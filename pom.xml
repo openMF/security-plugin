@@ -21,7 +21,7 @@
         <graal.version>22.3.1</graal.version>
         <eclipselink.version>4.0.7</eclipselink.version>
         <truth.version>1.4.5</truth.version>
-        <lombok.version>1.18.38</lombok.version>
+        <lombok.version>1.18.42</lombok.version>
     </properties>
 
     <dependencies>
