@@ -126,7 +126,7 @@ public class AppUserReadPlatformServiceImpl implements AppUserReadPlatformServic
 
         AppUserData retUser = AppUserData.instance(user.getId(), user.getUsername(), user.getEmail(), user.getOffice().getId(),
                 user.getOffice().getName(), user.getFirstname(), user.getLastname(), availableRoles, null, selectedUserRoles, linkedStaff,
-                user.getPasswordNeverExpires(), user.isSelfServiceUser());
+                user.getPasswordNeverExpires(), user.isSelfServiceUser);
 
         if (retUser.isSelfServiceUser()) {
             Set<ClientData> clients = new HashSet<>();

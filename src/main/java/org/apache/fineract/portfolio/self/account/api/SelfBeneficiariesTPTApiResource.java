@@ -45,6 +45,7 @@ import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
+import org.apache.fineract.commands.service.CommandWrapperBuilderSelfService;
 import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
 import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
@@ -110,7 +111,7 @@ public class SelfBeneficiariesTPTApiResource {
             @ApiResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = SelfBeneficiariesTPTApiResourceSwagger.PostSelfBeneficiariesTPTResponse.class))) })
     public String add(@Parameter(hidden = true) final String apiRequestBodyAsJson) {
 
-        final CommandWrapper commandRequest = new CommandWrapperBuilder().addSelfServiceBeneficiaryTPT().withJson(apiRequestBodyAsJson)
+        final CommandWrapper commandRequest = new CommandWrapperBuilderSelfService().addSelfServiceBeneficiaryTPT().withJson(apiRequestBodyAsJson)
                 .build();
         final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
         return this.toApiJsonSerializer.serialize(result);
@@ -128,7 +129,7 @@ public class SelfBeneficiariesTPTApiResource {
     public String update(@PathParam("beneficiaryId") @Parameter(description = "beneficiaryId") final Long beneficiaryId,
             @Parameter(hidden = true) final String apiRequestBodyAsJson) {
 
-        final CommandWrapper commandRequest = new CommandWrapperBuilder().updateSelfServiceBeneficiaryTPT(beneficiaryId)
+        final CommandWrapper commandRequest = new CommandWrapperBuilderSelfService().updateSelfServiceBeneficiaryTPT(beneficiaryId)
                 .withJson(apiRequestBodyAsJson).build();
         final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
         return this.toApiJsonSerializer.serialize(result);
@@ -145,7 +146,7 @@ public class SelfBeneficiariesTPTApiResource {
     public String delete(@PathParam("beneficiaryId") final Long beneficiaryId,
             @Parameter(hidden = true) final String apiRequestBodyAsJson) {
 
-        final CommandWrapper commandRequest = new CommandWrapperBuilder().deleteSelfServiceBeneficiaryTPT(beneficiaryId)
+        final CommandWrapper commandRequest = new CommandWrapperBuilderSelfService().deleteSelfServiceBeneficiaryTPT(beneficiaryId)
                 .withJson(apiRequestBodyAsJson).build();
         final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
         return this.toApiJsonSerializer.serialize(result);

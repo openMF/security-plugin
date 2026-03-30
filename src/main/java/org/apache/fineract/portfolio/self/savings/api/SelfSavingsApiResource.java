@@ -45,6 +45,7 @@ import org.apache.fineract.portfolio.client.exception.ClientNotFoundException;
 import org.apache.fineract.portfolio.savings.api.SavingsAccountChargesApiResource;
 import org.apache.fineract.portfolio.savings.api.SavingsAccountTransactionsApiResource;
 import org.apache.fineract.portfolio.savings.api.SavingsAccountsApiResource;
+import org.apache.fineract.portfolio.savings.data.SavingsAccountData;
 import org.apache.fineract.portfolio.savings.exception.SavingsAccountNotFoundException;
 import org.apache.fineract.portfolio.self.client.service.AppuserClientMapperReadService;
 import org.apache.fineract.portfolio.self.savings.data.SelfSavingsAccountConstants;
@@ -75,7 +76,7 @@ public class SelfSavingsApiResource {
             + "self/savingsaccounts/1\n" + "\n" + "\n" + "self/savingsaccounts/1?associations=transactions")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = SelfSavingsApiResourceSwagger.GetSelfSavingsAccountsResponse.class))) })
-    public String retrieveSavings(@PathParam("accountId") @Parameter(description = "accountId") final Long accountId,
+    public SavingsAccountData retrieveSavings(@PathParam("accountId") @Parameter(description = "accountId") final Long accountId,
             @DefaultValue("all") @QueryParam("chargeStatus") @Parameter(description = "chargeStatus") final String chargeStatus,
             @Context final UriInfo uriInfo) {
 
@@ -84,7 +85,7 @@ public class SelfSavingsApiResource {
         validateAppuserSavingsAccountMapping(accountId);
 
         final boolean staffInSelectedOfficeOnly = false;
-        return this.savingsAccountsApiResource.retrieveOne(accountId, staffInSelectedOfficeOnly, chargeStatus, uriInfo);
+        return this.savingsAccountsApiResource.retrieveOne(accountId, staffInSelectedOfficeOnly, chargeStatus, "", uriInfo);
     }
 
     @GET
