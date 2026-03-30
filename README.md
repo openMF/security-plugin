@@ -26,12 +26,12 @@ Maven
     <dependency>
         <groupId>community.mifos</groupId>
         <artifactId>selfservice-plugin</artifactId>
-        <version>1.11.0-SNAPSHOT</version>
+        <version>1.15.0-SNAPSHOT</version>
     </dependency>
 ```
 Gradle
 ```bash
-    compile(group: 'community.mifos', name: 'selfservice-plugin', version: '1.11.0-SNAPSHOT')
+    compile(group: 'community.mifos', name: 'selfservice-plugin', version: '1.15.0-SNAPSHOT')
 ```
 
 ## Build & Use For Linux Users
