@@ -77,6 +77,31 @@
             <scope>compile</scope>
 	</dependency>
         <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>            
+            <scope>provided</scope>
+        </dependency>        
+        <dependency>
+            <groupId>org.glassfish.jersey.media</groupId>
+            <artifactId>jersey-media-multipart</artifactId>            
+        </dependency>        
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-annotations</artifactId>
+            <version>2.2.45</version>
+        </dependency>        
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>            
+        </dependency>
+        <dependency>
+            <groupId>com.google.truth</groupId>
+            <artifactId>truth</artifactId>            
+            <version>${truth.version}</version>
+            <scope>compile</scope>            
+	</dependency>
+        <!-- Apache Fineract Libraries -->
+        <dependency>
             <groupId>org.apache.fineract</groupId>
             <artifactId>fineract-provider</artifactId>
             <version>${fineract.version}</version>
@@ -196,30 +221,7 @@
                     <artifactId>fineract-avro-schemas</artifactId>
                 </exclusion>
             </exclusions>
-	</dependency>
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>            
-            <scope>provided</scope>
-        </dependency>
-        
-        <dependency>
-            <groupId>org.glassfish.jersey.media</groupId>
-            <artifactId>jersey-media-multipart</artifactId>            
-        </dependency>
-        
-        <dependency>
-            <groupId>io.swagger.core.v3</groupId>
-            <artifactId>swagger-annotations</artifactId>
-            <version>2.2.45</version>
-        </dependency>
-        
-        <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>            
-        </dependency>
-
-        <!-- Testing-->
+	</dependency>        
         <dependency>
             <groupId>org.apache.fineract</groupId>
             <artifactId>fineract-client</artifactId>
@@ -358,13 +360,7 @@
                 </exclusion>
             </exclusions>       
                
-	</dependency>
-        <dependency>
-            <groupId>com.google.truth</groupId>
-            <artifactId>truth</artifactId>            
-            <version>${truth.version}</version>
-            <scope>compile</scope>            
-	</dependency>            
+	</dependency>        
     </dependencies>
 
     <build>
