@@ -69,7 +69,7 @@ public class SelfRunReportApiResource {
             @Context final UriInfo uriInfo) {
         this.context.authenticatedUser();
         final boolean isSelfServiceUserReport = true;
-        return this.runreportsApiResource.runReport(reportName, uriInfo, isSelfServiceUserReport);
+        return this.runreportsApiResource.runReport(reportName, uriInfo);
     }
 
 }
