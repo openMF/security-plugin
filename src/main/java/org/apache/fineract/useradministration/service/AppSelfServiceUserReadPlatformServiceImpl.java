@@ -35,9 +35,9 @@ import org.apache.fineract.portfolio.client.data.ClientData;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.useradministration.data.AppSelfServiceUserData;
 import org.apache.fineract.useradministration.data.RoleData;
-import org.apache.fineract.useradministration.domain.AppUser;
+import org.apache.fineract.useradministration.domain.AppSelfServiceUser;
 import org.apache.fineract.useradministration.domain.AppSelfServiceUserClientMapping;
-import org.apache.fineract.useradministration.domain.AppUserRepository;
+import org.apache.fineract.useradministration.domain.AppSelfServiceUserRepository;
 import org.apache.fineract.useradministration.domain.Role;
 import org.apache.fineract.useradministration.exception.UserNotFoundException;
 import org.springframework.cache.annotation.Cacheable;
@@ -51,7 +51,7 @@ public class AppSelfServiceUserReadPlatformServiceImpl implements AppSelfService
     private final JdbcTemplate jdbcTemplate;
     private final OfficeReadPlatformService officeReadPlatformService;
     private final RoleReadPlatformService roleReadPlatformService;
-    private final AppUserRepository appUserRepository;
+    private final AppSelfServiceUserRepository appUserRepository;
     private final StaffReadService staffReadPlatformService;
 
     /*
@@ -102,7 +102,7 @@ public class AppSelfServiceUserReadPlatformServiceImpl implements AppSelfService
 
         this.context.authenticatedUser();
 
-        final AppUser user = this.appUserRepository.findById(userId).orElseThrow(() -> new UserNotFoundException(userId));
+        final AppSelfServiceUser user = this.appUserRepository.findById(userId).orElseThrow(() -> new UserNotFoundException(userId));
         if (user.isDeleted()) {
             throw new UserNotFoundException(userId);
         }

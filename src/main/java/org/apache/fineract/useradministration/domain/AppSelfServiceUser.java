@@ -193,9 +193,6 @@ public class AppSelfServiceUser extends AbstractPersistableCustom<Long> implemen
 
     public EnumOptionData organisationalRoleData() {
         EnumOptionData organisationalRole = null;
-        if (this.staff != null) {
-            organisationalRole = this.staff.organisationalRoleData();
-        }
         return organisationalRole;
     }
 

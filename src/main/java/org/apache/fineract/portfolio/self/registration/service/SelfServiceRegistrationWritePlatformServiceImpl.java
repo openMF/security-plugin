@@ -219,7 +219,7 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
     }
 
     @Override
-    public AppUser createUser(String apiRequestBodyAsJson) {
+    public AppSelfServiceUser createUser(String apiRequestBodyAsJson) {
         JsonCommand command = null;
         String username = null;
         try {
