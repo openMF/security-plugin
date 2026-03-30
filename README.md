@@ -8,10 +8,10 @@
 1a. Execute only for DOCKER - Create a directory, copy the Self Service Plugin libraries in it
 
 ```bash
-    mkdir fineract-selfservice  && cd fineract-selfservice
+    mkdir selfservice-plugin  && cd selfservice-plugin
 ```
 
-1b. Execute only for TOMCAT - Copy the Self Service Plugin and Pentaho libraries in $TOMCAT_HOME/webapps/fineract-provider/WEB-INF/lib/
+1b. Execute only for TOMCAT - Copy the Self Service Plugin libraries in $TOMCAT_HOME/webapps/fineract-provider/WEB-INF/lib/
 
 5. Restart Docker or Tomcat
 
@@ -31,7 +31,7 @@ Maven
 ```
 Gradle
 ```bash
-    compile(group: 'community.mifos', name: 'security-plugin', version: '1.15.0-SNAPSHOT')
+    compile(group: 'community.mifos', name: 'selfservice-plugin', version: '1.15.0-SNAPSHOT')
 ```
 
 ## Build & Use For Linux Users
@@ -43,7 +43,7 @@ other versions may be possible, but is not tested or documented here.
 1. Download and compile
 
 ```bash
-    git clone https://github.com/openMF/security-plugin.git
+    git clone https://github.com/openMF/selfservice-plugin.git
     cd selfservice-plugin && ./mvnw -Dmaven.test.skip=true clean package && cd ..
 ```
 
