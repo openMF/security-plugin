@@ -54,6 +54,6 @@ public class SelfAuthenticationApiResource {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = SelfAuthenticationApiResourceSwagger.PostSelfAuthenticationResponse.class))) })
     public String authenticate(final String apiRequestBodyAsJson) {
-        return this.authenticationApiResource.authenticate(apiRequestBodyAsJson, true);
+        return this.authenticationApiResource.authenticate(apiRequestBodyAsJson);
     }
 }

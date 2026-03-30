@@ -42,12 +42,14 @@ import java.util.Collection;
 import java.util.HashMap;
 import lombok.RequiredArgsConstructor;
 import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
+import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.accounts.api.AccountsApiResource;
 import org.apache.fineract.portfolio.accounts.constants.ShareAccountApiConstants;
 import org.apache.fineract.portfolio.accounts.data.AccountData;
+import org.apache.fineract.portfolio.accounts.data.request.AccountRequest;
 import org.apache.fineract.portfolio.accounts.exceptions.ShareAccountNotFoundException;
 import org.apache.fineract.portfolio.charge.data.ChargeData;
 import org.apache.fineract.portfolio.charge.service.ChargeReadPlatformService;
@@ -121,8 +123,8 @@ public class SelfShareAccountsApiResource {
             + "minimumActivePeriod, minimumActivePeriodFrequencyType, lockinPeriodFrequency, lockinPeriodFrequencyType.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "OK", content = @Content(array = @ArraySchema(schema = @Schema(implementation = SelfShareAccountsApiResourceSwagger.PostNewShareApplicationResponse.class)))) })
-    public String createAccount(final String apiRequestBodyAsJson) {
-        HashMap<String, Object> attr = selfShareAccountsDataValidator.validateShareAccountApplication(apiRequestBodyAsJson);
+    public CommandProcessingResult createAccount(final AccountRequest apiRequestBodyAsJson) {
+        HashMap<String, Object> attr = selfShareAccountsDataValidator.validateShareAccountApplication(apiRequestBodyAsJson.toString());
         final Long clientId = (Long) attr.get(ShareAccountApiConstants.clientid_paramname);
         validateAppuserClientsMapping(clientId);
         String accountType = ShareAccountApiConstants.shareEntityType;
