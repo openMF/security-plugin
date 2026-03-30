@@ -172,8 +172,8 @@ public class AppUserReadPlatformServiceImpl implements AppUserReadPlatformServic
             } else {
                 linkedStaff = null;
             }
-            return AppUserData.instance(id, username, email, officeId, officeName, firstname, lastname, null, null, selectedRoles,
-                    linkedStaff, passwordNeverExpire, isSelfServiceUser);
+            return AppUserData.instance(id, username, email, officeId, officeName, firstname, lastname, selectedRoles, selectedRoles, linkedStaff, passwordNeverExpire);
+                            //.instance(id, username, email, officeId, officeName, firstname, lastname, null, null, selectedRoles, linkedStaff, passwordNeverExpire, isSelfServiceUser);
         }
 
         public String schema() {
