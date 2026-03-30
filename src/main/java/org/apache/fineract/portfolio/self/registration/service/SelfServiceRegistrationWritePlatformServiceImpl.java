@@ -58,6 +58,7 @@ import org.apache.fineract.portfolio.self.registration.SelfServiceApiConstants;
 import org.apache.fineract.portfolio.self.registration.domain.SelfServiceRegistration;
 import org.apache.fineract.portfolio.self.registration.domain.SelfServiceRegistrationRepository;
 import org.apache.fineract.portfolio.self.registration.exception.SelfServiceRegistrationNotFoundException;
+import org.apache.fineract.useradministration.domain.AppSelfServiceUser;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.apache.fineract.useradministration.domain.PasswordValidationPolicy;
 import org.apache.fineract.useradministration.domain.PasswordValidationPolicyRepository;
@@ -70,7 +71,7 @@ import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
-import org.apache.fineract.useradministration.service.AppUserReadPlatformService;
+import org.apache.fineract.useradministration.service.AppSelfServiceUserReadPlatformService;
 
 @RequiredArgsConstructor
 public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServiceRegistrationWritePlatformService {
@@ -85,7 +86,7 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
     private final SmsMessageRepository smsMessageRepository;
     private final SmsMessageScheduledJobService smsMessageScheduledJobService;
     private final SmsCampaignDropdownReadPlatformService smsCampaignDropdownReadPlatformService;
-    private final AppUserReadPlatformService appUserReadPlatformService;
+    private final AppSelfServiceUserReadPlatformService appUserReadPlatformService;
     private final RoleRepository roleRepository;
     private static final SecureRandom secureRandom = new SecureRandom();
 
@@ -262,7 +263,7 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
             }
             List<Client> clients = new ArrayList<>(Arrays.asList(client));
             User user = new User(selfServiceRegistration.getUsername(), selfServiceRegistration.getPassword(), authorities);
-            AppUser appUser = new AppUser(client.getOffice(), user, allRoles, selfServiceRegistration.getEmail(), client.getFirstname(),
+            AppSelfServiceUser appUser = new AppSelfServiceUser(client.getOffice(), user, allRoles, selfServiceRegistration.getEmail(), client.getFirstname(),
                     client.getLastname(), null, passwordNeverExpire, isSelfServiceUser, clients, null);
             this.userDomainService.create(appUser, true);
             return appUser;

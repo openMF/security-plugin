@@ -19,17 +19,16 @@
 package org.apache.fineract.useradministration.service;
 
 import java.util.Collection;
-import org.apache.fineract.useradministration.data.AppUserData;
 
-public interface AppUserReadPlatformService {
+public interface AppSelfServiceUserReadPlatformService {
 
-    Collection<AppUserData> retrieveAllUsers();
+    Collection<AppSelfServiceUserData> retrieveAllUsers();
 
-    Collection<AppUserData> retrieveSearchTemplate();
+    Collection<AppSelfServiceUserData> retrieveSearchTemplate();
 
-    AppUserData retrieveNewUserDetails();
+    AppSelfServiceUserData retrieveNewUserDetails();
 
-    AppUserData retrieveUser(Long userId);
+    AppSelfServiceUserData retrieveUser(Long userId);
 
     boolean isUsernameExist(String username);
 }

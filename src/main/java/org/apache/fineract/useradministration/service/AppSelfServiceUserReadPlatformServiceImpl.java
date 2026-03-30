@@ -33,10 +33,10 @@ import org.apache.fineract.organisation.staff.data.StaffData;
 import org.apache.fineract.organisation.staff.service.StaffReadService;
 import org.apache.fineract.portfolio.client.data.ClientData;
 import org.apache.fineract.portfolio.client.domain.Client;
-import org.apache.fineract.useradministration.data.AppUserData;
+import org.apache.fineract.useradministration.data.AppSelfServiceUserData;
 import org.apache.fineract.useradministration.data.RoleData;
 import org.apache.fineract.useradministration.domain.AppUser;
-import org.apache.fineract.useradministration.domain.AppUserClientMapping;
+import org.apache.fineract.useradministration.domain.AppSelfServiceUserClientMapping;
 import org.apache.fineract.useradministration.domain.AppUserRepository;
 import org.apache.fineract.useradministration.domain.Role;
 import org.apache.fineract.useradministration.exception.UserNotFoundException;
@@ -45,7 +45,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 
 @RequiredArgsConstructor
-public class AppUserReadPlatformServiceImpl implements AppUserReadPlatformService {
+public class AppSelfServiceUserReadPlatformServiceImpl implements AppSelfServiceUserReadPlatformService {
 
     private final PlatformSecurityContext context;
     private final JdbcTemplate jdbcTemplate;
@@ -63,9 +63,9 @@ public class AppUserReadPlatformServiceImpl implements AppUserReadPlatformServic
 
     @Override
     @Cacheable(value = "users", key = "T(org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat(#root.target.context.authenticatedUser().getOffice().getHierarchy())")
-    public Collection<AppUserData> retrieveAllUsers() {
+    public Collection<AppSelfServiceUserData> retrieveAllUsers() {
 
-        final AppUser currentUser = this.context.authenticatedUser();
+        final AppSelfServiceUser currentUser = this.context.authenticatedUser();
         final String hierarchy = currentUser.getOffice().getHierarchy();
         final String hierarchySearchString = hierarchy + "%";
 
@@ -76,29 +76,29 @@ public class AppUserReadPlatformServiceImpl implements AppUserReadPlatformServic
     }
 
     @Override
-    public Collection<AppUserData> retrieveSearchTemplate() {
-        final AppUser currentUser = this.context.authenticatedUser();
+    public Collection<AppSelfServiceUserData> retrieveSearchTemplate() {
+        final AppSelfServiceUser currentUser = this.context.authenticatedUser();
         final String hierarchy = currentUser.getOffice().getHierarchy();
         final String hierarchySearchString = hierarchy + "%";
 
-        final AppUserLookupMapper mapper = new AppUserLookupMapper();
+        final AppSelfServiceUserLookupMapper mapper = new AppSelfServiceUserLookupMapper();
         final String sql = "select " + mapper.schema();
 
         return this.jdbcTemplate.query(sql, mapper, new Object[] { hierarchySearchString }); // NOSONAR
     }
 
     @Override
-    public AppUserData retrieveNewUserDetails() {
+    public AppSelfServiceUserData retrieveNewUserDetails() {
 
         final Collection<OfficeData> offices = this.officeReadPlatformService.retrieveAllOfficesForDropdown();
         final Collection<RoleData> availableRoles = this.roleReadPlatformService.retrieveAllActiveRoles();
         final Collection<RoleData> selfServiceRoles = this.roleReadPlatformService.retrieveAllSelfServiceRoles();
 
-        return AppUserData.template(offices, availableRoles, selfServiceRoles);
+        return AppSelfServiceUserData.template(offices, availableRoles, selfServiceRoles);
     }
 
     @Override
-    public AppUserData retrieveUser(final Long userId) {
+    public AppSelfServiceUserData retrieveUser(final Long userId) {
 
         this.context.authenticatedUser();
 
@@ -124,13 +124,12 @@ public class AppUserReadPlatformServiceImpl implements AppUserReadPlatformServic
             linkedStaff = null;
         }
 
-        AppUserData retUser = AppUserData.instance(user.getId(), user.getUsername(), user.getEmail(), user.getOffice().getId(),
-                user.getOffice().getName(), user.getFirstname(), user.getLastname(), availableRoles, null, selectedUserRoles, linkedStaff,
-                user.getPasswordNeverExpires(), user.isSelfServiceUser);
-
+        AppSelfServiceUserData retUser = AppSelfServiceUserData.instance(user.getId(), user.getUsername(), user.getEmail(), user.getOffice().getId(), user.getOffice().getName(), user.getFirstname(), user.getLastname(), availableRoles, null, selectedUserRoles, linkedStaff, user.getPasswordNeverExpires(), user.isSelfServiceUser);
+                                       
+        
         if (retUser.isSelfServiceUser()) {
             Set<ClientData> clients = new HashSet<>();
-            for (AppUserClientMapping clientMap : user.getAppUserClientMappings()) {
+            for (AppSelfServiceUserClientMapping clientMap : user.getAppUserClientMappings()) {
                 Client client = clientMap.getClient();
                 clients.add(ClientData.lookup(client.getId(), client.getDisplayName(), client.getOffice().getId(),
                         client.getOffice().getName()));
@@ -141,7 +140,7 @@ public class AppUserReadPlatformServiceImpl implements AppUserReadPlatformServic
         return retUser;
     }
 
-    private static final class AppUserMapper implements RowMapper<AppUserData> {
+    private static final class AppUserMapper implements RowMapper<AppSelfServiceUserData> {
 
         private final RoleReadPlatformService roleReadPlatformService;
         private final StaffReadService staffReadPlatformService;
@@ -152,7 +151,7 @@ public class AppUserReadPlatformServiceImpl implements AppUserReadPlatformServic
         }
 
         @Override
-        public AppUserData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
+        public AppSelfServiceUserData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
 
             final Long id = rs.getLong("id");
             final String username = rs.getString("username");
@@ -172,8 +171,7 @@ public class AppUserReadPlatformServiceImpl implements AppUserReadPlatformServic
             } else {
                 linkedStaff = null;
             }
-            return AppUserData.instance(id, username, email, officeId, officeName, firstname, lastname, selectedRoles, selectedRoles, linkedStaff, passwordNeverExpire);
-                            //.instance(id, username, email, officeId, officeName, firstname, lastname, null, null, selectedRoles, linkedStaff, passwordNeverExpire, isSelfServiceUser);
+            return AppSelfServiceUserData.instance(id, username, email, officeId, officeName, firstname, lastname, null, null, selectedRoles, linkedStaff, passwordNeverExpire, isSelfServiceUser);
         }
 
         public String schema() {
@@ -184,15 +182,15 @@ public class AppUserReadPlatformServiceImpl implements AppUserReadPlatformServic
 
     }
 
-    private static final class AppUserLookupMapper implements RowMapper<AppUserData> {
+    private static final class AppSelfServiceUserLookupMapper implements RowMapper<AppSelfServiceUserData> {
 
         @Override
-        public AppUserData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
+        public AppSelfServiceUserData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
 
             final Long id = rs.getLong("id");
             final String username = rs.getString("username");
 
-            return AppUserData.dropdown(id, username);
+            return AppSelfServiceUserData.dropdown(id, username);
         }
 
         public String schema() {

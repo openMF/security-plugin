@@ -36,7 +36,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.apache.fineract.useradministration.service.AppUserReadPlatformService;
+import org.apache.fineract.useradministration.service.AppSelfServiceUserReadPlatformService;
 
 @Configuration
 public class SelfRegistrationConfiguration {
@@ -61,7 +61,7 @@ public class SelfRegistrationConfiguration {
             SmsMessageRepository smsMessageRepository,
             SmsMessageScheduledJobService smsMessageScheduledJobService,
             SmsCampaignDropdownReadPlatformService smsCampaignDropdownReadPlatformService,
-            AppUserReadPlatformService selfServiceAppUserReadPlatformService, 
+            AppSelfServiceUserReadPlatformService selfServiceAppUserReadPlatformService, 
             RoleRepository roleRepository) {
         return new SelfServiceRegistrationWritePlatformServiceImpl(selfServiceRegistrationRepository, fromApiJsonHelper,
                 selfServiceRegistrationReadPlatformService, clientRepository, passwordValidationPolicy, userDomainService,
