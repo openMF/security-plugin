@@ -66,6 +66,6 @@ We recommend that you _Watch_ and _Star_ this project on GitHub® to make it eas
 
 ## History
 
-This is a plugin created from the Apache Fineract code and functionality for Self Service users. The original work is this one https://github.com/apache/fineract
+This is a plugin created from the Apache Fineract code and functionality for Self Service users. The original work is this one https://github.com/apache/fineract and it was removed with this [PR](https://github.com/apache/fineract/commit/5364ddbe121ae6d7f95e06cce20450e0fb479f42) for more information.
 
 
