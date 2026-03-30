@@ -41,8 +41,10 @@ import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.apache.fineract.portfolio.account.data.request.AccountTransferRequest;
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
+import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
@@ -105,9 +107,9 @@ public class SelfAccountTransferApiResource {
             + "\n" + "\n" + "Example Requests:\n" + "\n" + " self/accounttransfers/\n")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "OK", content = @Content(array = @ArraySchema(schema = @Schema(implementation = SelfAccountTransferApiResourceSwagger.PostNewTransferResponse.class)))) })
-    public String create(@DefaultValue("") @QueryParam("type") @Parameter(name = "type") final String type,
-            final String apiRequestBodyAsJson) {
-        Map<String, Object> params = this.dataValidator.validateCreate(type, apiRequestBodyAsJson);
+    public CommandProcessingResult create(@DefaultValue("") @QueryParam("type") @Parameter(name = "type") final String type,
+            final AccountTransferRequest apiRequestBodyAsJson) {
+        Map<String, Object> params = this.dataValidator.validateCreate(type, apiRequestBodyAsJson.toString());
         if (type.equals("tpt")) {
             checkForLimits(params);
         }

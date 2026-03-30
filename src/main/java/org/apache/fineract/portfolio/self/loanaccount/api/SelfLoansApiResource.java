@@ -276,7 +276,7 @@ public class SelfLoansApiResource {
     public String retrieveGuarantorDetails(@PathParam("loanId") final Long loanId, @Context final UriInfo uriInfo) {
 
         validateAppuserLoanMapping(loanId);
-        return this.guarantorsApiResource.retrieveGuarantorDetails(uriInfo, loanId);
+        return this.guarantorsApiResource.retrieveGuarantorDetails(loanId);
     }
 
 }
