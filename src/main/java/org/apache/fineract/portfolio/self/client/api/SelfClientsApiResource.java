@@ -76,7 +76,7 @@ import org.apache.fineract.infrastructure.security.service.PlatformSecurityConte
 import org.apache.fineract.portfolio.client.api.ClientApiConstants;
 import org.apache.fineract.portfolio.client.api.ClientChargesApiResource;
 import org.apache.fineract.portfolio.client.api.ClientTransactionsApiResource;
-import org.apache.fineract.portfolio.client.api.ClientsApiResource;
+import org.apache.fineract.portfolio.client.api.SelfServiceClientsApiResource;
 import org.apache.fineract.portfolio.client.exception.ClientNotFoundException;
 import org.apache.fineract.portfolio.self.client.data.SelfClientDataValidator;
 import org.apache.fineract.portfolio.self.client.service.AppuserClientMapperReadService;
@@ -97,7 +97,7 @@ import org.springframework.stereotype.Component;
 public class SelfClientsApiResource {
 
     private final PlatformSecurityContext context;
-    private final ClientsApiResource clientApiResource;
+    private final SelfServiceClientsApiResource clientApiResource;
     private final ClientChargesApiResource clientChargesApiResource;
     private final ClientTransactionsApiResource clientTransactionsApiResource;
     private final AppuserClientMapperReadService appUserClientMapperReadService;
@@ -134,8 +134,8 @@ public class SelfClientsApiResource {
         final String externalId = null;
         final String hierarchy = null;
         final Boolean orphansOnly = null;
-        return this.clientApiResource.retrieveAll(uriInfo, officeId, externalId, displayName, firstname, lastname, status, legalForm,
-                hierarchy, offset, limit, orderBy, sortOrder, orphansOnly, true);
+        return this.clientApiResource.retrieveAll(uriInfo, officeId, externalId, displayName, firstname, lastname, status, legalForm, hierarchy, offset, limit, orderBy, sortOrder, orphansOnly);
+                                   //.retrieveAll(uriInfo, officeId, externalId, displayName, firstname, lastname, status, legalForm, hierarchy, offset, limit, orderBy, sortOrder, orphansOnly, true);
     }
 
     @GET
