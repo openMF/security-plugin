@@ -56,7 +56,6 @@ import org.apache.fineract.portfolio.self.account.exception.BeneficiaryTransferL
 import org.apache.fineract.portfolio.self.account.exception.DailyTPTTransactionAmountLimitExceededException;
 import org.apache.fineract.portfolio.self.account.service.SelfAccountTransferReadService;
 import org.apache.fineract.portfolio.self.account.service.SelfBeneficiariesTPTReadPlatformService;
-import org.apache.fineract.useradministration.domain.AppUser;
 import org.springframework.stereotype.Component;
 import org.apache.fineract.infrastructure.security.service.PlatformSelfServiceSecurityContext;
 import org.apache.fineract.useradministration.domain.AppSelfServiceUser;

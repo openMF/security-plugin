@@ -40,9 +40,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.useradministration.api.UsersApiResource;
-import org.apache.fineract.useradministration.domain.AppUser;
 import org.springframework.stereotype.Component;
 import org.apache.fineract.infrastructure.security.service.PlatformSelfServiceSecurityContext;
+import org.apache.fineract.useradministration.domain.AppSelfServiceUser;
 
 @Path("/v1/self/user")
 @Component
@@ -68,7 +68,7 @@ public class SelfUserApiResource {
         final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
         this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, apiRequestBodyAsJson, SUPPORTED_PARAMETERS);
 
-        final AppUser appUser = this.context.authenticatedUser();
+        final AppSelfServiceUser appUser = this.context.authenticatedSelfServiceUser();
         return this.usersApiResource.update(appUser.getId(), apiRequestBodyAsJson);
     }
 

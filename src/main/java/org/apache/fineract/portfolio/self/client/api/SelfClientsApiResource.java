@@ -53,13 +53,13 @@ import org.apache.fineract.portfolio.client.exception.ClientNotFoundException;
 import org.apache.fineract.portfolio.self.client.data.SelfClientDataValidator;
 import org.apache.fineract.portfolio.self.client.service.AppuserClientMapperReadService;
 import org.apache.fineract.portfolio.self.config.SelfServiceModuleIsEnabledCondition;
-import org.apache.fineract.useradministration.domain.AppUser;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 import org.apache.fineract.infrastructure.security.service.PlatformSelfServiceSecurityContext;
+import org.apache.fineract.useradministration.domain.AppSelfServiceUser;
 
 @Path("/v1/self/clients")
 @Component
@@ -228,7 +228,7 @@ public class SelfClientsApiResource {
     }
 
     private void validateAppuserClientsMapping(final Long clientId) {
-        AppUser user = this.context.authenticatedUser();
+        AppSelfServiceUser user = this.context.authenticatedSelfServiceUser();
         final boolean mappedClientId = this.appUserClientMapperReadService.isClientMappedToUser(clientId, user.getId());
         if (!mappedClientId) {
             throw new ClientNotFoundException(clientId);

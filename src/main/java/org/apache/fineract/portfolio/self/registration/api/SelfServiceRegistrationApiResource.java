@@ -29,7 +29,7 @@ import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
 import org.apache.fineract.portfolio.self.registration.SelfServiceApiConstants;
 import org.apache.fineract.portfolio.self.registration.service.SelfServiceRegistrationWritePlatformService;
-import org.apache.fineract.useradministration.domain.AppUser;
+import org.apache.fineract.useradministration.domain.AppSelfServiceUser;
 import org.springframework.stereotype.Component;
 
 @Path("/v1/self/registration")
@@ -39,7 +39,7 @@ import org.springframework.stereotype.Component;
 public class SelfServiceRegistrationApiResource {
 
     private final SelfServiceRegistrationWritePlatformService selfServiceRegistrationWritePlatformService;
-    private final DefaultToApiJsonSerializer<AppUser> toApiJsonSerializer;
+    private final DefaultToApiJsonSerializer<AppSelfServiceUser> toApiJsonSerializer;
 
     @POST
     @Produces({ MediaType.APPLICATION_JSON })
@@ -52,7 +52,7 @@ public class SelfServiceRegistrationApiResource {
     @Path("user")
     @Produces({ MediaType.APPLICATION_JSON })
     public String createSelfServiceUser(final String apiRequestBodyAsJson) {
-        AppUser user = this.selfServiceRegistrationWritePlatformService.createUser(apiRequestBodyAsJson);
+        AppSelfServiceUser user = this.selfServiceRegistrationWritePlatformService.createSelfServiceUser(apiRequestBodyAsJson);
         return this.toApiJsonSerializer.serialize(CommandProcessingResult.resourceResult(user.getId()));
     }
 

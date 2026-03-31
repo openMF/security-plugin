@@ -27,8 +27,8 @@ import org.springframework.data.repository.query.Param;
 
 public interface AppSelfServiceUserRepository extends JpaRepository<AppSelfServiceUser, Long>, JpaSpecificationExecutor<AppSelfServiceUser>, PlatformUserRepository {
 
-    @Query("Select appUser from AppUser appUser where appUser.username = :username")
-    AppSelfServiceUser findAppUserByName(@Param("username") String username);
+    @Query("Select appSelfServiceUser from AppSelfServiceUser appSelfServiceUser where appSelfServiceUser.username = :username")
+    AppSelfServiceUser findAppSelfServiceUserByName(@Param("username") String username);
 
-    Collection<AppUser> findByOfficeId(Long officeId);
+    Collection<AppSelfServiceUser> findByOfficeId(Long officeId);
 }

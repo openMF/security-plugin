@@ -60,7 +60,6 @@ import org.apache.fineract.portfolio.self.shareaccounts.data.SelfShareAccountsDa
 import org.apache.fineract.portfolio.self.shareaccounts.service.AppUserShareAccountsMapperReadPlatformService;
 import org.apache.fineract.portfolio.shareaccounts.data.ShareAccountData;
 import org.apache.fineract.portfolio.shareaccounts.service.ShareAccountReadPlatformService;
-import org.apache.fineract.useradministration.domain.AppUser;
 import org.springframework.stereotype.Component;
 import org.apache.fineract.infrastructure.security.service.PlatformSelfServiceSecurityContext;
 import org.apache.fineract.useradministration.domain.AppSelfServiceUser;

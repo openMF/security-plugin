@@ -726,6 +726,6 @@ public class AppSelfServiceUser extends AbstractPersistableCustom<Long> implemen
 
     @Override
     public String toString() {
-        return "AppUser [username=" + this.username + ", getId()=" + this.getId() + "]";
+        return "AppSelfServiceUser [username=" + this.username + ", getId()=" + this.getId() + "]";
     }
 }

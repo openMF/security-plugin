@@ -50,7 +50,6 @@ import org.apache.fineract.portfolio.self.client.service.AppuserClientMapperRead
 import org.apache.fineract.portfolio.self.savings.data.SelfSavingsAccountConstants;
 import org.apache.fineract.portfolio.self.savings.data.SelfSavingsDataValidator;
 import org.apache.fineract.portfolio.self.savings.service.AppuserSavingsMapperReadService;
-import org.apache.fineract.useradministration.domain.AppUser;
 import org.springframework.stereotype.Component;
 import org.apache.fineract.infrastructure.security.service.PlatformSelfServiceSecurityContext;
 import org.apache.fineract.useradministration.domain.AppSelfServiceUser;

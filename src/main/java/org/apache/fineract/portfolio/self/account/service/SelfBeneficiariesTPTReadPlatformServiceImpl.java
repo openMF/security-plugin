@@ -26,7 +26,6 @@ import org.apache.fineract.portfolio.account.PortfolioAccountType;
 import org.apache.fineract.portfolio.account.service.AccountTransferEnumerations;
 import org.apache.fineract.portfolio.self.account.data.SelfAccountTemplateData;
 import org.apache.fineract.portfolio.self.account.data.SelfBeneficiariesTPTData;
-import org.apache.fineract.useradministration.domain.AppUser;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.apache.fineract.infrastructure.security.service.PlatformSelfServiceSecurityContext;

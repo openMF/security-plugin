@@ -43,7 +43,6 @@ import org.apache.fineract.portfolio.self.account.domain.SelfBeneficiariesTPT;
 import org.apache.fineract.portfolio.self.account.domain.SelfBeneficiariesTPTRepository;
 import org.apache.fineract.portfolio.self.account.exception.InvalidAccountInformationException;
 import org.apache.fineract.portfolio.self.account.exception.InvalidBeneficiaryException;
-import org.apache.fineract.useradministration.domain.AppUser;
 import org.springframework.dao.DataAccessException;
 import org.springframework.transaction.annotation.Transactional;
 import org.apache.fineract.infrastructure.security.service.PlatformSelfServiceSecurityContext;
