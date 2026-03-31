@@ -47,7 +47,6 @@ import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
-import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.account.api.AccountTransfersApiResource;
 import org.apache.fineract.portfolio.account.service.AccountTransfersReadPlatformService;
 import org.apache.fineract.portfolio.self.account.data.SelfAccountTemplateData;
@@ -59,6 +58,8 @@ import org.apache.fineract.portfolio.self.account.service.SelfAccountTransferRea
 import org.apache.fineract.portfolio.self.account.service.SelfBeneficiariesTPTReadPlatformService;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.springframework.stereotype.Component;
+import org.apache.fineract.infrastructure.security.service.PlatformSelfServiceSecurityContext;
+import org.apache.fineract.useradministration.domain.AppSelfServiceUser;
 
 @Path("/v1/self/accounttransfers")
 @Component
@@ -66,7 +67,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class SelfAccountTransferApiResource {
 
-    private final PlatformSecurityContext context;
+    private final PlatformSelfServiceSecurityContext context;
     private final DefaultToApiJsonSerializer<SelfAccountTransferData> toApiJsonSerializer;
     private final AccountTransfersApiResource accountTransfersApiResource;
     private final SelfAccountTransferReadService selfAccountTransferReadService;
@@ -87,7 +88,7 @@ public class SelfAccountTransferApiResource {
     public String template(@DefaultValue("") @QueryParam("type") @Parameter(name = "type") final String type,
             @Context final UriInfo uriInfo) {
 
-        AppUser user = this.context.authenticatedUser();
+        AppSelfServiceUser user = this.context.authenticatedSelfServiceUser();        
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         Collection<SelfAccountTemplateData> selfTemplateData = this.selfAccountTransferReadService.retrieveSelfAccountTemplateData(user);
 
@@ -122,7 +123,7 @@ public class SelfAccountTransferApiResource {
         LocalDate transactionDate = (LocalDate) params.get("transactionDate");
         BigDecimal transactionAmount = (BigDecimal) params.get("transactionAmount");
 
-        AppUser user = this.context.authenticatedUser();
+        AppSelfServiceUser user = this.context.authenticatedSelfServiceUser();
         Long transferLimit = this.tptBeneficiaryReadPlatformService.getTransferLimit(user.getId(), toAccount.getAccountId(),
                 toAccount.getAccountType());
         if (transferLimit != null && transferLimit > 0) {

@@ -33,7 +33,6 @@ import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
 import org.apache.fineract.infrastructure.core.exception.ErrorHandler;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
-import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.account.PortfolioAccountType;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepositoryWrapper;
@@ -47,12 +46,14 @@ import org.apache.fineract.portfolio.self.account.exception.InvalidBeneficiaryEx
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.springframework.dao.DataAccessException;
 import org.springframework.transaction.annotation.Transactional;
+import org.apache.fineract.infrastructure.security.service.PlatformSelfServiceSecurityContext;
+import org.apache.fineract.useradministration.domain.AppSelfServiceUser;
 
 @RequiredArgsConstructor
 @Slf4j
 public class SelfBeneficiariesTPTWritePlatformServiceImpl implements SelfBeneficiariesTPTWritePlatformService {
 
-    private final PlatformSecurityContext context;
+    private final PlatformSelfServiceSecurityContext context;
     private final SelfBeneficiariesTPTRepository repository;
     private final SelfBeneficiariesTPTDataValidator validator;
     private final LoanRepositoryWrapper loanRepositoryWrapper;
@@ -96,7 +97,7 @@ public class SelfBeneficiariesTPTWritePlatformServiceImpl implements SelfBenefic
 
         if (validAccountDetails) {
             try {
-                AppUser user = this.context.authenticatedUser();
+                AppSelfServiceUser user = this.context.authenticatedSelfServiceUser();
                 SelfBeneficiariesTPT beneficiary = new SelfBeneficiariesTPT(user.getId(), name, officeId, clientId, accountId, accountType,
                         transferLimit);
                 this.repository.saveAndFlush(beneficiary);
@@ -113,7 +114,7 @@ public class SelfBeneficiariesTPTWritePlatformServiceImpl implements SelfBenefic
     @Override
     public CommandProcessingResult update(JsonCommand command) {
         HashMap<String, Object> params = this.validator.validateForUpdate(command.json());
-        AppUser user = this.context.authenticatedUser();
+        AppSelfServiceUser user = this.context.authenticatedSelfServiceUser();
         Long beneficiaryId = command.entityId();
         SelfBeneficiariesTPT beneficiary = this.repository.findById(beneficiaryId).orElse(null);
         if (beneficiary != null && beneficiary.getAppUserId().equals(user.getId())) {
@@ -140,7 +141,7 @@ public class SelfBeneficiariesTPTWritePlatformServiceImpl implements SelfBenefic
     @Transactional
     @Override
     public CommandProcessingResult delete(JsonCommand command) {
-        AppUser user = this.context.authenticatedUser();
+        AppSelfServiceUser user = this.context.authenticatedSelfServiceUser();
         Long beneficiaryId = command.entityId();
         SelfBeneficiariesTPT beneficiary = this.repository.findById(beneficiaryId).orElse(null);
         if (beneficiary != null && beneficiary.getAppUserId().equals(user.getId())) {

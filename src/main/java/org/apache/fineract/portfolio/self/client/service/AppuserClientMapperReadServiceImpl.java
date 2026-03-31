@@ -19,16 +19,16 @@
 package org.apache.fineract.portfolio.self.client.service;
 
 import lombok.RequiredArgsConstructor;
-import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.client.exception.ClientNotFoundException;
-import org.apache.fineract.useradministration.domain.AppUser;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.apache.fineract.infrastructure.security.service.PlatformSelfServiceSecurityContext;
+import org.apache.fineract.useradministration.domain.AppSelfServiceUser;
 
 @RequiredArgsConstructor
 public class AppuserClientMapperReadServiceImpl implements AppuserClientMapperReadService {
 
     private final JdbcTemplate jdbcTemplate;
-    private final PlatformSecurityContext context;
+    private final PlatformSelfServiceSecurityContext context;
 
     @Override
     public Boolean isClientMappedToUser(Long clientId, Long appUserId) {
@@ -40,7 +40,7 @@ public class AppuserClientMapperReadServiceImpl implements AppuserClientMapperRe
 
     @Override
     public void validateAppuserClientsMapping(final Long clientId) {
-        AppUser user = this.context.authenticatedUser();
+        AppSelfServiceUser user = this.context.authenticatedSelfServiceUser();
         if (clientId != null) {
             final boolean mappedClientId = isClientMappedToUser(clientId, user.getId());
             if (!mappedClientId) {

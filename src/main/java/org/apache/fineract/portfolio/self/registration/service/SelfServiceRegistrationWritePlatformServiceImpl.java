@@ -59,7 +59,6 @@ import org.apache.fineract.portfolio.self.registration.domain.SelfServiceRegistr
 import org.apache.fineract.portfolio.self.registration.domain.SelfServiceRegistrationRepository;
 import org.apache.fineract.portfolio.self.registration.exception.SelfServiceRegistrationNotFoundException;
 import org.apache.fineract.useradministration.domain.AppSelfServiceUser;
-import org.apache.fineract.useradministration.domain.AppUser;
 import org.apache.fineract.useradministration.domain.PasswordValidationPolicy;
 import org.apache.fineract.useradministration.domain.PasswordValidationPolicyRepository;
 import org.apache.fineract.useradministration.domain.Role;

@@ -45,23 +45,23 @@ import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
-import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.self.account.service.SelfAccountTransferReadService;
 import org.apache.fineract.portfolio.self.account.service.SelfBeneficiariesTPTReadPlatformService;
-import org.apache.fineract.useradministration.domain.AppUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.apache.fineract.infrastructure.security.service.PlatformSelfServiceSecurityContext;
+import org.apache.fineract.useradministration.domain.AppSelfServiceUser;
 
 @Component
 public class SelfAccountTransferDataValidator {
 
-    private final PlatformSecurityContext context;
+    private final PlatformSelfServiceSecurityContext context;
     private final SelfAccountTransferReadService selfAccountTransferReadService;
     private final SelfBeneficiariesTPTReadPlatformService tptBeneficiaryReadPlatformService;
     private final FromJsonHelper fromApiJsonHelper;
 
     @Autowired
-    public SelfAccountTransferDataValidator(final PlatformSecurityContext context,
+    public SelfAccountTransferDataValidator(final PlatformSelfServiceSecurityContext context,
             final SelfAccountTransferReadService selfAccountTransferReadService,
             final SelfBeneficiariesTPTReadPlatformService tptBeneficiaryReadPlatformService, final FromJsonHelper fromApiJsonHelper) {
         this.context = context;
@@ -142,7 +142,7 @@ public class SelfAccountTransferDataValidator {
 
     private void validateUserAccounts(final SelfAccountTemplateData fromAccount, final SelfAccountTemplateData toAccount,
             final DataValidatorBuilder baseDataValidator, final String type) {
-        AppUser user = this.context.authenticatedUser();
+        AppSelfServiceUser user = this.context.authenticatedSelfServiceUser();
         Collection<SelfAccountTemplateData> validFromAccounts = this.selfAccountTransferReadService.retrieveSelfAccountTemplateData(user);
 
         Collection<SelfAccountTemplateData> validToAccounts = validFromAccounts;

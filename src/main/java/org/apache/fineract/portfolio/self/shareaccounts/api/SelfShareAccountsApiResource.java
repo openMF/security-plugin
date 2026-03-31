@@ -45,7 +45,6 @@ import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
-import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.accounts.api.AccountsApiResource;
 import org.apache.fineract.portfolio.accounts.constants.ShareAccountApiConstants;
 import org.apache.fineract.portfolio.accounts.data.AccountData;
@@ -63,6 +62,8 @@ import org.apache.fineract.portfolio.shareaccounts.data.ShareAccountData;
 import org.apache.fineract.portfolio.shareaccounts.service.ShareAccountReadPlatformService;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.springframework.stereotype.Component;
+import org.apache.fineract.infrastructure.security.service.PlatformSelfServiceSecurityContext;
+import org.apache.fineract.useradministration.domain.AppSelfServiceUser;
 
 @Path("/v1/self/shareaccounts")
 @Component
@@ -70,7 +71,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class SelfShareAccountsApiResource {
 
-    private final PlatformSecurityContext context;
+    private final PlatformSelfServiceSecurityContext context;
     private final AccountsApiResource accountsApiResource;
     private final ShareAccountReadPlatformService readPlatformService;
     private final ApiRequestParameterHelper apiRequestParameterHelper;
@@ -146,7 +147,7 @@ public class SelfShareAccountsApiResource {
     }
 
     private void validateAppuserShareAccountMapping(final Long accountId) {
-        AppUser user = context.authenticatedUser();
+        AppSelfServiceUser user = context.authenticatedSelfServiceUser();
         final boolean isMapped = appUserShareAccountsMapperReadPlatformService.isShareAccountsMappedToUser(accountId, user.getId());
         if (!isMapped) {
             throw new ShareAccountNotFoundException(accountId);
@@ -154,7 +155,7 @@ public class SelfShareAccountsApiResource {
     }
 
     private void validateAppuserClientsMapping(final Long clientId) {
-        AppUser user = context.authenticatedUser();
+        AppSelfServiceUser user = context.authenticatedSelfServiceUser();
         final boolean mappedClientId = appuserClientMapperReadService.isClientMappedToUser(clientId, user.getId());
         if (!mappedClientId) {
             throw new ClientNotFoundException(clientId);

@@ -18,7 +18,6 @@
  */
 package org.apache.fineract.portfolio.self.account.starter;
 
-import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepositoryWrapper;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountRepositoryWrapper;
 import org.apache.fineract.portfolio.self.account.data.SelfBeneficiariesTPTDataValidator;
@@ -33,6 +32,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.apache.fineract.infrastructure.security.service.PlatformSelfServiceSecurityContext;
 
 @Configuration
 public class SelfAccountConfiguration {
@@ -45,14 +45,14 @@ public class SelfAccountConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(SelfBeneficiariesTPTReadPlatformService.class)
-    public SelfBeneficiariesTPTReadPlatformService selfBeneficiariesTPTReadPlatformService(PlatformSecurityContext context,
+    public SelfBeneficiariesTPTReadPlatformService selfBeneficiariesTPTReadPlatformService(PlatformSelfServiceSecurityContext context,
             JdbcTemplate jdbcTemplate) {
         return new SelfBeneficiariesTPTReadPlatformServiceImpl(context, jdbcTemplate);
     }
 
     @Bean
     @ConditionalOnMissingBean(SelfBeneficiariesTPTWritePlatformService.class)
-    public SelfBeneficiariesTPTWritePlatformService selfBeneficiariesTPTWritePlatformService(PlatformSecurityContext context,
+    public SelfBeneficiariesTPTWritePlatformService selfBeneficiariesTPTWritePlatformService(PlatformSelfServiceSecurityContext context,
             SelfBeneficiariesTPTRepository repository, SelfBeneficiariesTPTDataValidator validator,
             LoanRepositoryWrapper loanRepositoryWrapper, SavingsAccountRepositoryWrapper savingRepositoryWrapper) {
         return new SelfBeneficiariesTPTWritePlatformServiceImpl(context, repository, validator, loanRepositoryWrapper,

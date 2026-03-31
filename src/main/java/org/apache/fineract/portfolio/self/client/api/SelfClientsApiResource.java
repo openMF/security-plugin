@@ -45,7 +45,6 @@ import lombok.RequiredArgsConstructor;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.UploadRequest;
 import org.apache.fineract.infrastructure.documentmanagement.api.ImagesApiResource;
-import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.client.api.ClientApiConstants;
 import org.apache.fineract.portfolio.client.api.ClientChargesApiResource;
 import org.apache.fineract.portfolio.client.api.ClientTransactionsApiResource;
@@ -60,6 +59,7 @@ import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
+import org.apache.fineract.infrastructure.security.service.PlatformSelfServiceSecurityContext;
 
 @Path("/v1/self/clients")
 @Component
@@ -68,7 +68,7 @@ import org.springframework.stereotype.Component;
 @Conditional(SelfServiceModuleIsEnabledCondition.class)
 public class SelfClientsApiResource {
 
-    private final PlatformSecurityContext context;
+    private final PlatformSelfServiceSecurityContext context;
     private final ClientsApiResource clientApiResource;
     private final ImagesApiResource imagesApiResource;
     private final ClientChargesApiResource clientChargesApiResource;

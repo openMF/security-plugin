@@ -21,13 +21,13 @@ package org.apache.fineract.portfolio.self.account.service;
 import java.util.Collection;
 import org.apache.fineract.portfolio.self.account.data.SelfAccountTemplateData;
 import org.apache.fineract.portfolio.self.account.data.SelfBeneficiariesTPTData;
-import org.apache.fineract.useradministration.domain.AppUser;
+import org.apache.fineract.useradministration.domain.AppSelfServiceUser;
 
 public interface SelfBeneficiariesTPTReadPlatformService {
 
     Collection<SelfBeneficiariesTPTData> retrieveAll();
 
-    Collection<SelfAccountTemplateData> retrieveTPTSelfAccountTemplateData(AppUser user);
+    Collection<SelfAccountTemplateData> retrieveTPTSelfAccountTemplateData(AppSelfServiceUser user);
 
     Long getTransferLimit(Long id, Long accountId, Integer accountType);
 

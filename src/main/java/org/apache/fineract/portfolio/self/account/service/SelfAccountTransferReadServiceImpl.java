@@ -23,7 +23,7 @@ import java.sql.SQLException;
 import java.util.Collection;
 import lombok.RequiredArgsConstructor;
 import org.apache.fineract.portfolio.self.account.data.SelfAccountTemplateData;
-import org.apache.fineract.useradministration.domain.AppUser;
+import org.apache.fineract.useradministration.domain.AppSelfServiceUser;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 
@@ -33,7 +33,7 @@ public class SelfAccountTransferReadServiceImpl implements SelfAccountTransferRe
     private final JdbcTemplate jdbcTemplate;
 
     @Override
-    public Collection<SelfAccountTemplateData> retrieveSelfAccountTemplateData(AppUser user) {
+    public Collection<SelfAccountTemplateData> retrieveSelfAccountTemplateData(AppSelfServiceUser user) {
         SelfAccountTemplateMapper mapper = new SelfAccountTemplateMapper();
         StringBuilder sql = new StringBuilder().append("select s.id as accountId, ").append("s.account_no as accountNo, ")
                 .append("2 as accountType, ").append("c.id as clientId, ").append("c.display_name as clientName, ")

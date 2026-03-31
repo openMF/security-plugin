@@ -16,15 +16,22 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.fineract.portfolio.self.config;
+package org.apache.fineract.infrastructure.security.service;
 
-import org.apache.fineract.infrastructure.core.condition.PropertiesCondition;
-import org.apache.fineract.infrastructure.core.config.FineractProperties;
+import org.apache.fineract.commands.domain.CommandWrapper;
+import org.apache.fineract.useradministration.domain.AppSelfServiceUser;
 
-public class SelfServiceModuleIsEnabledCondition extends PropertiesCondition {
+public interface PlatformSelfServiceSecurityContext extends PlatformUserRightsContext {
 
-    @Override
-    protected boolean matches(FineractProperties properties) {
-        return true;
-    }
+    public AppSelfServiceUser authenticatedSelfServiceUser();
+
+    public AppSelfServiceUser getAuthenticatedSelfServiceUserIfPresent();
+
+    public void validateAccessRights(String resourceOfficeHierarchy);
+
+    public String officeHierarchy();
+
+    public boolean doesPasswordHasToBeRenewed(AppSelfServiceUser currentSelfServiceUser);
+
+    public AppSelfServiceUser authenticatedUser(CommandWrapper commandWrapper);
 }

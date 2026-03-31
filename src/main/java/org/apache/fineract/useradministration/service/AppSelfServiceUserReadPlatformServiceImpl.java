@@ -26,7 +26,6 @@ import java.util.HashSet;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
-import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.office.data.OfficeData;
 import org.apache.fineract.organisation.office.service.OfficeReadPlatformService;
 import org.apache.fineract.organisation.staff.data.StaffData;
@@ -43,11 +42,12 @@ import org.apache.fineract.useradministration.exception.UserNotFoundException;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.apache.fineract.infrastructure.security.service.PlatformSelfServiceSecurityContext;
 
 @RequiredArgsConstructor
 public class AppSelfServiceUserReadPlatformServiceImpl implements AppSelfServiceUserReadPlatformService {
 
-    private final PlatformSecurityContext context;
+    private final PlatformSelfServiceSecurityContext context;
     private final JdbcTemplate jdbcTemplate;
     private final OfficeReadPlatformService officeReadPlatformService;
     private final RoleReadPlatformService roleReadPlatformService;
@@ -57,19 +57,19 @@ public class AppSelfServiceUserReadPlatformServiceImpl implements AppSelfService
     /*
      * used for caching in spring expression language.
      */
-    public PlatformSecurityContext getContext() {
+    public PlatformSelfServiceSecurityContext getContext() {
         return this.context;
     }
 
     @Override
     @Cacheable(value = "users", key = "T(org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat(#root.target.context.authenticatedUser().getOffice().getHierarchy())")
-    public Collection<AppSelfServiceUserData> retrieveAllUsers() {
+    public Collection<AppSelfServiceUserData> retrieveAllSelfServiceUsers() {
 
-        final AppSelfServiceUser currentUser = this.context.authenticatedUser();
+        final AppSelfServiceUser currentUser = this.context.authenticatedSelfServiceUser();
         final String hierarchy = currentUser.getOffice().getHierarchy();
         final String hierarchySearchString = hierarchy + "%";
 
-        final AppUserMapper mapper = new AppUserMapper(this.roleReadPlatformService, this.staffReadPlatformService);
+        final AppSelfServiceUserMapper mapper = new AppSelfServiceUserMapper(this.roleReadPlatformService, this.staffReadPlatformService);
         final String sql = "select " + mapper.schema();
 
         return this.jdbcTemplate.query(sql, mapper, new Object[] { hierarchySearchString }); // NOSONAR
@@ -77,7 +77,7 @@ public class AppSelfServiceUserReadPlatformServiceImpl implements AppSelfService
 
     @Override
     public Collection<AppSelfServiceUserData> retrieveSearchTemplate() {
-        final AppSelfServiceUser currentUser = this.context.authenticatedUser();
+        final AppSelfServiceUser currentUser = this.context.authenticatedSelfServiceUser();
         final String hierarchy = currentUser.getOffice().getHierarchy();
         final String hierarchySearchString = hierarchy + "%";
 
@@ -88,7 +88,7 @@ public class AppSelfServiceUserReadPlatformServiceImpl implements AppSelfService
     }
 
     @Override
-    public AppSelfServiceUserData retrieveNewUserDetails() {
+    public AppSelfServiceUserData retrieveNewSelfServiceUserDetails() {
 
         final Collection<OfficeData> offices = this.officeReadPlatformService.retrieveAllOfficesForDropdown();
         final Collection<RoleData> availableRoles = this.roleReadPlatformService.retrieveAllActiveRoles();
@@ -98,9 +98,9 @@ public class AppSelfServiceUserReadPlatformServiceImpl implements AppSelfService
     }
 
     @Override
-    public AppSelfServiceUserData retrieveUser(final Long userId) {
+    public AppSelfServiceUserData retrieveSelfServiceUser(final Long userId) {
 
-        this.context.authenticatedUser();
+        this.context.authenticatedSelfServiceUser();
 
         final AppSelfServiceUser user = this.appUserRepository.findById(userId).orElseThrow(() -> new UserNotFoundException(userId));
         if (user.isDeleted()) {
@@ -124,7 +124,7 @@ public class AppSelfServiceUserReadPlatformServiceImpl implements AppSelfService
             linkedStaff = null;
         }
 
-        AppSelfServiceUserData retUser = AppSelfServiceUserData.instance(user.getId(), user.getUsername(), user.getEmail(), user.getOffice().getId(), user.getOffice().getName(), user.getFirstname(), user.getLastname(), availableRoles, null, selectedUserRoles, linkedStaff, user.getPasswordNeverExpires(), user.isSelfServiceUser);
+        AppSelfServiceUserData retUser = AppSelfServiceUserData.instance(user.getId(), user.getUsername(), user.getEmail(), user.getOffice().getId(), user.getOffice().getName(), user.getFirstname(), user.getLastname(), availableRoles, null, selectedUserRoles, linkedStaff, user.getPasswordNeverExpires(), user.isSelfServiceUser());
                                        
         
         if (retUser.isSelfServiceUser()) {
@@ -140,12 +140,12 @@ public class AppSelfServiceUserReadPlatformServiceImpl implements AppSelfService
         return retUser;
     }
 
-    private static final class AppUserMapper implements RowMapper<AppSelfServiceUserData> {
+    private static final class AppSelfServiceUserMapper implements RowMapper<AppSelfServiceUserData> {
 
         private final RoleReadPlatformService roleReadPlatformService;
         private final StaffReadService staffReadPlatformService;
 
-        AppUserMapper(final RoleReadPlatformService roleReadPlatformService, final StaffReadService staffReadPlatformService) {
+        AppSelfServiceUserMapper(final RoleReadPlatformService roleReadPlatformService, final StaffReadService staffReadPlatformService) {
             this.roleReadPlatformService = roleReadPlatformService;
             this.staffReadPlatformService = staffReadPlatformService;
         }

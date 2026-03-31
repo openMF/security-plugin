@@ -39,10 +39,10 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
-import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.useradministration.api.UsersApiResource;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.springframework.stereotype.Component;
+import org.apache.fineract.infrastructure.security.service.PlatformSelfServiceSecurityContext;
 
 @Path("/v1/self/user")
 @Component
@@ -51,7 +51,7 @@ import org.springframework.stereotype.Component;
 public class SelfUserApiResource {
 
     private final UsersApiResource usersApiResource;
-    private final PlatformSecurityContext context;
+    private final PlatformSelfServiceSecurityContext context;
     private final FromJsonHelper fromApiJsonHelper;
     private static final Set<String> SUPPORTED_PARAMETERS = new HashSet<>(Arrays.asList("password", "repeatPassword"));
 

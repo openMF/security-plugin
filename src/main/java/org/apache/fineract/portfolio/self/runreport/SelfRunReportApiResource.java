@@ -36,8 +36,8 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 import lombok.RequiredArgsConstructor;
 import org.apache.fineract.infrastructure.dataqueries.api.RunreportsApiResource;
-import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.springframework.stereotype.Component;
+import org.apache.fineract.infrastructure.security.service.PlatformSelfServiceSecurityContext;
 
 @Path("/v1/self/runreports")
 @Component
@@ -53,7 +53,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class SelfRunReportApiResource {
 
-    private final PlatformSecurityContext context;
+    private final PlatformSelfServiceSecurityContext context;
     private final RunreportsApiResource runreportsApiResource;
 
     @GET
@@ -67,7 +67,7 @@ public class SelfRunReportApiResource {
             @ApiResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = SelfRunReportApiResourceSwagger.GetRunReportResponse.class))) })
     public Response runReport(@PathParam("reportName") @Parameter(description = "reportName") final String reportName,
             @Context final UriInfo uriInfo) {
-        this.context.authenticatedUser();
+        this.context.authenticatedSelfServiceUser();
         final boolean isSelfServiceUserReport = true;
         return this.runreportsApiResource.runReport(reportName, uriInfo);
     }

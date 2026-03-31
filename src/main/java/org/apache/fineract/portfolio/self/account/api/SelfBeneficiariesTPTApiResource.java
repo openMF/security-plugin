@@ -52,12 +52,12 @@ import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
-import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.account.PortfolioAccountType;
 import org.apache.fineract.portfolio.account.service.AccountTransferEnumerations;
 import org.apache.fineract.portfolio.self.account.data.SelfBeneficiariesTPTData;
 import org.apache.fineract.portfolio.self.account.service.SelfBeneficiariesTPTReadPlatformService;
 import org.springframework.stereotype.Component;
+import org.apache.fineract.infrastructure.security.service.PlatformSelfServiceSecurityContext;
 
 @Path("/v1/self/beneficiaries/tpt")
 @Component
@@ -65,7 +65,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class SelfBeneficiariesTPTApiResource {
 
-    private final PlatformSecurityContext context;
+    private final PlatformSelfServiceSecurityContext context;
     private final DefaultToApiJsonSerializer<SelfBeneficiariesTPTData> toApiJsonSerializer;
     private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
     private final ApiRequestParameterHelper apiRequestParameterHelper;
@@ -161,7 +161,7 @@ public class SelfBeneficiariesTPTApiResource {
             @ApiResponse(responseCode = "200", description = "OK", content = @Content(array = @ArraySchema(schema = @Schema(implementation = SelfBeneficiariesTPTApiResourceSwagger.GetSelfBeneficiariesTPTResponse.class)))) })
     public String retrieveAll(@Context final UriInfo uriInfo) {
 
-        this.context.authenticatedUser().validateHasReadPermission(SelfBeneficiariesTPTApiConstants.BENEFICIARY_ENTITY_NAME);
+        this.context.authenticatedSelfServiceUser().validateHasReadPermission(SelfBeneficiariesTPTApiConstants.BENEFICIARY_ENTITY_NAME);
 
         final Collection<SelfBeneficiariesTPTData> beneficiaries = this.readPlatformService.retrieveAll();
 

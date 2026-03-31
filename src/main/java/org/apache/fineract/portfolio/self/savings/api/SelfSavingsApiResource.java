@@ -40,7 +40,6 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.UriInfo;
 import java.util.HashMap;
 import lombok.RequiredArgsConstructor;
-import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.client.exception.ClientNotFoundException;
 import org.apache.fineract.portfolio.savings.api.SavingsAccountChargesApiResource;
 import org.apache.fineract.portfolio.savings.api.SavingsAccountTransactionsApiResource;
@@ -53,6 +52,8 @@ import org.apache.fineract.portfolio.self.savings.data.SelfSavingsDataValidator;
 import org.apache.fineract.portfolio.self.savings.service.AppuserSavingsMapperReadService;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.springframework.stereotype.Component;
+import org.apache.fineract.infrastructure.security.service.PlatformSelfServiceSecurityContext;
+import org.apache.fineract.useradministration.domain.AppSelfServiceUser;
 
 @Path("/v1/self/savingsaccounts")
 @Component
@@ -60,7 +61,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class SelfSavingsApiResource {
 
-    private final PlatformSecurityContext context;
+    private final PlatformSelfServiceSecurityContext context;
     private final SavingsAccountsApiResource savingsAccountsApiResource;
     private final SavingsAccountChargesApiResource savingsAccountChargesApiResource;
     private final SavingsAccountTransactionsApiResource savingsAccountTransactionsApiResource;
@@ -82,7 +83,7 @@ public class SelfSavingsApiResource {
 
         this.dataValidator.validateRetrieveSavings(uriInfo);
 
-        validateAppuserSavingsAccountMapping(accountId);
+        validateAppSelfServiceUserSavingsAccountMapping(accountId);
 
         final boolean staffInSelectedOfficeOnly = false;
         return this.savingsAccountsApiResource.retrieveOne(accountId, staffInSelectedOfficeOnly, chargeStatus, "", uriInfo);
@@ -102,7 +103,7 @@ public class SelfSavingsApiResource {
 
         this.dataValidator.validateRetrieveSavingsTransaction(uriInfo);
 
-        validateAppuserSavingsAccountMapping(accountId);
+        validateAppSelfServiceUserSavingsAccountMapping(accountId);
 
         return this.savingsAccountTransactionsApiResource.retrieveOne(accountId, transactionId, uriInfo);
     }
@@ -120,7 +121,7 @@ public class SelfSavingsApiResource {
             @DefaultValue("all") @QueryParam("chargeStatus") @Parameter(description = "chargeStatus") final String chargeStatus,
             @Context final UriInfo uriInfo) {
 
-        validateAppuserSavingsAccountMapping(accountId);
+        validateAppSelfServiceUserSavingsAccountMapping(accountId);
 
         return this.savingsAccountChargesApiResource.retrieveAllSavingsAccountCharges(accountId, chargeStatus, uriInfo);
     }
@@ -137,13 +138,13 @@ public class SelfSavingsApiResource {
             @PathParam("savingsAccountChargeId") @Parameter(description = "savingsAccountChargeId") final Long savingsAccountChargeId,
             @Context final UriInfo uriInfo) {
 
-        validateAppuserSavingsAccountMapping(accountId);
+        validateAppSelfServiceUserSavingsAccountMapping(accountId);
 
         return this.savingsAccountChargesApiResource.retrieveSavingsAccountCharge(accountId, savingsAccountChargeId, uriInfo);
     }
 
-    private void validateAppuserSavingsAccountMapping(final Long accountId) {
-        AppUser user = this.context.authenticatedUser();
+    private void validateAppSelfServiceUserSavingsAccountMapping(final Long accountId) {
+        AppSelfServiceUser user = this.context.authenticatedSelfServiceUser();
         final boolean isMappedSavings = this.appuserSavingsMapperReadService.isSavingsMappedToUser(accountId, user.getId());
         if (!isMappedSavings) {
             throw new SavingsAccountNotFoundException(accountId);
@@ -156,7 +157,7 @@ public class SelfSavingsApiResource {
     public String template(@QueryParam("clientId") final Long clientId, @QueryParam("productId") final Long productId,
             @Context final UriInfo uriInfo) {
 
-        validateAppuserClientsMapping(clientId);
+        validateAppSelfServiceUserClientsMapping(clientId);
         Long groupId = null;
         boolean staffInSelectedOfficeOnly = false;
         return this.savingsAccountsApiResource.template(clientId, groupId, productId, staffInSelectedOfficeOnly, uriInfo);
@@ -171,7 +172,7 @@ public class SelfSavingsApiResource {
 
         HashMap<String, Object> parameterMap = this.dataValidator.validateSavingsApplication(apiRequestBodyAsJson);
         final Long clientId = (Long) parameterMap.get(SelfSavingsAccountConstants.clientIdParameterName);
-        validateAppuserClientsMapping(clientId);
+        validateAppSelfServiceUserClientsMapping(clientId);
         return this.savingsAccountsApiResource.submitApplication(apiRequestBodyAsJson);
     }
 
@@ -182,13 +183,13 @@ public class SelfSavingsApiResource {
     public String modifySavingsAccountApplication(@PathParam("accountId") final Long accountId,
             @QueryParam("command") final String commandParam, final String apiRequestBodyAsJson) {
 
-        validateAppuserSavingsAccountMapping(accountId);
+        validateAppSelfServiceUserSavingsAccountMapping(accountId);
         this.dataValidator.validateSavingsApplication(apiRequestBodyAsJson);
         return this.savingsAccountsApiResource.update(accountId, apiRequestBodyAsJson, commandParam);
     }
 
-    private void validateAppuserClientsMapping(final Long clientId) {
-        AppUser user = this.context.authenticatedUser();
+    private void validateAppSelfServiceUserClientsMapping(final Long clientId) {
+        AppSelfServiceUser user = this.context.authenticatedSelfServiceUser();
         final boolean mappedClientId = this.appUserClientMapperReadService.isClientMappedToUser(clientId, user.getId());
         if (!mappedClientId) {
             throw new ClientNotFoundException(clientId);

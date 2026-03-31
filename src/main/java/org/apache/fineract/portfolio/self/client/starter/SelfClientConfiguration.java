@@ -18,20 +18,20 @@
  */
 package org.apache.fineract.portfolio.self.client.starter;
 
-import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.self.client.service.AppuserClientMapperReadService;
 import org.apache.fineract.portfolio.self.client.service.AppuserClientMapperReadServiceImpl;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.apache.fineract.infrastructure.security.service.PlatformSelfServiceSecurityContext;
 
 @Configuration
 public class SelfClientConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(AppuserClientMapperReadService.class)
-    public AppuserClientMapperReadService appuserClientMapperReadService(JdbcTemplate jdbcTemplate, PlatformSecurityContext context) {
+    public AppuserClientMapperReadService appuserClientMapperReadService(JdbcTemplate jdbcTemplate, PlatformSelfServiceSecurityContext context) {
         return new AppuserClientMapperReadServiceImpl(jdbcTemplate, context);
     }
 

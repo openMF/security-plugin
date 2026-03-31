@@ -22,7 +22,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
-import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.account.PortfolioAccountType;
 import org.apache.fineract.portfolio.account.service.AccountTransferEnumerations;
 import org.apache.fineract.portfolio.self.account.data.SelfAccountTemplateData;
@@ -30,15 +29,17 @@ import org.apache.fineract.portfolio.self.account.data.SelfBeneficiariesTPTData;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.apache.fineract.infrastructure.security.service.PlatformSelfServiceSecurityContext;
+import org.apache.fineract.useradministration.domain.AppSelfServiceUser;
 
 public class SelfBeneficiariesTPTReadPlatformServiceImpl implements SelfBeneficiariesTPTReadPlatformService {
 
-    private final PlatformSecurityContext context;
+    private final PlatformSelfServiceSecurityContext context;
     private final JdbcTemplate jdbcTemplate;
     private final BeneficiaryMapper mapper;
     private final AccountTemplateMapper accountTemplateMapper;
 
-    public SelfBeneficiariesTPTReadPlatformServiceImpl(final PlatformSecurityContext context, final JdbcTemplate jdbcTemplate) {
+    public SelfBeneficiariesTPTReadPlatformServiceImpl(final PlatformSelfServiceSecurityContext context, final JdbcTemplate jdbcTemplate) {
         this.context = context;
         this.jdbcTemplate = jdbcTemplate;
         this.mapper = new BeneficiaryMapper();
@@ -47,12 +48,12 @@ public class SelfBeneficiariesTPTReadPlatformServiceImpl implements SelfBenefici
 
     @Override
     public Collection<SelfBeneficiariesTPTData> retrieveAll() {
-        AppUser user = this.context.authenticatedUser();
+        AppSelfServiceUser user = this.context.authenticatedSelfServiceUser();
         return this.jdbcTemplate.query(this.mapper.schema(), this.mapper, new Object[] { user.getId(), user.getId() });
     }
 
     @Override
-    public Collection<SelfAccountTemplateData> retrieveTPTSelfAccountTemplateData(AppUser user) {
+    public Collection<SelfAccountTemplateData> retrieveTPTSelfAccountTemplateData(AppSelfServiceUser user) {
         return this.jdbcTemplate.query(this.accountTemplateMapper.schema(), this.accountTemplateMapper,
                 new Object[] { user.getId(), user.getId() });
     }
