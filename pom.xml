@@ -370,6 +370,28 @@
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-maven-plugin</artifactId>
                 </plugin>
+                <!-- Spotless Code Formatter -->
+                <plugin>
+                    <groupId>com.diffplug.spotless</groupId>
+                    <artifactId>spotless-maven-plugin</artifactId>
+                    <version>3.4.0</version>   <!-- Check latest at https://mvnrepository.com/artifact/com.diffplug.spotless/spotless-maven-plugin -->
+                    <configuration>
+                        <!-- Optional: only format files changed since this branch (recommended for large projects) -->
+                        <ratchetFrom>origin/main</ratchetFrom>
+
+                        <java>
+                            <!-- Choose one formatter -->
+                            <googleJavaFormat/>
+                            <!-- or <eclipse> ... </eclipse> -->
+                            <!-- or <palantirJavaFormat/> -->
+                        </java>
+
+                        <!-- Optional: also format pom.xml files -->
+                        <pom>
+                            <sortPom/>
+                        </pom>
+                    </configuration>
+                </plugin>
             </plugins>
         </pluginManagement>
     </build>
