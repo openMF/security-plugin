@@ -15,7 +15,7 @@ jobs:
         uses: actions/setup-java@v5
         with:
           java-version: '21'
-          distribution: 'adopt'
+          distribution: 'zulu'
           server-id: central
           server-username: ARTIFACTORY_USERNAME
           server-password: ARTIFACTORY_PASSWORD
