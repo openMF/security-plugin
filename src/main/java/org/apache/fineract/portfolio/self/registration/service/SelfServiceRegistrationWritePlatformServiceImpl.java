@@ -63,7 +63,6 @@ import org.apache.fineract.useradministration.domain.PasswordValidationPolicy;
 import org.apache.fineract.useradministration.domain.PasswordValidationPolicyRepository;
 import org.apache.fineract.useradministration.domain.Role;
 import org.apache.fineract.useradministration.domain.RoleRepository;
-import org.apache.fineract.useradministration.domain.UserDomainService;
 import org.apache.fineract.useradministration.exception.RoleNotFoundException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.orm.jpa.JpaSystemException;
@@ -71,6 +70,7 @@ import org.springframework.security.authentication.AuthenticationServiceExceptio
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.apache.fineract.useradministration.service.AppSelfServiceUserReadPlatformService;
+import org.apache.fineract.useradministration.domain.SelfServiceUserDomainService;
 
 @RequiredArgsConstructor
 public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServiceRegistrationWritePlatformService {
@@ -80,7 +80,7 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
     private final SelfServiceRegistrationReadPlatformService selfServiceRegistrationReadPlatformService;
     private final ClientRepositoryWrapper clientRepository;
     private final PasswordValidationPolicyRepository passwordValidationPolicy;
-    private final UserDomainService userDomainService;
+    private final SelfServiceUserDomainService userDomainService;
     private final GmailBackedPlatformEmailService gmailBackedPlatformEmailService;
     private final SmsMessageRepository smsMessageRepository;
     private final SmsMessageScheduledJobService smsMessageScheduledJobService;
