@@ -39,7 +39,9 @@ import org.apache.fineract.useradministration.exception.UserNotFoundException;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.stereotype.Component;
 
+@Component
 @RequiredArgsConstructor
 public class AppSelfServiceUserReadPlatformServiceImpl
     implements AppSelfServiceUserReadPlatformService {
