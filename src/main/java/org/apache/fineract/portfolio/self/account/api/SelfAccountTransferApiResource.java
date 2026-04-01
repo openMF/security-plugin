@@ -62,84 +62,132 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class SelfAccountTransferApiResource {
 
-    private final PlatformSelfServiceSecurityContext context;
-    private final DefaultToApiJsonSerializer<SelfAccountTransferData> toApiJsonSerializer;
-    private final AccountTransfersApiResource accountTransfersApiResource;
-    private final SelfAccountTransferReadService selfAccountTransferReadService;
-    private final ApiRequestParameterHelper apiRequestParameterHelper;
-    private final SelfAccountTransferDataValidator dataValidator;
-    private final SelfBeneficiariesTPTReadPlatformService tptBeneficiaryReadPlatformService;
-    private final ConfigurationDomainService configurationDomainService;
-    private final AccountTransfersReadPlatformService accountTransfersReadPlatformService;
+  private final PlatformSelfServiceSecurityContext context;
+  private final DefaultToApiJsonSerializer<SelfAccountTransferData> toApiJsonSerializer;
+  private final AccountTransfersApiResource accountTransfersApiResource;
+  private final SelfAccountTransferReadService selfAccountTransferReadService;
+  private final ApiRequestParameterHelper apiRequestParameterHelper;
+  private final SelfAccountTransferDataValidator dataValidator;
+  private final SelfBeneficiariesTPTReadPlatformService tptBeneficiaryReadPlatformService;
+  private final ConfigurationDomainService configurationDomainService;
+  private final AccountTransfersReadPlatformService accountTransfersReadPlatformService;
 
-    @GET
-    @Path("template")
-    @Consumes({ MediaType.APPLICATION_JSON })
-    @Produces({ MediaType.APPLICATION_JSON })
-    @Operation(summary = "Retrieve Account Transfer Template", description = "Returns list of loan/savings accounts that can be used for account transfer\n"
-            + "\n" + "\n" + "Example Requests:\n" + "\n" + "self/accounttransfers/template\n")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "OK", content = @Content(array = @ArraySchema(schema = @Schema(implementation = SelfAccountTransferApiResourceSwagger.GetAccountTransferTemplateResponse.class)))) })
-    public String template(@DefaultValue("") @QueryParam("type") @Parameter(name = "type") final String type,
-            @Context final UriInfo uriInfo) {
+  @GET
+  @Path("template")
+  @Consumes({MediaType.APPLICATION_JSON})
+  @Produces({MediaType.APPLICATION_JSON})
+  @Operation(
+      summary = "Retrieve Account Transfer Template",
+      description =
+          "Returns list of loan/savings accounts that can be used for account transfer\n"
+              + "\n"
+              + "\n"
+              + "Example Requests:\n"
+              + "\n"
+              + "self/accounttransfers/template\n")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "OK",
+        content =
+            @Content(
+                array =
+                    @ArraySchema(
+                        schema =
+                            @Schema(
+                                implementation =
+                                    SelfAccountTransferApiResourceSwagger
+                                        .GetAccountTransferTemplateResponse.class))))
+  })
+  public String template(
+      @DefaultValue("") @QueryParam("type") @Parameter(name = "type") final String type,
+      @Context final UriInfo uriInfo) {
 
-        AppSelfServiceUser user = this.context.authenticatedSelfServiceUser();
-        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-        Collection<SelfAccountTemplateData> selfTemplateData = this.selfAccountTransferReadService.retrieveSelfAccountTemplateData(user);
+    AppSelfServiceUser user = this.context.authenticatedSelfServiceUser();
+    final ApiRequestJsonSerializationSettings settings =
+        this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+    Collection<SelfAccountTemplateData> selfTemplateData =
+        this.selfAccountTransferReadService.retrieveSelfAccountTemplateData(user);
 
-        if (type.equals("tpt")) {
-            Collection<SelfAccountTemplateData> tptTemplateData = this.tptBeneficiaryReadPlatformService
-                    .retrieveTPTSelfAccountTemplateData(user);
-            return this.toApiJsonSerializer.serialize(settings, new SelfAccountTransferData(selfTemplateData, tptTemplateData));
-        }
-
-        return this.toApiJsonSerializer.serialize(settings, new SelfAccountTransferData(selfTemplateData, selfTemplateData));
+    if (type.equals("tpt")) {
+      Collection<SelfAccountTemplateData> tptTemplateData =
+          this.tptBeneficiaryReadPlatformService.retrieveTPTSelfAccountTemplateData(user);
+      return this.toApiJsonSerializer.serialize(
+          settings, new SelfAccountTransferData(selfTemplateData, tptTemplateData));
     }
 
-    @POST
-    @Consumes({ MediaType.APPLICATION_JSON })
-    @Produces({ MediaType.APPLICATION_JSON })
-    @Operation(summary = "Create new Transfer", description = "Ability to create new transfer of monetary funds from one account to another.\n"
-            + "\n" + "\n" + "Example Requests:\n" + "\n" + " self/accounttransfers/\n")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "OK", content = @Content(array = @ArraySchema(schema = @Schema(implementation = SelfAccountTransferApiResourceSwagger.PostNewTransferResponse.class)))) })
-    public CommandProcessingResult create(@DefaultValue("") @QueryParam("type") @Parameter(name = "type") final String type,
-            final AccountTransferRequest apiRequestBodyAsJson) {
-        Map<String, Object> params = this.dataValidator.validateCreate(type, apiRequestBodyAsJson.toString());
-        if (type.equals("tpt")) {
-            checkForLimits(params);
-        }
-        return this.accountTransfersApiResource.create(apiRequestBodyAsJson);
+    return this.toApiJsonSerializer.serialize(
+        settings, new SelfAccountTransferData(selfTemplateData, selfTemplateData));
+  }
+
+  @POST
+  @Consumes({MediaType.APPLICATION_JSON})
+  @Produces({MediaType.APPLICATION_JSON})
+  @Operation(
+      summary = "Create new Transfer",
+      description =
+          "Ability to create new transfer of monetary funds from one account to another.\n"
+              + "\n"
+              + "\n"
+              + "Example Requests:\n"
+              + "\n"
+              + " self/accounttransfers/\n")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "OK",
+        content =
+            @Content(
+                array =
+                    @ArraySchema(
+                        schema =
+                            @Schema(
+                                implementation =
+                                    SelfAccountTransferApiResourceSwagger.PostNewTransferResponse
+                                        .class))))
+  })
+  public CommandProcessingResult create(
+      @DefaultValue("") @QueryParam("type") @Parameter(name = "type") final String type,
+      final AccountTransferRequest apiRequestBodyAsJson) {
+    Map<String, Object> params =
+        this.dataValidator.validateCreate(type, apiRequestBodyAsJson.toString());
+    if (type.equals("tpt")) {
+      checkForLimits(params);
+    }
+    return this.accountTransfersApiResource.create(apiRequestBodyAsJson);
+  }
+
+  private void checkForLimits(Map<String, Object> params) {
+    SelfAccountTemplateData fromAccount = (SelfAccountTemplateData) params.get("fromAccount");
+    SelfAccountTemplateData toAccount = (SelfAccountTemplateData) params.get("toAccount");
+    LocalDate transactionDate = (LocalDate) params.get("transactionDate");
+    BigDecimal transactionAmount = (BigDecimal) params.get("transactionAmount");
+
+    AppSelfServiceUser user = this.context.authenticatedSelfServiceUser();
+    Long transferLimit =
+        this.tptBeneficiaryReadPlatformService.getTransferLimit(
+            user.getId(), toAccount.getAccountId(), toAccount.getAccountType());
+    if (transferLimit != null && transferLimit > 0) {
+      if (transactionAmount.compareTo(new BigDecimal(transferLimit)) > 0) {
+        throw new BeneficiaryTransferLimitExceededException();
+      }
     }
 
-    private void checkForLimits(Map<String, Object> params) {
-        SelfAccountTemplateData fromAccount = (SelfAccountTemplateData) params.get("fromAccount");
-        SelfAccountTemplateData toAccount = (SelfAccountTemplateData) params.get("toAccount");
-        LocalDate transactionDate = (LocalDate) params.get("transactionDate");
-        BigDecimal transactionAmount = (BigDecimal) params.get("transactionAmount");
-
-        AppSelfServiceUser user = this.context.authenticatedSelfServiceUser();
-        Long transferLimit = this.tptBeneficiaryReadPlatformService.getTransferLimit(user.getId(), toAccount.getAccountId(),
-                toAccount.getAccountType());
-        if (transferLimit != null && transferLimit > 0) {
-            if (transactionAmount.compareTo(new BigDecimal(transferLimit)) > 0) {
-                throw new BeneficiaryTransferLimitExceededException();
-            }
+    if (this.configurationDomainService.isDailyTPTLimitEnabled()) {
+      Long dailyTPTLimit = this.configurationDomainService.getDailyTPTLimit();
+      if (dailyTPTLimit != null && dailyTPTLimit > 0) {
+        BigDecimal dailyTPTLimitBD = new BigDecimal(dailyTPTLimit);
+        BigDecimal totTransactionAmount =
+            this.accountTransfersReadPlatformService.getTotalTransactionAmount(
+                fromAccount.getAccountId(), fromAccount.getAccountType(), transactionDate);
+        if (totTransactionAmount != null && totTransactionAmount.compareTo(BigDecimal.ZERO) > 0) {
+          if (dailyTPTLimitBD.compareTo(totTransactionAmount) <= 0
+              || dailyTPTLimitBD.compareTo(totTransactionAmount.add(transactionAmount)) < 0) {
+            throw new DailyTPTTransactionAmountLimitExceededException(
+                fromAccount.getAccountId(), fromAccount.getAccountType());
+          }
         }
-
-        if (this.configurationDomainService.isDailyTPTLimitEnabled()) {
-            Long dailyTPTLimit = this.configurationDomainService.getDailyTPTLimit();
-            if (dailyTPTLimit != null && dailyTPTLimit > 0) {
-                BigDecimal dailyTPTLimitBD = new BigDecimal(dailyTPTLimit);
-                BigDecimal totTransactionAmount = this.accountTransfersReadPlatformService
-                        .getTotalTransactionAmount(fromAccount.getAccountId(), fromAccount.getAccountType(), transactionDate);
-                if (totTransactionAmount != null && totTransactionAmount.compareTo(BigDecimal.ZERO) > 0) {
-                    if (dailyTPTLimitBD.compareTo(totTransactionAmount) <= 0
-                            || dailyTPTLimitBD.compareTo(totTransactionAmount.add(transactionAmount)) < 0) {
-                        throw new DailyTPTTransactionAmountLimitExceededException(fromAccount.getAccountId(), fromAccount.getAccountType());
-                    }
-                }
-            }
-        }
+      }
     }
+  }
 }

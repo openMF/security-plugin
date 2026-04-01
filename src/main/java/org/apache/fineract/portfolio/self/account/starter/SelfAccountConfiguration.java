@@ -33,25 +33,28 @@ import org.springframework.jdbc.core.JdbcTemplate;
 @Configuration
 public class SelfAccountConfiguration {
 
-    @Bean
-    @ConditionalOnMissingBean(SelfAccountTransferReadService.class)
-    public SelfAccountTransferReadService selfAccountTransferReadService(JdbcTemplate jdbcTemplate) {
-        return new SelfAccountTransferReadServiceImpl(jdbcTemplate);
-    }
+  @Bean
+  @ConditionalOnMissingBean(SelfAccountTransferReadService.class)
+  public SelfAccountTransferReadService selfAccountTransferReadService(JdbcTemplate jdbcTemplate) {
+    return new SelfAccountTransferReadServiceImpl(jdbcTemplate);
+  }
 
-    @Bean
-    @ConditionalOnMissingBean(SelfBeneficiariesTPTReadPlatformService.class)
-    public SelfBeneficiariesTPTReadPlatformService selfBeneficiariesTPTReadPlatformService(PlatformSelfServiceSecurityContext context,
-            JdbcTemplate jdbcTemplate) {
-        return new SelfBeneficiariesTPTReadPlatformServiceImpl(context, jdbcTemplate);
-    }
+  @Bean
+  @ConditionalOnMissingBean(SelfBeneficiariesTPTReadPlatformService.class)
+  public SelfBeneficiariesTPTReadPlatformService selfBeneficiariesTPTReadPlatformService(
+      PlatformSelfServiceSecurityContext context, JdbcTemplate jdbcTemplate) {
+    return new SelfBeneficiariesTPTReadPlatformServiceImpl(context, jdbcTemplate);
+  }
 
-    @Bean
-    @ConditionalOnMissingBean(SelfBeneficiariesTPTWritePlatformService.class)
-    public SelfBeneficiariesTPTWritePlatformService selfBeneficiariesTPTWritePlatformService(PlatformSelfServiceSecurityContext context,
-            SelfBeneficiariesTPTRepository repository, SelfBeneficiariesTPTDataValidator validator,
-            LoanRepositoryWrapper loanRepositoryWrapper, SavingsAccountRepositoryWrapper savingRepositoryWrapper) {
-        return new SelfBeneficiariesTPTWritePlatformServiceImpl(context, repository, validator, loanRepositoryWrapper,
-                savingRepositoryWrapper);
-    }
+  @Bean
+  @ConditionalOnMissingBean(SelfBeneficiariesTPTWritePlatformService.class)
+  public SelfBeneficiariesTPTWritePlatformService selfBeneficiariesTPTWritePlatformService(
+      PlatformSelfServiceSecurityContext context,
+      SelfBeneficiariesTPTRepository repository,
+      SelfBeneficiariesTPTDataValidator validator,
+      LoanRepositoryWrapper loanRepositoryWrapper,
+      SavingsAccountRepositoryWrapper savingRepositoryWrapper) {
+    return new SelfBeneficiariesTPTWritePlatformServiceImpl(
+        context, repository, validator, loanRepositoryWrapper, savingRepositoryWrapper);
+  }
 }

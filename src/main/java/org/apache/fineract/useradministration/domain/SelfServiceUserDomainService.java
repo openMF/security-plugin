@@ -16,5 +16,5 @@ package org.apache.fineract.useradministration.domain;
 
 public interface SelfServiceUserDomainService {
 
-    void create(AppSelfServiceUser appUser, Boolean sendPasswordToEmail);
+  void create(AppSelfServiceUser appUser, Boolean sendPasswordToEmail);
 }

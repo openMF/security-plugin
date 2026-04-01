@@ -19,13 +19,13 @@ import org.apache.fineract.useradministration.data.AppSelfServiceUserData;
 
 public interface AppSelfServiceUserReadPlatformService {
 
-    Collection<AppSelfServiceUserData> retrieveAllSelfServiceUsers();
+  Collection<AppSelfServiceUserData> retrieveAllSelfServiceUsers();
 
-    Collection<AppSelfServiceUserData> retrieveSearchTemplate();
+  Collection<AppSelfServiceUserData> retrieveSearchTemplate();
 
-    AppSelfServiceUserData retrieveNewSelfServiceUserDetails();
+  AppSelfServiceUserData retrieveNewSelfServiceUserDetails();
 
-    AppSelfServiceUserData retrieveSelfServiceUser(Long userId);
+  AppSelfServiceUserData retrieveSelfServiceUser(Long userId);
 
-    boolean isUsernameExist(String username);
+  boolean isUsernameExist(String username);
 }

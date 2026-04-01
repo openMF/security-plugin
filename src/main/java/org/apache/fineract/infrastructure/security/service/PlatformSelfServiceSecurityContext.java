@@ -19,15 +19,15 @@ import org.apache.fineract.useradministration.domain.AppSelfServiceUser;
 
 public interface PlatformSelfServiceSecurityContext extends PlatformUserRightsContext {
 
-    public AppSelfServiceUser authenticatedSelfServiceUser();
+  public AppSelfServiceUser authenticatedSelfServiceUser();
 
-    public AppSelfServiceUser getAuthenticatedSelfServiceUserIfPresent();
+  public AppSelfServiceUser getAuthenticatedSelfServiceUserIfPresent();
 
-    public void validateAccessRights(String resourceOfficeHierarchy);
+  public void validateAccessRights(String resourceOfficeHierarchy);
 
-    public String officeHierarchy();
+  public String officeHierarchy();
 
-    public boolean doesPasswordHasToBeRenewed(AppSelfServiceUser currentSelfServiceUser);
+  public boolean doesPasswordHasToBeRenewed(AppSelfServiceUser currentSelfServiceUser);
 
-    public AppSelfServiceUser authenticatedUser(CommandWrapper commandWrapper);
+  public AppSelfServiceUser authenticatedUser(CommandWrapper commandWrapper);
 }

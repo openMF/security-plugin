@@ -39,38 +39,40 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class SelfScorecardApiResource {
 
-    private final PlatformSelfServiceSecurityContext context;
-    private final ScorecardApiResource scorecardApiResource;
-    private final AppuserClientMapperReadService appuserClientMapperReadService;
+  private final PlatformSelfServiceSecurityContext context;
+  private final ScorecardApiResource scorecardApiResource;
+  private final AppuserClientMapperReadService appuserClientMapperReadService;
 
-    @GET
-    @Path("clients/{clientId}")
-    @Consumes({ MediaType.APPLICATION_JSON })
-    @Produces({ MediaType.APPLICATION_JSON })
-    @Transactional
-    public List<ScorecardData> findByClient(@PathParam("clientId") final Long clientId) {
+  @GET
+  @Path("clients/{clientId}")
+  @Consumes({MediaType.APPLICATION_JSON})
+  @Produces({MediaType.APPLICATION_JSON})
+  @Transactional
+  public List<ScorecardData> findByClient(@PathParam("clientId") final Long clientId) {
 
-        validateAppSelfServiceUserClientsMapping(clientId);
-        return this.scorecardApiResource.findByClient(clientId);
+    validateAppSelfServiceUserClientsMapping(clientId);
+    return this.scorecardApiResource.findByClient(clientId);
+  }
+
+  @POST
+  @Path("{surveyId}")
+  @Consumes({MediaType.APPLICATION_JSON})
+  @Produces({MediaType.APPLICATION_JSON})
+  @Transactional
+  public void createScorecard(
+      @PathParam("surveyId") final Long surveyId, final ScorecardData scorecardData) {
+    if (scorecardData.getClientId() != null) {
+      validateAppSelfServiceUserClientsMapping(scorecardData.getClientId());
+      this.scorecardApiResource.createScorecard(surveyId, scorecardData);
     }
+  }
 
-    @POST
-    @Path("{surveyId}")
-    @Consumes({ MediaType.APPLICATION_JSON })
-    @Produces({ MediaType.APPLICATION_JSON })
-    @Transactional
-    public void createScorecard(@PathParam("surveyId") final Long surveyId, final ScorecardData scorecardData) {
-        if (scorecardData.getClientId() != null) {
-            validateAppSelfServiceUserClientsMapping(scorecardData.getClientId());
-            this.scorecardApiResource.createScorecard(surveyId, scorecardData);
-        }
+  private void validateAppSelfServiceUserClientsMapping(final Long clientId) {
+    AppSelfServiceUser user = this.context.authenticatedSelfServiceUser();
+    final boolean mappedClientId =
+        this.appuserClientMapperReadService.isClientMappedToUser(clientId, user.getId());
+    if (!mappedClientId) {
+      throw new ClientNotFoundException(clientId);
     }
-
-    private void validateAppSelfServiceUserClientsMapping(final Long clientId) {
-        AppSelfServiceUser user = this.context.authenticatedSelfServiceUser();
-        final boolean mappedClientId = this.appuserClientMapperReadService.isClientMappedToUser(clientId, user.getId());
-        if (!mappedClientId) {
-            throw new ClientNotFoundException(clientId);
-        }
-    }
+  }
 }

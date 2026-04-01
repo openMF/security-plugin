@@ -24,14 +24,14 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class SelfServiceWarning implements InitializingBean {
 
-    @Override
-    public void afterPropertiesSet() throws Exception {
-        log.warn("------------------------------------------------------------");
-        log.warn("                                                            ");
-        log.warn("DO NOT USE THIS IN PRODUCTION!");
-        log.warn("Self service capabilities of Fineract are NOT considered safe!");
-        log.warn("DO NOT USE THIS IN PRODUCTION!");
-        log.warn("                                                            ");
-        log.warn("------------------------------------------------------------");
-    }
+  @Override
+  public void afterPropertiesSet() throws Exception {
+    log.warn("------------------------------------------------------------");
+    log.warn("                                                            ");
+    log.warn("DO NOT USE THIS IN PRODUCTION!");
+    log.warn("Self service capabilities of Fineract are NOT considered safe!");
+    log.warn("DO NOT USE THIS IN PRODUCTION!");
+    log.warn("                                                            ");
+    log.warn("------------------------------------------------------------");
+  }
 }

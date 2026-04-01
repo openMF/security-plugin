@@ -45,25 +45,42 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class SelfUserApiResource {
 
-    private final UsersApiResource usersApiResource;
-    private final PlatformSelfServiceSecurityContext context;
-    private final FromJsonHelper fromApiJsonHelper;
-    private static final Set<String> SUPPORTED_PARAMETERS = new HashSet<>(Arrays.asList("password", "repeatPassword"));
+  private final UsersApiResource usersApiResource;
+  private final PlatformSelfServiceSecurityContext context;
+  private final FromJsonHelper fromApiJsonHelper;
+  private static final Set<String> SUPPORTED_PARAMETERS =
+      new HashSet<>(Arrays.asList("password", "repeatPassword"));
 
-    @PUT
-    @Operation(summary = "Update User", description = "This API can be used by Self Service user to update their own user information. Currently, \"password\" and \"repeatPassword\" are the only parameters accepted.")
-    @RequestBody(required = true, content = @Content(schema = @Schema(implementation = SelfUserApiResourceSwagger.PutSelfUserRequest.class)))
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = SelfUserApiResourceSwagger.PutSelfUserResponse.class))) })
-    public String update(@Parameter(hidden = true) final String apiRequestBodyAsJson) {
-        if (StringUtils.isBlank(apiRequestBodyAsJson)) {
-            throw new InvalidJsonException();
-        }
-
-        final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
-        this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, apiRequestBodyAsJson, SUPPORTED_PARAMETERS);
-
-        final AppSelfServiceUser appUser = this.context.authenticatedSelfServiceUser();
-        return this.usersApiResource.update(appUser.getId(), apiRequestBodyAsJson);
+  @PUT
+  @Operation(
+      summary = "Update User",
+      description =
+          "This API can be used by Self Service user to update their own user information. Currently, \"password\" and \"repeatPassword\" are the only parameters accepted.")
+  @RequestBody(
+      required = true,
+      content =
+          @Content(
+              schema =
+                  @Schema(implementation = SelfUserApiResourceSwagger.PutSelfUserRequest.class)))
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "OK",
+        content =
+            @Content(
+                schema =
+                    @Schema(implementation = SelfUserApiResourceSwagger.PutSelfUserResponse.class)))
+  })
+  public String update(@Parameter(hidden = true) final String apiRequestBodyAsJson) {
+    if (StringUtils.isBlank(apiRequestBodyAsJson)) {
+      throw new InvalidJsonException();
     }
+
+    final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
+    this.fromApiJsonHelper.checkForUnsupportedParameters(
+        typeOfMap, apiRequestBodyAsJson, SUPPORTED_PARAMETERS);
+
+    final AppSelfServiceUser appUser = this.context.authenticatedSelfServiceUser();
+    return this.usersApiResource.update(appUser.getId(), apiRequestBodyAsJson);
+  }
 }

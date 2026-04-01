@@ -65,93 +65,156 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class SelfShareAccountsApiResource {
 
-    private final PlatformSelfServiceSecurityContext context;
-    private final AccountsApiResource accountsApiResource;
-    private final ShareAccountReadPlatformService readPlatformService;
-    private final ApiRequestParameterHelper apiRequestParameterHelper;
-    private final DefaultToApiJsonSerializer<AccountData> toApiJsonSerializer;
-    private final AppuserClientMapperReadService appuserClientMapperReadService;
-    private final SelfShareAccountsDataValidator selfShareAccountsDataValidator;
-    private final ShareProductReadPlatformService shareProductReadPlatformService;
-    private final ChargeReadPlatformService chargeReadPlatformService;
-    private final AppUserShareAccountsMapperReadPlatformService appUserShareAccountsMapperReadPlatformService;
+  private final PlatformSelfServiceSecurityContext context;
+  private final AccountsApiResource accountsApiResource;
+  private final ShareAccountReadPlatformService readPlatformService;
+  private final ApiRequestParameterHelper apiRequestParameterHelper;
+  private final DefaultToApiJsonSerializer<AccountData> toApiJsonSerializer;
+  private final AppuserClientMapperReadService appuserClientMapperReadService;
+  private final SelfShareAccountsDataValidator selfShareAccountsDataValidator;
+  private final ShareProductReadPlatformService shareProductReadPlatformService;
+  private final ChargeReadPlatformService chargeReadPlatformService;
+  private final AppUserShareAccountsMapperReadPlatformService
+      appUserShareAccountsMapperReadPlatformService;
 
-    @GET
-    @Path("template")
-    @Consumes({ MediaType.APPLICATION_JSON })
-    @Produces({ MediaType.APPLICATION_JSON })
-    @Operation(summary = "Retrieve Share Account Template", description = "This is a convenience resource. It can be useful when building maintenance user interface screens for client applications. The template data returned consists of any or all of:\n"
-            + "Field Defaults\n" + "\n" + "Allowed Value Lists\n" + "\n" + "\n" + "Arguments\n" + "\n" + "clientId:Integer mandatory\n"
-            + "productId:Integer optionalIf entered, productId, productName and selectedProduct fields are returned.\n"
-            + "Example Requests:\n" + "\n" + "self/shareaccounts/template?clientId=14\n" + "\n"
-            + "self/shareaccounts/template?clientId=14&productId=3\n")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "OK", content = @Content(array = @ArraySchema(schema = @Schema(implementation = SelfShareAccountsApiResourceSwagger.GetShareAccountsClientIdProductIdResponse.class)))) })
-    public String template(@QueryParam("clientId") @Parameter(name = "clientId") final Long clientId,
-            @QueryParam("productId") @Parameter(name = "productId") final Long productId, @Context final UriInfo uriInfo) {
+  @GET
+  @Path("template")
+  @Consumes({MediaType.APPLICATION_JSON})
+  @Produces({MediaType.APPLICATION_JSON})
+  @Operation(
+      summary = "Retrieve Share Account Template",
+      description =
+          "This is a convenience resource. It can be useful when building maintenance user interface screens for client applications. The template data returned consists of any or all of:\n"
+              + "Field Defaults\n"
+              + "\n"
+              + "Allowed Value Lists\n"
+              + "\n"
+              + "\n"
+              + "Arguments\n"
+              + "\n"
+              + "clientId:Integer mandatory\n"
+              + "productId:Integer optionalIf entered, productId, productName and selectedProduct fields are returned.\n"
+              + "Example Requests:\n"
+              + "\n"
+              + "self/shareaccounts/template?clientId=14\n"
+              + "\n"
+              + "self/shareaccounts/template?clientId=14&productId=3\n")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "OK",
+        content =
+            @Content(
+                array =
+                    @ArraySchema(
+                        schema =
+                            @Schema(
+                                implementation =
+                                    SelfShareAccountsApiResourceSwagger
+                                        .GetShareAccountsClientIdProductIdResponse.class))))
+  })
+  public String template(
+      @QueryParam("clientId") @Parameter(name = "clientId") final Long clientId,
+      @QueryParam("productId") @Parameter(name = "productId") final Long productId,
+      @Context final UriInfo uriInfo) {
 
-        validateAppuserClientsMapping(clientId);
+    validateAppuserClientsMapping(clientId);
 
-        Collection<ProductData> productOptions = new ArrayList<ProductData>();
-        if (productId != null) {
-            final boolean includeTemplate = true;
-            productOptions.add(shareProductReadPlatformService.retrieveOne(productId, includeTemplate));
-        } else {
-            productOptions = shareProductReadPlatformService.retrieveAllForLookup();
-        }
-
-        String clientName = null;
-
-        final Collection<ChargeData> chargeOptions = chargeReadPlatformService.retrieveSharesApplicableCharges();
-        final ShareAccountData accountData = new ShareAccountData(clientId, clientName, productOptions, chargeOptions);
-
-        return toApiJsonSerializer.serialize(accountData);
+    Collection<ProductData> productOptions = new ArrayList<ProductData>();
+    if (productId != null) {
+      final boolean includeTemplate = true;
+      productOptions.add(shareProductReadPlatformService.retrieveOne(productId, includeTemplate));
+    } else {
+      productOptions = shareProductReadPlatformService.retrieveAllForLookup();
     }
 
-    @POST
-    @Consumes({ MediaType.APPLICATION_JSON })
-    @Produces({ MediaType.APPLICATION_JSON })
-    @Operation(summary = "Submit new share application", description = "Mandatory fields:\n" + "\n"
-            + "clientId, productId, submittedDate, savingsAccountId, requestedShares, applicationDate\n" + "\n" + "\n" + "Optional Fields\n"
-            + "\n" + "accountNo, externalId\n" + "\n" + "\n" + "Inherited from Product (if not provided)\n" + "\n"
-            + "minimumActivePeriod, minimumActivePeriodFrequencyType, lockinPeriodFrequency, lockinPeriodFrequencyType.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "OK", content = @Content(array = @ArraySchema(schema = @Schema(implementation = SelfShareAccountsApiResourceSwagger.PostNewShareApplicationResponse.class)))) })
-    public CommandProcessingResult createAccount(final AccountRequest apiRequestBodyAsJson) {
-        HashMap<String, Object> attr = selfShareAccountsDataValidator.validateShareAccountApplication(apiRequestBodyAsJson.toString());
-        final Long clientId = (Long) attr.get(ShareAccountApiConstants.clientid_paramname);
-        validateAppuserClientsMapping(clientId);
-        String accountType = ShareAccountApiConstants.shareEntityType;
-        return accountsApiResource.createAccount(accountType, apiRequestBodyAsJson);
-    }
+    String clientName = null;
 
-    @GET
-    @Path("{accountId}")
-    @Consumes({ MediaType.APPLICATION_JSON })
-    @Produces({ MediaType.APPLICATION_JSON })
-    @Operation(summary = "Retrieve a share application/account", description = "\n" + "\n" + "\n" + "Example Requests:\n" + "\n"
-            + "self/shareaccounts/12\n")
-    public String retrieveShareAccount(@PathParam("accountId") final Long accountId, @Context final UriInfo uriInfo) {
-        validateAppuserShareAccountMapping(accountId);
-        final boolean includeTemplate = false;
-        AccountData accountData = readPlatformService.retrieveOne(accountId, includeTemplate);
-        final ApiRequestJsonSerializationSettings settings = apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-        return toApiJsonSerializer.serialize(settings, accountData, readPlatformService.getResponseDataParams());
-    }
+    final Collection<ChargeData> chargeOptions =
+        chargeReadPlatformService.retrieveSharesApplicableCharges();
+    final ShareAccountData accountData =
+        new ShareAccountData(clientId, clientName, productOptions, chargeOptions);
 
-    private void validateAppuserShareAccountMapping(final Long accountId) {
-        AppSelfServiceUser user = context.authenticatedSelfServiceUser();
-        final boolean isMapped = appUserShareAccountsMapperReadPlatformService.isShareAccountsMappedToUser(accountId, user.getId());
-        if (!isMapped) {
-            throw new ShareAccountNotFoundException(accountId);
-        }
-    }
+    return toApiJsonSerializer.serialize(accountData);
+  }
 
-    private void validateAppuserClientsMapping(final Long clientId) {
-        AppSelfServiceUser user = context.authenticatedSelfServiceUser();
-        final boolean mappedClientId = appuserClientMapperReadService.isClientMappedToUser(clientId, user.getId());
-        if (!mappedClientId) {
-            throw new ClientNotFoundException(clientId);
-        }
+  @POST
+  @Consumes({MediaType.APPLICATION_JSON})
+  @Produces({MediaType.APPLICATION_JSON})
+  @Operation(
+      summary = "Submit new share application",
+      description =
+          "Mandatory fields:\n"
+              + "\n"
+              + "clientId, productId, submittedDate, savingsAccountId, requestedShares, applicationDate\n"
+              + "\n"
+              + "\n"
+              + "Optional Fields\n"
+              + "\n"
+              + "accountNo, externalId\n"
+              + "\n"
+              + "\n"
+              + "Inherited from Product (if not provided)\n"
+              + "\n"
+              + "minimumActivePeriod, minimumActivePeriodFrequencyType, lockinPeriodFrequency, lockinPeriodFrequencyType.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "OK",
+        content =
+            @Content(
+                array =
+                    @ArraySchema(
+                        schema =
+                            @Schema(
+                                implementation =
+                                    SelfShareAccountsApiResourceSwagger
+                                        .PostNewShareApplicationResponse.class))))
+  })
+  public CommandProcessingResult createAccount(final AccountRequest apiRequestBodyAsJson) {
+    HashMap<String, Object> attr =
+        selfShareAccountsDataValidator.validateShareAccountApplication(
+            apiRequestBodyAsJson.toString());
+    final Long clientId = (Long) attr.get(ShareAccountApiConstants.clientid_paramname);
+    validateAppuserClientsMapping(clientId);
+    String accountType = ShareAccountApiConstants.shareEntityType;
+    return accountsApiResource.createAccount(accountType, apiRequestBodyAsJson);
+  }
+
+  @GET
+  @Path("{accountId}")
+  @Consumes({MediaType.APPLICATION_JSON})
+  @Produces({MediaType.APPLICATION_JSON})
+  @Operation(
+      summary = "Retrieve a share application/account",
+      description = "\n" + "\n" + "\n" + "Example Requests:\n" + "\n" + "self/shareaccounts/12\n")
+  public String retrieveShareAccount(
+      @PathParam("accountId") final Long accountId, @Context final UriInfo uriInfo) {
+    validateAppuserShareAccountMapping(accountId);
+    final boolean includeTemplate = false;
+    AccountData accountData = readPlatformService.retrieveOne(accountId, includeTemplate);
+    final ApiRequestJsonSerializationSettings settings =
+        apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+    return toApiJsonSerializer.serialize(
+        settings, accountData, readPlatformService.getResponseDataParams());
+  }
+
+  private void validateAppuserShareAccountMapping(final Long accountId) {
+    AppSelfServiceUser user = context.authenticatedSelfServiceUser();
+    final boolean isMapped =
+        appUserShareAccountsMapperReadPlatformService.isShareAccountsMappedToUser(
+            accountId, user.getId());
+    if (!isMapped) {
+      throw new ShareAccountNotFoundException(accountId);
     }
+  }
+
+  private void validateAppuserClientsMapping(final Long clientId) {
+    AppSelfServiceUser user = context.authenticatedSelfServiceUser();
+    final boolean mappedClientId =
+        appuserClientMapperReadService.isClientMappedToUser(clientId, user.getId());
+    if (!mappedClientId) {
+      throw new ClientNotFoundException(clientId);
+    }
+  }
 }

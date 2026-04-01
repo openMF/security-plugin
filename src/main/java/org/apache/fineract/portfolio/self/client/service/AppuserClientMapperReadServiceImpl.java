@@ -23,27 +23,29 @@ import org.springframework.jdbc.core.JdbcTemplate;
 @RequiredArgsConstructor
 public class AppuserClientMapperReadServiceImpl implements AppuserClientMapperReadService {
 
-    private final JdbcTemplate jdbcTemplate;
-    private final PlatformSelfServiceSecurityContext context;
+  private final JdbcTemplate jdbcTemplate;
+  private final PlatformSelfServiceSecurityContext context;
 
-    @Override
-    public Boolean isClientMappedToUser(Long clientId, Long appUserId) {
-        return this.jdbcTemplate.queryForObject(
-                "select case when (count(*) > 0) then true else false end "
-                        + " from m_selfservice_user_client_mapping where client_id = ? and appuser_id = ?",
-                Boolean.class, clientId, appUserId);
-    }
+  @Override
+  public Boolean isClientMappedToUser(Long clientId, Long appUserId) {
+    return this.jdbcTemplate.queryForObject(
+        "select case when (count(*) > 0) then true else false end "
+            + " from m_selfservice_user_client_mapping where client_id = ? and appuser_id = ?",
+        Boolean.class,
+        clientId,
+        appUserId);
+  }
 
-    @Override
-    public void validateAppuserClientsMapping(final Long clientId) {
-        AppSelfServiceUser user = this.context.authenticatedSelfServiceUser();
-        if (clientId != null) {
-            final boolean mappedClientId = isClientMappedToUser(clientId, user.getId());
-            if (!mappedClientId) {
-                throw new ClientNotFoundException(clientId);
-            }
-        } else {
-            throw new ClientNotFoundException(clientId);
-        }
+  @Override
+  public void validateAppuserClientsMapping(final Long clientId) {
+    AppSelfServiceUser user = this.context.authenticatedSelfServiceUser();
+    if (clientId != null) {
+      final boolean mappedClientId = isClientMappedToUser(clientId, user.getId());
+      if (!mappedClientId) {
+        throw new ClientNotFoundException(clientId);
+      }
+    } else {
+      throw new ClientNotFoundException(clientId);
     }
+  }
 }

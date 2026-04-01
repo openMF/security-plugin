@@ -436,62 +436,28 @@
           <artifactId>spring-boot-maven-plugin</artifactId>
         </plugin>
         <!-- Spotless Code Formatter -->
-        <!-- Spotless - Code Formatter (matches Apache Fineract) -->
         <plugin>
-          <groupId>com.diffplug.spotless</groupId>
-          <artifactId>spotless-maven-plugin</artifactId>
-          <version>${spotless.version}</version>
-          <configuration>
-            <!-- Only format files changed since this branch (highly recommended) -->
-            <ratchetFrom>origin/develop</ratchetFrom>
-            <!-- Or use origin/main if your default branch is main -->
-
-            <!-- Java formatting (Fineract style) -->
-            <java>
-              <!-- Use Eclipse formatter with Fineract's custom profile -->
-              <eclipse>
-                <file>${project.basedir}/config/fineractdev-formatter.xml</file>
-              </eclipse>
-
-              <!-- Import order and cleanup (matches Fineract) -->
-              <importOrder/>
-              <removeUnusedImports/>
-            </java>
-
-            <!-- Optional: Format other file types (Fineract also formats these) -->
-            <pom>
-              <sortPom/>
-            </pom>
-
-            <!-- Format miscellaneous files -->
-            <format>
-              <name>misc</name>
-              <target>**/*.md,
-                        **/*.properties,
-                        **/*.yml,
-                        **/*.yaml,
-                        **/*.xml,
-                        **/*.sql,
-                        **/.gitignore,
-                        **/.editorconfig</target>
-              <trimTrailingWhitespace/>
-              <endWithNewline/>
-              <indent>
-                <spaces>true</spaces>
-                <spacesPerTab>4</spacesPerTab>
-              </indent>
-            </format>
-          </configuration>
-
-          <!-- Optional: Bind spotless:check to verify phase so it runs automatically -->
-          <executions>
-            <execution>
-              <goals>
-                <goal>check</goal>
-              </goals>
-              <phase>verify</phase>
-            </execution>
-          </executions>
+            <groupId>com.diffplug.spotless</groupId>
+            <artifactId>spotless-maven-plugin</artifactId>
+            <version>3.4.0</version>
+            <configuration>
+                <java>
+                    <googleJavaFormat>
+                        <version>1.17.0</version>
+                        <style>GOOGLE</style>
+                    </googleJavaFormat>
+                    <importOrder />
+                    <removeUnusedImports />
+                </java>
+            </configuration>
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>check</goal>
+                    </goals>
+                    <phase>compile</phase>
+                </execution>
+            </executions>
         </plugin>
       </plugins>
     </pluginManagement>

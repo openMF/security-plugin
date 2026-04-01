@@ -37,25 +37,40 @@ import org.springframework.jdbc.core.JdbcTemplate;
 @Configuration
 public class SelfRegistrationConfiguration {
 
-    @Bean
-    @ConditionalOnMissingBean(SelfServiceRegistrationReadPlatformService.class)
-    public SelfServiceRegistrationReadPlatformService selfServiceRegistrationReadPlatformService(JdbcTemplate jdbcTemplate) {
-        return new SelfServiceRegistrationReadPlatformServiceImpl(jdbcTemplate);
-    }
+  @Bean
+  @ConditionalOnMissingBean(SelfServiceRegistrationReadPlatformService.class)
+  public SelfServiceRegistrationReadPlatformService selfServiceRegistrationReadPlatformService(
+      JdbcTemplate jdbcTemplate) {
+    return new SelfServiceRegistrationReadPlatformServiceImpl(jdbcTemplate);
+  }
 
-    @Bean
-    @ConditionalOnMissingBean(SelfServiceRegistrationWritePlatformService.class)
-    public SelfServiceRegistrationWritePlatformService selfServiceRegistrationWritePlatformService(
-            SelfServiceRegistrationRepository selfServiceRegistrationRepository, FromJsonHelper fromApiJsonHelper,
-            SelfServiceRegistrationReadPlatformService selfServiceRegistrationReadPlatformService, ClientRepositoryWrapper clientRepository,
-            PasswordValidationPolicyRepository passwordValidationPolicy, SelfServiceUserDomainService userDomainService,
-            GmailBackedPlatformEmailService gmailBackedPlatformEmailService, SmsMessageRepository smsMessageRepository,
-            SmsMessageScheduledJobService smsMessageScheduledJobService,
-            SmsCampaignDropdownReadPlatformService smsCampaignDropdownReadPlatformService,
-            AppSelfServiceUserReadPlatformService selfServiceAppUserReadPlatformService, RoleRepository roleRepository) {
-        return new SelfServiceRegistrationWritePlatformServiceImpl(selfServiceRegistrationRepository, fromApiJsonHelper,
-                selfServiceRegistrationReadPlatformService, clientRepository, passwordValidationPolicy, userDomainService,
-                gmailBackedPlatformEmailService, smsMessageRepository, smsMessageScheduledJobService,
-                smsCampaignDropdownReadPlatformService, selfServiceAppUserReadPlatformService, roleRepository);
-    }
+  @Bean
+  @ConditionalOnMissingBean(SelfServiceRegistrationWritePlatformService.class)
+  public SelfServiceRegistrationWritePlatformService selfServiceRegistrationWritePlatformService(
+      SelfServiceRegistrationRepository selfServiceRegistrationRepository,
+      FromJsonHelper fromApiJsonHelper,
+      SelfServiceRegistrationReadPlatformService selfServiceRegistrationReadPlatformService,
+      ClientRepositoryWrapper clientRepository,
+      PasswordValidationPolicyRepository passwordValidationPolicy,
+      SelfServiceUserDomainService userDomainService,
+      GmailBackedPlatformEmailService gmailBackedPlatformEmailService,
+      SmsMessageRepository smsMessageRepository,
+      SmsMessageScheduledJobService smsMessageScheduledJobService,
+      SmsCampaignDropdownReadPlatformService smsCampaignDropdownReadPlatformService,
+      AppSelfServiceUserReadPlatformService selfServiceAppUserReadPlatformService,
+      RoleRepository roleRepository) {
+    return new SelfServiceRegistrationWritePlatformServiceImpl(
+        selfServiceRegistrationRepository,
+        fromApiJsonHelper,
+        selfServiceRegistrationReadPlatformService,
+        clientRepository,
+        passwordValidationPolicy,
+        userDomainService,
+        gmailBackedPlatformEmailService,
+        smsMessageRepository,
+        smsMessageScheduledJobService,
+        smsCampaignDropdownReadPlatformService,
+        selfServiceAppUserReadPlatformService,
+        roleRepository);
+  }
 }

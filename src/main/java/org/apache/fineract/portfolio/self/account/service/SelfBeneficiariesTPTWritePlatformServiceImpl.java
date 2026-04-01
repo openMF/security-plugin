@@ -46,120 +46,136 @@ import org.springframework.transaction.annotation.Transactional;
 
 @RequiredArgsConstructor
 @Slf4j
-public class SelfBeneficiariesTPTWritePlatformServiceImpl implements SelfBeneficiariesTPTWritePlatformService {
+public class SelfBeneficiariesTPTWritePlatformServiceImpl
+    implements SelfBeneficiariesTPTWritePlatformService {
 
-    private final PlatformSelfServiceSecurityContext context;
-    private final SelfBeneficiariesTPTRepository repository;
-    private final SelfBeneficiariesTPTDataValidator validator;
-    private final LoanRepositoryWrapper loanRepositoryWrapper;
-    private final SavingsAccountRepositoryWrapper savingRepositoryWrapper;
+  private final PlatformSelfServiceSecurityContext context;
+  private final SelfBeneficiariesTPTRepository repository;
+  private final SelfBeneficiariesTPTDataValidator validator;
+  private final LoanRepositoryWrapper loanRepositoryWrapper;
+  private final SavingsAccountRepositoryWrapper savingRepositoryWrapper;
 
-    @Transactional
-    @Override
-    public CommandProcessingResult add(JsonCommand command) {
-        HashMap<String, Object> params = this.validator.validateForCreate(command.json());
+  @Transactional
+  @Override
+  public CommandProcessingResult add(JsonCommand command) {
+    HashMap<String, Object> params = this.validator.validateForCreate(command.json());
 
-        String name = (String) params.get(NAME_PARAM_NAME);
-        Integer accountType = (Integer) params.get(ACCOUNT_TYPE_PARAM_NAME);
-        String accountNumber = (String) params.get(ACCOUNT_NUMBER_PARAM_NAME);
-        String officeName = (String) params.get(OFFICE_NAME_PARAM_NAME);
-        Long transferLimit = (Long) params.get(TRANSFER_LIMIT_PARAM_NAME);
+    String name = (String) params.get(NAME_PARAM_NAME);
+    Integer accountType = (Integer) params.get(ACCOUNT_TYPE_PARAM_NAME);
+    String accountNumber = (String) params.get(ACCOUNT_NUMBER_PARAM_NAME);
+    String officeName = (String) params.get(OFFICE_NAME_PARAM_NAME);
+    Long transferLimit = (Long) params.get(TRANSFER_LIMIT_PARAM_NAME);
 
-        Long accountId = null;
-        Long clientId = null;
-        Long officeId = null;
+    Long accountId = null;
+    Long clientId = null;
+    Long officeId = null;
 
-        boolean validAccountDetails = true;
-        if (accountType.equals(PortfolioAccountType.LOAN.getValue())) {
-            Loan loan = this.loanRepositoryWrapper.findNonClosedLoanByAccountNumber(accountNumber);
-            if (loan != null && loan.getClientId() != null && loan.getOffice().getName().equals(officeName)) {
-                accountId = loan.getId();
-                officeId = loan.getOfficeId();
-                clientId = loan.getClientId();
-            } else {
-                validAccountDetails = false;
-            }
-        } else {
-            SavingsAccount savings = this.savingRepositoryWrapper.findNonClosedAccountByAccountNumber(accountNumber);
-            if (savings != null && savings.getClient() != null && savings.getClient().getOffice().getName().equals(officeName)) {
-                accountId = savings.getId();
-                clientId = savings.getClient().getId();
-                officeId = savings.getClient().getOffice().getId();
-            } else {
-                validAccountDetails = false;
-            }
-        }
-
-        if (validAccountDetails) {
-            try {
-                AppSelfServiceUser user = this.context.authenticatedSelfServiceUser();
-                SelfBeneficiariesTPT beneficiary = new SelfBeneficiariesTPT(user.getId(), name, officeId, clientId, accountId, accountType,
-                        transferLimit);
-                this.repository.saveAndFlush(beneficiary);
-                return new CommandProcessingResultBuilder().withEntityId((Long) beneficiary.getId()).build();
-            } catch (DataAccessException dae) {
-                handleDataIntegrityIssues(command, dae);
-            }
-        }
-        throw new InvalidAccountInformationException(officeName, accountNumber, PortfolioAccountType.fromInt(accountType).getCode());
+    boolean validAccountDetails = true;
+    if (accountType.equals(PortfolioAccountType.LOAN.getValue())) {
+      Loan loan = this.loanRepositoryWrapper.findNonClosedLoanByAccountNumber(accountNumber);
+      if (loan != null
+          && loan.getClientId() != null
+          && loan.getOffice().getName().equals(officeName)) {
+        accountId = loan.getId();
+        officeId = loan.getOfficeId();
+        clientId = loan.getClientId();
+      } else {
+        validAccountDetails = false;
+      }
+    } else {
+      SavingsAccount savings =
+          this.savingRepositoryWrapper.findNonClosedAccountByAccountNumber(accountNumber);
+      if (savings != null
+          && savings.getClient() != null
+          && savings.getClient().getOffice().getName().equals(officeName)) {
+        accountId = savings.getId();
+        clientId = savings.getClient().getId();
+        officeId = savings.getClient().getOffice().getId();
+      } else {
+        validAccountDetails = false;
+      }
     }
 
-    @Transactional
-    @Override
-    public CommandProcessingResult update(JsonCommand command) {
-        HashMap<String, Object> params = this.validator.validateForUpdate(command.json());
+    if (validAccountDetails) {
+      try {
         AppSelfServiceUser user = this.context.authenticatedSelfServiceUser();
-        Long beneficiaryId = command.entityId();
-        SelfBeneficiariesTPT beneficiary = this.repository.findById(beneficiaryId).orElse(null);
-        if (beneficiary != null && beneficiary.getAppUserId().equals(user.getId())) {
-            String name = (String) params.get(NAME_PARAM_NAME);
-            Long transferLimit = (Long) params.get(TRANSFER_LIMIT_PARAM_NAME);
+        SelfBeneficiariesTPT beneficiary =
+            new SelfBeneficiariesTPT(
+                user.getId(), name, officeId, clientId, accountId, accountType, transferLimit);
+        this.repository.saveAndFlush(beneficiary);
+        return new CommandProcessingResultBuilder()
+            .withEntityId((Long) beneficiary.getId())
+            .build();
+      } catch (DataAccessException dae) {
+        handleDataIntegrityIssues(command, dae);
+      }
+    }
+    throw new InvalidAccountInformationException(
+        officeName, accountNumber, PortfolioAccountType.fromInt(accountType).getCode());
+  }
 
-            Map<String, Object> changes = beneficiary.update(name, transferLimit);
-            if (!changes.isEmpty()) {
-                try {
-                    this.repository.saveAndFlush(beneficiary);
+  @Transactional
+  @Override
+  public CommandProcessingResult update(JsonCommand command) {
+    HashMap<String, Object> params = this.validator.validateForUpdate(command.json());
+    AppSelfServiceUser user = this.context.authenticatedSelfServiceUser();
+    Long beneficiaryId = command.entityId();
+    SelfBeneficiariesTPT beneficiary = this.repository.findById(beneficiaryId).orElse(null);
+    if (beneficiary != null && beneficiary.getAppUserId().equals(user.getId())) {
+      String name = (String) params.get(NAME_PARAM_NAME);
+      Long transferLimit = (Long) params.get(TRANSFER_LIMIT_PARAM_NAME);
 
-                    return new CommandProcessingResultBuilder() //
-                            .withEntityId((Long) beneficiary.getId()) //
-                            .with(changes).build();
-                } catch (DataAccessException dae) {
-                    handleDataIntegrityIssues(command, dae);
-                }
-            }
+      Map<String, Object> changes = beneficiary.update(name, transferLimit);
+      if (!changes.isEmpty()) {
+        try {
+          this.repository.saveAndFlush(beneficiary);
+
+          return new CommandProcessingResultBuilder() //
+              .withEntityId((Long) beneficiary.getId()) //
+              .with(changes)
+              .build();
+        } catch (DataAccessException dae) {
+          handleDataIntegrityIssues(command, dae);
         }
-        throw new InvalidBeneficiaryException(beneficiaryId);
+      }
+    }
+    throw new InvalidBeneficiaryException(beneficiaryId);
+  }
+
+  @Transactional
+  @Override
+  public CommandProcessingResult delete(JsonCommand command) {
+    AppSelfServiceUser user = this.context.authenticatedSelfServiceUser();
+    Long beneficiaryId = command.entityId();
+    SelfBeneficiariesTPT beneficiary = this.repository.findById(beneficiaryId).orElse(null);
+    if (beneficiary != null && beneficiary.getAppUserId().equals(user.getId())) {
+
+      beneficiary.setActive(false);
+      this.repository.save(beneficiary);
+
+      return new CommandProcessingResultBuilder() //
+          .withEntityId((Long) beneficiary.getId()) //
+          .build();
+    }
+    throw new InvalidBeneficiaryException(beneficiaryId);
+  }
+
+  private void handleDataIntegrityIssues(final JsonCommand command, final DataAccessException dae) {
+    final Throwable realCause = dae.getMostSpecificCause();
+    if (realCause.getMessage().contains("name")) {
+
+      final String name = command.stringValueOfParameterNamed(NAME_PARAM_NAME);
+      throw new PlatformDataIntegrityException(
+          "error.msg.beneficiary.duplicate.name",
+          "Beneficiary with name `" + name + "` already exists",
+          NAME_PARAM_NAME,
+          name);
     }
 
-    @Transactional
-    @Override
-    public CommandProcessingResult delete(JsonCommand command) {
-        AppSelfServiceUser user = this.context.authenticatedSelfServiceUser();
-        Long beneficiaryId = command.entityId();
-        SelfBeneficiariesTPT beneficiary = this.repository.findById(beneficiaryId).orElse(null);
-        if (beneficiary != null && beneficiary.getAppUserId().equals(user.getId())) {
-
-            beneficiary.setActive(false);
-            this.repository.save(beneficiary);
-
-            return new CommandProcessingResultBuilder() //
-                    .withEntityId((Long) beneficiary.getId()) //
-                    .build();
-        }
-        throw new InvalidBeneficiaryException(beneficiaryId);
-    }
-
-    private void handleDataIntegrityIssues(final JsonCommand command, final DataAccessException dae) {
-        final Throwable realCause = dae.getMostSpecificCause();
-        if (realCause.getMessage().contains("name")) {
-
-            final String name = command.stringValueOfParameterNamed(NAME_PARAM_NAME);
-            throw new PlatformDataIntegrityException("error.msg.beneficiary.duplicate.name",
-                    "Beneficiary with name `" + name + "` already exists", NAME_PARAM_NAME, name);
-        }
-
-        log.error("Error occured.", dae);
-        throw ErrorHandler.getMappable(dae, "error.msg.beneficiary.unknown.data.integrity.issue",
-                "Unknown data integrity issue with resource.");
-    }
+    log.error("Error occured.", dae);
+    throw ErrorHandler.getMappable(
+        dae,
+        "error.msg.beneficiary.unknown.data.integrity.issue",
+        "Unknown data integrity issue with resource.");
+  }
 }

@@ -34,16 +34,16 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class SelfSpmApiResource {
 
-    private final PlatformSelfServiceSecurityContext securityContext;
-    private final SpmApiResource spmApiResource;
+  private final PlatformSelfServiceSecurityContext securityContext;
+  private final SpmApiResource spmApiResource;
 
-    @GET
-    @Consumes({ MediaType.APPLICATION_JSON })
-    @Produces({ MediaType.APPLICATION_JSON })
-    @Transactional
-    public List<SurveyData> fetchAllSurveys() {
-        securityContext.authenticatedSelfServiceUser();
-        final Boolean isActive = true;
-        return this.spmApiResource.fetchAllSurveys(isActive);
-    }
+  @GET
+  @Consumes({MediaType.APPLICATION_JSON})
+  @Produces({MediaType.APPLICATION_JSON})
+  @Transactional
+  public List<SurveyData> fetchAllSurveys() {
+    securityContext.authenticatedSelfServiceUser();
+    final Boolean isActive = true;
+    return this.spmApiResource.fetchAllSurveys(isActive);
+  }
 }

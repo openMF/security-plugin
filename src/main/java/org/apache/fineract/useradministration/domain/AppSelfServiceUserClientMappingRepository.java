@@ -22,26 +22,44 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
-public interface AppSelfServiceUserClientMappingRepository extends JpaRepository<AppSelfServiceUserClientMapping, Long> {
+public interface AppSelfServiceUserClientMappingRepository
+    extends JpaRepository<AppSelfServiceUserClientMapping, Long> {
 
-    @Modifying(clearAutomatically = true)
-    @Transactional
-    @Query(value = "INSERT INTO m_selfservice_user_client_mapping (appuser_id, client_id) VALUES (?1 ,  ?2 ) ", nativeQuery = true)
-    public void saveClientUserMapping(@Param("appuserId") Long appuserId, @Param("clientId") Long clientId);
+  @Modifying(clearAutomatically = true)
+  @Transactional
+  @Query(
+      value =
+          "INSERT INTO m_selfservice_user_client_mapping (appuser_id, client_id) VALUES (?1 ,  ?2 ) ",
+      nativeQuery = true)
+  public void saveClientUserMapping(
+      @Param("appuserId") Long appuserId, @Param("clientId") Long clientId);
 
-    @Query("select appUserMapping from AppUserClientMapping appUserMapping where appUserMapping.client.id = :clientId")
-    @Cacheable(value = "appUserClientFetchByClientId", key = "T(org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat(#clientId)")
-    AppSelfServiceUserClientMapping fetchByClientId(@Param("clientId") Long clientId);
+  @Query(
+      "select appUserMapping from AppUserClientMapping appUserMapping where appUserMapping.client.id = :clientId")
+  @Cacheable(
+      value = "appUserClientFetchByClientId",
+      key =
+          "T(org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat(#clientId)")
+  AppSelfServiceUserClientMapping fetchByClientId(@Param("clientId") Long clientId);
 
-    @Query("select appUserMapping from AppUserClientMapping appUserMapping where appUserMapping.appUser.username = :username")
-    @Cacheable(value = "appUserClientFetchByAppuserUsername", key = "T(org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat(#username)")
-    AppSelfServiceUserClientMapping fetchByAppuserUsername(@Param("username") String username);
+  @Query(
+      "select appUserMapping from AppUserClientMapping appUserMapping where appUserMapping.appUser.username = :username")
+  @Cacheable(
+      value = "appUserClientFetchByAppuserUsername",
+      key =
+          "T(org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat(#username)")
+  AppSelfServiceUserClientMapping fetchByAppuserUsername(@Param("username") String username);
 
-    @Query("select appUserMapping from AppUserClientMapping appUserMapping WHERE appUserMapping.client.externalId = :externalId AND appUserMapping.appUser.email = :email")
-    Optional<AppSelfServiceUserClientMapping> fetchByClientExternalIdAndUserEmail(@Param("externalId") String externalId,
-            @Param("email") String email);
+  @Query(
+      "select appUserMapping from AppUserClientMapping appUserMapping WHERE appUserMapping.client.externalId = :externalId AND appUserMapping.appUser.email = :email")
+  Optional<AppSelfServiceUserClientMapping> fetchByClientExternalIdAndUserEmail(
+      @Param("externalId") String externalId, @Param("email") String email);
 
-    @Query("select appUserMapping from AppUserClientMapping appUserMapping where appUserMapping.appUser.id = :appUserId")
-    @Cacheable(value = "appUserClientFetchByAppUserId", key = "T(org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat(#appUserId)")
-    AppSelfServiceUserClientMapping fetchByAppUserId(@Param("appUserId") Long appUserId);
+  @Query(
+      "select appUserMapping from AppUserClientMapping appUserMapping where appUserMapping.appUser.id = :appUserId")
+  @Cacheable(
+      value = "appUserClientFetchByAppUserId",
+      key =
+          "T(org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat(#appUserId)")
+  AppSelfServiceUserClientMapping fetchByAppUserId(@Param("appUserId") Long appUserId);
 }

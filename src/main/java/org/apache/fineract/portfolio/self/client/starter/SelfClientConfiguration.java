@@ -25,10 +25,10 @@ import org.springframework.jdbc.core.JdbcTemplate;
 @Configuration
 public class SelfClientConfiguration {
 
-    @Bean
-    @ConditionalOnMissingBean(AppuserClientMapperReadService.class)
-    public AppuserClientMapperReadService appuserClientMapperReadService(JdbcTemplate jdbcTemplate,
-            PlatformSelfServiceSecurityContext context) {
-        return new AppuserClientMapperReadServiceImpl(jdbcTemplate, context);
-    }
+  @Bean
+  @ConditionalOnMissingBean(AppuserClientMapperReadService.class)
+  public AppuserClientMapperReadService appuserClientMapperReadService(
+      JdbcTemplate jdbcTemplate, PlatformSelfServiceSecurityContext context) {
+    return new AppuserClientMapperReadServiceImpl(jdbcTemplate, context);
+  }
 }

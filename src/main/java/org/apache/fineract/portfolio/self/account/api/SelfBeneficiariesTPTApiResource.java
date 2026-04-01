@@ -60,107 +60,243 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class SelfBeneficiariesTPTApiResource {
 
-    private final PlatformSelfServiceSecurityContext context;
-    private final DefaultToApiJsonSerializer<SelfBeneficiariesTPTData> toApiJsonSerializer;
-    private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
-    private final ApiRequestParameterHelper apiRequestParameterHelper;
-    private final SelfBeneficiariesTPTReadPlatformService readPlatformService;
-    private static final Set<String> RESPONSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList(
-            SelfBeneficiariesTPTApiConstants.NAME_PARAM_NAME, SelfBeneficiariesTPTApiConstants.OFFICE_NAME_PARAM_NAME,
-            SelfBeneficiariesTPTApiConstants.ACCOUNT_NUMBER_PARAM_NAME, SelfBeneficiariesTPTApiConstants.ACCOUNT_TYPE_PARAM_NAME,
-            SelfBeneficiariesTPTApiConstants.TRANSFER_LIMIT_PARAM_NAME, SelfBeneficiariesTPTApiConstants.ID_PARAM_NAME,
-            SelfBeneficiariesTPTApiConstants.CLIENT_NAME_PARAM_NAME, SelfBeneficiariesTPTApiConstants.ACCOUNT_TYPE_OPTIONS_PARAM_NAME));
+  private final PlatformSelfServiceSecurityContext context;
+  private final DefaultToApiJsonSerializer<SelfBeneficiariesTPTData> toApiJsonSerializer;
+  private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
+  private final ApiRequestParameterHelper apiRequestParameterHelper;
+  private final SelfBeneficiariesTPTReadPlatformService readPlatformService;
+  private static final Set<String> RESPONSE_DATA_PARAMETERS =
+      new HashSet<>(
+          Arrays.asList(
+              SelfBeneficiariesTPTApiConstants.NAME_PARAM_NAME,
+                  SelfBeneficiariesTPTApiConstants.OFFICE_NAME_PARAM_NAME,
+              SelfBeneficiariesTPTApiConstants.ACCOUNT_NUMBER_PARAM_NAME,
+                  SelfBeneficiariesTPTApiConstants.ACCOUNT_TYPE_PARAM_NAME,
+              SelfBeneficiariesTPTApiConstants.TRANSFER_LIMIT_PARAM_NAME,
+                  SelfBeneficiariesTPTApiConstants.ID_PARAM_NAME,
+              SelfBeneficiariesTPTApiConstants.CLIENT_NAME_PARAM_NAME,
+                  SelfBeneficiariesTPTApiConstants.ACCOUNT_TYPE_OPTIONS_PARAM_NAME));
 
-    @GET
-    @Path("template")
-    @Consumes({ MediaType.APPLICATION_JSON })
-    @Produces({ MediaType.APPLICATION_JSON })
-    @Operation(summary = "Beneficiary Third Party Transfer Template", description = "Returns Account Type enumerations. Self User is expected to know office name and account number to be able to add beneficiary.\n"
-            + "\n" + "Example Requests:\n" + "\n" + "/self/beneficiaries/tpt/template")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = SelfBeneficiariesTPTApiResourceSwagger.GetSelfBeneficiariesTPTTemplateResponse.class))) })
-    public String template(@Context final UriInfo uriInfo) {
+  @GET
+  @Path("template")
+  @Consumes({MediaType.APPLICATION_JSON})
+  @Produces({MediaType.APPLICATION_JSON})
+  @Operation(
+      summary = "Beneficiary Third Party Transfer Template",
+      description =
+          "Returns Account Type enumerations. Self User is expected to know office name and account number to be able to add beneficiary.\n"
+              + "\n"
+              + "Example Requests:\n"
+              + "\n"
+              + "/self/beneficiaries/tpt/template")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "OK",
+        content =
+            @Content(
+                schema =
+                    @Schema(
+                        implementation =
+                            SelfBeneficiariesTPTApiResourceSwagger
+                                .GetSelfBeneficiariesTPTTemplateResponse.class)))
+  })
+  public String template(@Context final UriInfo uriInfo) {
 
-        final EnumOptionData loanAccountType = AccountTransferEnumerations.accountType(PortfolioAccountType.LOAN);
-        final EnumOptionData savingsAccountType = AccountTransferEnumerations.accountType(PortfolioAccountType.SAVINGS);
+    final EnumOptionData loanAccountType =
+        AccountTransferEnumerations.accountType(PortfolioAccountType.LOAN);
+    final EnumOptionData savingsAccountType =
+        AccountTransferEnumerations.accountType(PortfolioAccountType.SAVINGS);
 
-        final Collection<EnumOptionData> accountTypeOptions = Arrays.asList(savingsAccountType, loanAccountType);
+    final Collection<EnumOptionData> accountTypeOptions =
+        Arrays.asList(savingsAccountType, loanAccountType);
 
-        SelfBeneficiariesTPTData templateData = new SelfBeneficiariesTPTData(accountTypeOptions);
+    SelfBeneficiariesTPTData templateData = new SelfBeneficiariesTPTData(accountTypeOptions);
 
-        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-        return this.toApiJsonSerializer.serialize(settings, templateData, RESPONSE_DATA_PARAMETERS);
-    }
+    final ApiRequestJsonSerializationSettings settings =
+        this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+    return this.toApiJsonSerializer.serialize(settings, templateData, RESPONSE_DATA_PARAMETERS);
+  }
 
-    @POST
-    @Consumes({ MediaType.APPLICATION_JSON })
-    @Produces({ MediaType.APPLICATION_JSON })
-    @Operation(summary = "Add TPT Beneficiary", description = "Api to add third party beneficiary linked to current user.\n" + "\n"
-            + "Parameter Definitions\n" + "\n" + "name : Nick name for beneficiary, should be unique for an self service user\n" + "\n"
-            + "officeName : Office Name of beneficiary(not id)\n" + "\n" + "accountNumber : Account Number of beneficiary(not id)\n" + "\n"
-            + "transferLimit : Each transfer initiated to this account will not exceed this amount\n" + "\n" + "Example Requests:\n" + "\n"
-            + "/self/beneficiaries/tpt\n\n" + "Mandatory Fields: name, officeName, accountNumber, accountType\n\n"
-            + "Optional Fields: transferLimit")
-    @RequestBody(required = true, content = @Content(schema = @Schema(implementation = SelfBeneficiariesTPTApiResourceSwagger.PostSelfBeneficiariesTPTRequest.class)))
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = SelfBeneficiariesTPTApiResourceSwagger.PostSelfBeneficiariesTPTResponse.class))) })
-    public String add(@Parameter(hidden = true) final String apiRequestBodyAsJson) {
+  @POST
+  @Consumes({MediaType.APPLICATION_JSON})
+  @Produces({MediaType.APPLICATION_JSON})
+  @Operation(
+      summary = "Add TPT Beneficiary",
+      description =
+          "Api to add third party beneficiary linked to current user.\n"
+              + "\n"
+              + "Parameter Definitions\n"
+              + "\n"
+              + "name : Nick name for beneficiary, should be unique for an self service user\n"
+              + "\n"
+              + "officeName : Office Name of beneficiary(not id)\n"
+              + "\n"
+              + "accountNumber : Account Number of beneficiary(not id)\n"
+              + "\n"
+              + "transferLimit : Each transfer initiated to this account will not exceed this amount\n"
+              + "\n"
+              + "Example Requests:\n"
+              + "\n"
+              + "/self/beneficiaries/tpt\n\n"
+              + "Mandatory Fields: name, officeName, accountNumber, accountType\n\n"
+              + "Optional Fields: transferLimit")
+  @RequestBody(
+      required = true,
+      content =
+          @Content(
+              schema =
+                  @Schema(
+                      implementation =
+                          SelfBeneficiariesTPTApiResourceSwagger.PostSelfBeneficiariesTPTRequest
+                              .class)))
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "OK",
+        content =
+            @Content(
+                schema =
+                    @Schema(
+                        implementation =
+                            SelfBeneficiariesTPTApiResourceSwagger.PostSelfBeneficiariesTPTResponse
+                                .class)))
+  })
+  public String add(@Parameter(hidden = true) final String apiRequestBodyAsJson) {
 
-        final CommandWrapper commandRequest = new CommandWrapperBuilderSelfService().addSelfServiceBeneficiaryTPT()
-                .withJson(apiRequestBodyAsJson).build();
-        final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
-        return this.toApiJsonSerializer.serialize(result);
-    }
+    final CommandWrapper commandRequest =
+        new CommandWrapperBuilderSelfService()
+            .addSelfServiceBeneficiaryTPT()
+            .withJson(apiRequestBodyAsJson)
+            .build();
+    final CommandProcessingResult result =
+        this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+    return this.toApiJsonSerializer.serialize(result);
+  }
 
-    @PUT
-    @Path("{beneficiaryId}")
-    @Consumes({ MediaType.APPLICATION_JSON })
-    @Produces({ MediaType.APPLICATION_JSON })
-    @Operation(summary = "Update TPT Beneficiary", description = "Api to update third party beneficiary linked to current user.\n" + "\n"
-            + "Example Requests:\n" + "\n" + "/self/beneficiaries/tpt/{beneficiaryId}\n\n" + "Optional Fields: name, transferLimit")
-    @RequestBody(required = true, content = @Content(schema = @Schema(implementation = SelfBeneficiariesTPTApiResourceSwagger.PutSelfBeneficiariesTPTBeneficiaryIdRequest.class)))
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = SelfBeneficiariesTPTApiResourceSwagger.PutSelfBeneficiariesTPTBeneficiaryIdResponse.class))) })
-    public String update(@PathParam("beneficiaryId") @Parameter(description = "beneficiaryId") final Long beneficiaryId,
-            @Parameter(hidden = true) final String apiRequestBodyAsJson) {
+  @PUT
+  @Path("{beneficiaryId}")
+  @Consumes({MediaType.APPLICATION_JSON})
+  @Produces({MediaType.APPLICATION_JSON})
+  @Operation(
+      summary = "Update TPT Beneficiary",
+      description =
+          "Api to update third party beneficiary linked to current user.\n"
+              + "\n"
+              + "Example Requests:\n"
+              + "\n"
+              + "/self/beneficiaries/tpt/{beneficiaryId}\n\n"
+              + "Optional Fields: name, transferLimit")
+  @RequestBody(
+      required = true,
+      content =
+          @Content(
+              schema =
+                  @Schema(
+                      implementation =
+                          SelfBeneficiariesTPTApiResourceSwagger
+                              .PutSelfBeneficiariesTPTBeneficiaryIdRequest.class)))
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "OK",
+        content =
+            @Content(
+                schema =
+                    @Schema(
+                        implementation =
+                            SelfBeneficiariesTPTApiResourceSwagger
+                                .PutSelfBeneficiariesTPTBeneficiaryIdResponse.class)))
+  })
+  public String update(
+      @PathParam("beneficiaryId") @Parameter(description = "beneficiaryId")
+          final Long beneficiaryId,
+      @Parameter(hidden = true) final String apiRequestBodyAsJson) {
 
-        final CommandWrapper commandRequest = new CommandWrapperBuilderSelfService().updateSelfServiceBeneficiaryTPT(beneficiaryId)
-                .withJson(apiRequestBodyAsJson).build();
-        final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
-        return this.toApiJsonSerializer.serialize(result);
-    }
+    final CommandWrapper commandRequest =
+        new CommandWrapperBuilderSelfService()
+            .updateSelfServiceBeneficiaryTPT(beneficiaryId)
+            .withJson(apiRequestBodyAsJson)
+            .build();
+    final CommandProcessingResult result =
+        this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+    return this.toApiJsonSerializer.serialize(result);
+  }
 
-    @DELETE
-    @Path("{beneficiaryId}")
-    @Consumes({ MediaType.APPLICATION_JSON })
-    @Produces({ MediaType.APPLICATION_JSON })
-    @Operation(summary = "Delete TPT Beneficiary", description = "Api to delete third party beneficiary linked to current user.\n" + "\n"
-            + "Example Requests:\n" + "\n" + "/self/beneficiaries/tpt/{beneficiaryId}")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = SelfBeneficiariesTPTApiResourceSwagger.DeleteSelfBeneficiariesTPTBeneficiaryIdResponse.class))) })
-    public String delete(@PathParam("beneficiaryId") final Long beneficiaryId,
-            @Parameter(hidden = true) final String apiRequestBodyAsJson) {
+  @DELETE
+  @Path("{beneficiaryId}")
+  @Consumes({MediaType.APPLICATION_JSON})
+  @Produces({MediaType.APPLICATION_JSON})
+  @Operation(
+      summary = "Delete TPT Beneficiary",
+      description =
+          "Api to delete third party beneficiary linked to current user.\n"
+              + "\n"
+              + "Example Requests:\n"
+              + "\n"
+              + "/self/beneficiaries/tpt/{beneficiaryId}")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "OK",
+        content =
+            @Content(
+                schema =
+                    @Schema(
+                        implementation =
+                            SelfBeneficiariesTPTApiResourceSwagger
+                                .DeleteSelfBeneficiariesTPTBeneficiaryIdResponse.class)))
+  })
+  public String delete(
+      @PathParam("beneficiaryId") final Long beneficiaryId,
+      @Parameter(hidden = true) final String apiRequestBodyAsJson) {
 
-        final CommandWrapper commandRequest = new CommandWrapperBuilderSelfService().deleteSelfServiceBeneficiaryTPT(beneficiaryId)
-                .withJson(apiRequestBodyAsJson).build();
-        final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
-        return this.toApiJsonSerializer.serialize(result);
-    }
+    final CommandWrapper commandRequest =
+        new CommandWrapperBuilderSelfService()
+            .deleteSelfServiceBeneficiaryTPT(beneficiaryId)
+            .withJson(apiRequestBodyAsJson)
+            .build();
+    final CommandProcessingResult result =
+        this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+    return this.toApiJsonSerializer.serialize(result);
+  }
 
-    @GET
-    @Consumes({ MediaType.APPLICATION_JSON })
-    @Produces({ MediaType.APPLICATION_JSON })
-    @Operation(summary = "Get All TPT Beneficiary", description = "Api to get all third party beneficiary linked to current user.\n" + "\n"
-            + "Example Requests:\n" + "\n" + "/self/beneficiaries/tpt")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "OK", content = @Content(array = @ArraySchema(schema = @Schema(implementation = SelfBeneficiariesTPTApiResourceSwagger.GetSelfBeneficiariesTPTResponse.class)))) })
-    public String retrieveAll(@Context final UriInfo uriInfo) {
+  @GET
+  @Consumes({MediaType.APPLICATION_JSON})
+  @Produces({MediaType.APPLICATION_JSON})
+  @Operation(
+      summary = "Get All TPT Beneficiary",
+      description =
+          "Api to get all third party beneficiary linked to current user.\n"
+              + "\n"
+              + "Example Requests:\n"
+              + "\n"
+              + "/self/beneficiaries/tpt")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "OK",
+        content =
+            @Content(
+                array =
+                    @ArraySchema(
+                        schema =
+                            @Schema(
+                                implementation =
+                                    SelfBeneficiariesTPTApiResourceSwagger
+                                        .GetSelfBeneficiariesTPTResponse.class))))
+  })
+  public String retrieveAll(@Context final UriInfo uriInfo) {
 
-        this.context.authenticatedSelfServiceUser().validateHasReadPermission(SelfBeneficiariesTPTApiConstants.BENEFICIARY_ENTITY_NAME);
+    this.context
+        .authenticatedSelfServiceUser()
+        .validateHasReadPermission(SelfBeneficiariesTPTApiConstants.BENEFICIARY_ENTITY_NAME);
 
-        final Collection<SelfBeneficiariesTPTData> beneficiaries = this.readPlatformService.retrieveAll();
+    final Collection<SelfBeneficiariesTPTData> beneficiaries =
+        this.readPlatformService.retrieveAll();
 
-        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-        return this.toApiJsonSerializer.serialize(settings, beneficiaries, RESPONSE_DATA_PARAMETERS);
-    }
+    final ApiRequestJsonSerializationSettings settings =
+        this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+    return this.toApiJsonSerializer.serialize(settings, beneficiaries, RESPONSE_DATA_PARAMETERS);
+  }
 }

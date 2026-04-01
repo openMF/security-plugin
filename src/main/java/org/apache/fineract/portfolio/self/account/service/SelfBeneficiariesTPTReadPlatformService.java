@@ -21,9 +21,9 @@ import org.apache.fineract.useradministration.domain.AppSelfServiceUser;
 
 public interface SelfBeneficiariesTPTReadPlatformService {
 
-    Collection<SelfBeneficiariesTPTData> retrieveAll();
+  Collection<SelfBeneficiariesTPTData> retrieveAll();
 
-    Collection<SelfAccountTemplateData> retrieveTPTSelfAccountTemplateData(AppSelfServiceUser user);
+  Collection<SelfAccountTemplateData> retrieveTPTSelfAccountTemplateData(AppSelfServiceUser user);
 
-    Long getTransferLimit(Long id, Long accountId, Integer accountType);
+  Long getTransferLimit(Long id, Long accountId, Integer accountType);
 }
