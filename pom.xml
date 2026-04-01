@@ -439,7 +439,7 @@
         <plugin>
             <groupId>com.diffplug.spotless</groupId>
             <artifactId>spotless-maven-plugin</artifactId>
-            <version>3.4.0</version>
+            <version>${spotless.version}</version>
             <configuration>
                 <java>
                     <googleJavaFormat>
