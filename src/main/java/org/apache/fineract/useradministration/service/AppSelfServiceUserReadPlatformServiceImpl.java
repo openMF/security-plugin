@@ -1,20 +1,16 @@
 /**
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements. See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License. You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more contributor license
+ * agreements. See the NOTICE file distributed with this work for additional information regarding
+ * copyright ownership. The ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the License. You may obtain a
+ * copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.apache.fineract.useradministration.service;
 
@@ -26,6 +22,7 @@ import java.util.HashSet;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
+import org.apache.fineract.infrastructure.security.service.PlatformSelfServiceSecurityContext;
 import org.apache.fineract.organisation.office.data.OfficeData;
 import org.apache.fineract.organisation.office.service.OfficeReadPlatformService;
 import org.apache.fineract.organisation.staff.data.StaffData;
@@ -42,7 +39,6 @@ import org.apache.fineract.useradministration.exception.UserNotFoundException;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
-import org.apache.fineract.infrastructure.security.service.PlatformSelfServiceSecurityContext;
 
 @RequiredArgsConstructor
 public class AppSelfServiceUserReadPlatformServiceImpl implements AppSelfServiceUserReadPlatformService {
@@ -124,9 +120,10 @@ public class AppSelfServiceUserReadPlatformServiceImpl implements AppSelfService
             linkedStaff = null;
         }
 
-        AppSelfServiceUserData retUser = AppSelfServiceUserData.instance(user.getId(), user.getUsername(), user.getEmail(), user.getOffice().getId(), user.getOffice().getName(), user.getFirstname(), user.getLastname(), availableRoles, null, selectedUserRoles, linkedStaff, user.getPasswordNeverExpires(), user.isSelfServiceUser());
-                                       
-        
+        AppSelfServiceUserData retUser = AppSelfServiceUserData.instance(user.getId(), user.getUsername(), user.getEmail(),
+                user.getOffice().getId(), user.getOffice().getName(), user.getFirstname(), user.getLastname(), availableRoles, null,
+                selectedUserRoles, linkedStaff, user.getPasswordNeverExpires(), user.isSelfServiceUser());
+
         if (retUser.isSelfServiceUser()) {
             Set<ClientData> clients = new HashSet<>();
             for (AppSelfServiceUserClientMapping clientMap : user.getAppUserClientMappings()) {
@@ -171,7 +168,8 @@ public class AppSelfServiceUserReadPlatformServiceImpl implements AppSelfService
             } else {
                 linkedStaff = null;
             }
-            return AppSelfServiceUserData.instance(id, username, email, officeId, officeName, firstname, lastname, null, null, selectedRoles, linkedStaff, passwordNeverExpire, isSelfServiceUser);
+            return AppSelfServiceUserData.instance(id, username, email, officeId, officeName, firstname, lastname, null, null,
+                    selectedRoles, linkedStaff, passwordNeverExpire, isSelfServiceUser);
         }
 
         public String schema() {
@@ -179,7 +177,6 @@ public class AppSelfServiceUserReadPlatformServiceImpl implements AppSelfService
                     + " u.office_id as officeId, o.name as officeName, u.staff_id as staffId, u.is_self_service_user as isSelfServiceUser from m_appuser u "
                     + " join m_office o on o.id = u.office_id where o.hierarchy like ? and u.is_deleted=false order by u.username";
         }
-
     }
 
     private static final class AppSelfServiceUserLookupMapper implements RowMapper<AppSelfServiceUserData> {

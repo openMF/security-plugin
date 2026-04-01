@@ -1,20 +1,16 @@
 /**
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements. See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License. You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more contributor license
+ * agreements. See the NOTICE file distributed with this work for additional information regarding
+ * copyright ownership. The ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the License. You may obtain a
+ * copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.apache.fineract.useradministration.domain;
 
@@ -158,8 +154,8 @@ public class AppSelfServiceUser extends AbstractPersistableCustom<Long> implemen
 
         final boolean isSelfServiceUser = command.booleanPrimitiveValueOfParameterNamed(AppSelfServiceUserConstants.IS_SELF_SERVICE_USER);
 
-        return new AppSelfServiceUser(userOffice, user, allRoles, email, firstname, lastname, linkedStaff, passwordNeverExpire, isSelfServiceUser,
-                clients, cannotChangePassword);
+        return new AppSelfServiceUser(userOffice, user, allRoles, email, firstname, lastname, linkedStaff, passwordNeverExpire,
+                isSelfServiceUser, clients, cannotChangePassword);
     }
 
     protected AppSelfServiceUser() {
@@ -223,7 +219,6 @@ public class AppSelfServiceUser extends AbstractPersistableCustom<Long> implemen
         this.password = encodePassword;
         this.firstTimeLoginRemaining = false;
         this.lastTimePasswordUpdated = DateUtils.getBusinessLocalDate();
-
     }
 
     public void changeOffice(final Office differentOffice) {
@@ -350,6 +345,7 @@ public class AppSelfServiceUser extends AbstractPersistableCustom<Long> implemen
     /**
      * Delete is a <i>soft delete</i>. Updates flag so it wont appear in query/report results.
      *
+     * <p>
      * Any fields with unique constraints and prepended with id of record.
      */
     public void delete() {
@@ -405,7 +401,7 @@ public class AppSelfServiceUser extends AbstractPersistableCustom<Long> implemen
     }
 
     public String getDisplayName() {
-        
+
         String firstName = StringUtils.isNotBlank(this.firstname) ? this.firstname : "";
         if (StringUtils.isNotBlank(this.lastname)) {
             return firstName + " " + this.lastname;
@@ -688,13 +684,11 @@ public class AppSelfServiceUser extends AbstractPersistableCustom<Long> implemen
             if (command.isChangeInPasswordParameterNamed(passwordParamName, this.password, platformPasswordEncoder, getId())) {
 
                 passwordEncodedValue = command.passwordValueOfParameterNamed(passwordParamName, platformPasswordEncoder, getId());
-
             }
         } else if (command.hasParameter(passwordEncodedParamName)) {
             if (command.isChangeInStringParameterNamed(passwordEncodedParamName, this.password)) {
 
                 passwordEncodedValue = command.stringValueOfParameterNamed(passwordEncodedParamName);
-
             }
         }
 

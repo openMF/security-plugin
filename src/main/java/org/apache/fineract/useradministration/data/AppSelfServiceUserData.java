@@ -1,20 +1,16 @@
 /**
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements. See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License. You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more contributor license
+ * agreements. See the NOTICE file distributed with this work for additional information regarding
+ * copyright ownership. The ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the License. You may obtain a
+ * copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.apache.fineract.useradministration.data;
 
@@ -25,9 +21,7 @@ import org.apache.fineract.organisation.office.data.OfficeData;
 import org.apache.fineract.organisation.staff.data.StaffData;
 import org.apache.fineract.portfolio.client.data.ClientData;
 
-/**
- * Immutable data object for application user data.
- */
+/** Immutable data object for application user data. */
 public final class AppSelfServiceUserData {
 
     private final Long id;
@@ -47,6 +41,7 @@ public final class AppSelfServiceUserData {
 
     @SuppressWarnings("unused")
     private final Collection<OfficeData> allowedOffices;
+
     private final Collection<RoleData> availableRoles;
     private final Collection<RoleData> selfServiceRoles;
     private final Collection<RoleData> selectedRoles;
@@ -56,10 +51,10 @@ public final class AppSelfServiceUserData {
     @SuppressWarnings("unused")
     private Set<ClientData> clients;
 
-    public static AppSelfServiceUserData importInstance(Long officeId, Long staffId, String username, String firstname, String lastname, String email,
-            Boolean sendPasswordToEmail, Boolean passwordNeverExpires, List<Long> roleIds, Integer rowIndex) {
-        return new AppSelfServiceUserData(officeId, staffId, username, firstname, lastname, email, sendPasswordToEmail, passwordNeverExpires, roleIds,
-                rowIndex);
+    public static AppSelfServiceUserData importInstance(Long officeId, Long staffId, String username, String firstname, String lastname,
+            String email, Boolean sendPasswordToEmail, Boolean passwordNeverExpires, List<Long> roleIds, Integer rowIndex) {
+        return new AppSelfServiceUserData(officeId, staffId, username, firstname, lastname, email, sendPasswordToEmail,
+                passwordNeverExpires, roleIds, rowIndex);
     }
 
     private AppSelfServiceUserData(Long officeId, Long staffId, String username, String firstname, String lastname, String email,
@@ -97,7 +92,8 @@ public final class AppSelfServiceUserData {
 
     public static AppSelfServiceUserData template(final Collection<OfficeData> offices, final Collection<RoleData> availableRoles,
             final Collection<RoleData> selfServiceRoles) {
-        return new AppSelfServiceUserData(null, null, null, null, null, null, null, availableRoles, selfServiceRoles, null, offices, null, null, null);
+        return new AppSelfServiceUserData(null, null, null, null, null, null, null, availableRoles, selfServiceRoles, null, offices, null,
+                null, null);
     }
 
     public static AppSelfServiceUserData dropdown(final Long id, final String username) {
@@ -171,5 +167,4 @@ public final class AppSelfServiceUserData {
     public boolean isSelfServiceUser() {
         return this.isSelfServiceUser == null ? false : this.isSelfServiceUser;
     }
-
 }
