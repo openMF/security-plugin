@@ -117,7 +117,7 @@ public class SelfServiceSecurityConfiguration {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
-        http.csrf(csrf -> csrf.disable()).securityMatcher(API_MATCHER.matcher("/api/**")).authorizeHttpRequests(auth -> {
+        http.csrf(csrf -> csrf.disable()).securityMatcher(API_MATCHER.matcher("/api/v1/self**")).authorizeHttpRequests(auth -> {
 
             List<AuthorizationManager<RequestAuthorizationContext>> authorizationManagers = new ArrayList<>();
             authorizationManagers.add(fullyAuthenticated());

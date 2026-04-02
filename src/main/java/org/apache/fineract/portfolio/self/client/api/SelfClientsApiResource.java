@@ -72,7 +72,7 @@ import org.apache.fineract.infrastructure.security.service.PlatformSecurityConte
 import org.apache.fineract.portfolio.client.api.ClientApiConstants;
 import org.apache.fineract.portfolio.client.api.ClientChargesApiResource;
 import org.apache.fineract.portfolio.client.api.ClientTransactionsApiResource;
-import org.apache.fineract.portfolio.client.api.SelfServiceClientsApiResource;
+import org.apache.fineract.portfolio.client.api.ClientsApiResource;
 import org.apache.fineract.portfolio.client.exception.ClientNotFoundException;
 import org.apache.fineract.portfolio.self.client.data.SelfClientDataValidator;
 import org.apache.fineract.portfolio.self.client.service.AppuserClientMapperReadService;
@@ -93,7 +93,7 @@ import org.springframework.stereotype.Component;
 public class SelfClientsApiResource {
 
   private final PlatformSecurityContext context;
-  private final SelfServiceClientsApiResource clientApiResource;
+  private final ClientsApiResource clientApiResource;
   private final ClientChargesApiResource clientChargesApiResource;
   private final ClientTransactionsApiResource clientTransactionsApiResource;
   private final AppuserClientMapperReadService appUserClientMapperReadService;
