@@ -33,23 +33,21 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class SelfServiceRegistrationApiResource {
 
-  private final SelfServiceRegistrationWritePlatformService selfServiceRegistrationWritePlatformService;
-  private final DefaultToApiJsonSerializer<AppSelfServiceUser> toApiJsonSerializer;
+    private final SelfServiceRegistrationWritePlatformService selfServiceRegistrationWritePlatformService;
+    private final DefaultToApiJsonSerializer<AppSelfServiceUser> toApiJsonSerializer;
 
-  @POST
-  @Produces({MediaType.APPLICATION_JSON})
-  public String createSelfServiceRegistrationRequest(final String apiRequestBodyAsJson) {
-    this.selfServiceRegistrationWritePlatformService.createRegistrationRequest(apiRequestBodyAsJson);
-    return SelfServiceApiConstants.createRequestSuccessMessage;
-  }
+    @POST
+    @Produces({MediaType.APPLICATION_JSON})
+    public String createSelfServiceRegistrationRequest(final String apiRequestBodyAsJson) {
+        this.selfServiceRegistrationWritePlatformService.createRegistrationRequest(apiRequestBodyAsJson);
+        return SelfServiceApiConstants.createRequestSuccessMessage;
+    }
 
-  @POST
-  @Path("user")
-  @Produces({MediaType.APPLICATION_JSON})
-  public String createSelfServiceUser(final String apiRequestBodyAsJson) {
-    AppSelfServiceUser user =
-        this.selfServiceRegistrationWritePlatformService.createSelfServiceUser(
-            apiRequestBodyAsJson);
-    return this.toApiJsonSerializer.serialize(CommandProcessingResult.resourceResult(user.getId()));
-  }
+    @POST
+    @Path("user")
+    @Produces({MediaType.APPLICATION_JSON})
+    public String createSelfServiceUser(final String apiRequestBodyAsJson) {
+        AppSelfServiceUser user = this.selfServiceRegistrationWritePlatformService.createSelfServiceUser(apiRequestBodyAsJson);
+        return this.toApiJsonSerializer.serialize(CommandProcessingResult.resourceResult(user.getId()));
+    }
 }
