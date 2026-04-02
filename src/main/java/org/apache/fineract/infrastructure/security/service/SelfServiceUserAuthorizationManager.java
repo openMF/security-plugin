@@ -44,6 +44,7 @@ public class SelfServiceUserAuthorizationManager implements AuthorizationManager
                 log.warn("SELF SERVICE REQUEST NOT ALLOWED");
                 return new AuthorizationDecision(false);
             }
+            log.warn("SELF SERVICE REQUEST ALLOWED");
         }
         return new AuthorizationDecision(true);
     }
