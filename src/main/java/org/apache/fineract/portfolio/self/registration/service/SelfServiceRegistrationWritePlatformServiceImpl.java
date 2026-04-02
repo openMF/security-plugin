@@ -92,17 +92,14 @@ public class SelfServiceRegistrationWritePlatformServiceImpl
     Gson gson = new Gson();
     final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
     final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
-    final DataValidatorBuilder baseDataValidator =
-        new DataValidatorBuilder(dataValidationErrors).resource("user");
+    final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource("user");
     this.fromApiJsonHelper.checkForUnsupportedParameters(
         typeOfMap,
         apiRequestBodyAsJson,
         SelfServiceApiConstants.REGISTRATION_REQUEST_DATA_PARAMETERS);
     JsonElement element = gson.fromJson(apiRequestBodyAsJson.toString(), JsonElement.class);
 
-    String accountNumber =
-        this.fromApiJsonHelper.extractStringNamed(
-            SelfServiceApiConstants.accountNumberParamName, element);
+    String accountNumber = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.accountNumberParamName, element);
     baseDataValidator
         .reset()
         .parameter(SelfServiceApiConstants.accountNumberParamName)
@@ -111,19 +108,23 @@ public class SelfServiceRegistrationWritePlatformServiceImpl
         .notBlank()
         .notExceedingLengthOf(100);
 
-    String firstName =
-        this.fromApiJsonHelper.extractStringNamed(
-            SelfServiceApiConstants.firstNameParamName, element);
+    String firstName = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.firstNameParamName, element);
     baseDataValidator
         .reset()
         .parameter(SelfServiceApiConstants.firstNameParamName)
         .value(firstName)
         .notBlank()
         .notExceedingLengthOf(100);
+    
+    String middleName = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.middleNameParamName, element);
+    baseDataValidator
+        .reset()
+        .parameter(SelfServiceApiConstants.middleNameParamName)
+        .value(middleName)
+        .notBlank()
+        .notExceedingLengthOf(100);
 
-    String lastName =
-        this.fromApiJsonHelper.extractStringNamed(
-            SelfServiceApiConstants.lastNameParamName, element);
+    String lastName = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.lastNameParamName, element);
     baseDataValidator
         .reset()
         .parameter(SelfServiceApiConstants.lastNameParamName)
@@ -142,11 +143,8 @@ public class SelfServiceRegistrationWritePlatformServiceImpl
         .notExceedingLengthOf(100);
 
     // validate password policy
-    String password =
-        this.fromApiJsonHelper.extractStringNamed(
-            SelfServiceApiConstants.passwordParamName, element);
-    final PasswordValidationPolicy validationPolicy =
-        this.passwordValidationPolicy.findActivePasswordValidationPolicy();
+    String password = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.passwordParamName, element);
+    final PasswordValidationPolicy validationPolicy = this.passwordValidationPolicy.findActivePasswordValidationPolicy();
     final String regex = validationPolicy.getRegex();
     final String description = validationPolicy.getDescription();
     baseDataValidator
@@ -200,7 +198,8 @@ public class SelfServiceRegistrationWritePlatformServiceImpl
         firstName,
         lastName,
         mobileNumber,
-        isEmailAuthenticationMode);
+        isEmailAuthenticationMode,
+        middleName);
 
     String authenticationToken = randomAuthorizationTokenGeneration();
     Client client = this.clientRepository.getClientByAccountNumber(accountNumber);
@@ -310,13 +309,12 @@ public class SelfServiceRegistrationWritePlatformServiceImpl
       String firstName,
       String lastName,
       String mobileNumber,
-      boolean isEmailAuthenticationMode) {
+      boolean isEmailAuthenticationMode,
+      String middleName) {
     if (!dataValidationErrors.isEmpty()) {
       throw new PlatformApiDataValidationException(dataValidationErrors);
     }
-    boolean isClientExist =
-        this.selfServiceRegistrationReadPlatformService.isClientExist(
-            accountNumber, firstName, lastName, mobileNumber, isEmailAuthenticationMode);
+    boolean isClientExist = this.selfServiceRegistrationReadPlatformService.isClientExist(accountNumber, firstName, middleName, lastName, mobileNumber, isEmailAuthenticationMode);
     if (!isClientExist) {
       throw new ClientNotFoundException();
     }

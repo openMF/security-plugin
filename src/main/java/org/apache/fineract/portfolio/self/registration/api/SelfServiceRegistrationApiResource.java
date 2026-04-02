@@ -33,15 +33,13 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class SelfServiceRegistrationApiResource {
 
-  private final SelfServiceRegistrationWritePlatformService
-      selfServiceRegistrationWritePlatformService;
+  private final SelfServiceRegistrationWritePlatformService selfServiceRegistrationWritePlatformService;
   private final DefaultToApiJsonSerializer<AppSelfServiceUser> toApiJsonSerializer;
 
   @POST
   @Produces({MediaType.APPLICATION_JSON})
   public String createSelfServiceRegistrationRequest(final String apiRequestBodyAsJson) {
-    this.selfServiceRegistrationWritePlatformService.createRegistrationRequest(
-        apiRequestBodyAsJson);
+    this.selfServiceRegistrationWritePlatformService.createRegistrationRequest(apiRequestBodyAsJson);
     return SelfServiceApiConstants.createRequestSuccessMessage;
   }
 

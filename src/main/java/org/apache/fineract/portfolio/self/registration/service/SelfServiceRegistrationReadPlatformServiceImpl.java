@@ -25,18 +25,21 @@ public class SelfServiceRegistrationReadPlatformServiceImpl
 
   @Override
   public boolean isClientExist(
-      String accountNumber,
-      String firstName,
-      String lastName,
-      String mobileNumber,
-      boolean isEmailAuthenticationMode) {
-    String sql =
-        "select count(*) from m_client where account_no = ? and firstname = ? and lastname = ?";
-    Object[] params = new Object[] {accountNumber, firstName, lastName};
+                            String accountNumber,
+                            String firstName,
+                            String middleName,
+                            String lastName,
+                            String mobileNumber,
+                            boolean isEmailAuthenticationMode) {
+      
+    String sql = "select count(*) from m_client where account_no = ? and firstname = ? and middleName = ? and lastName=? ";
+    Object[] params = new Object[] {accountNumber, firstName, middleName, lastName};
+    
     if (!isEmailAuthenticationMode) {
       sql = sql + " and mobile_no = ?";
-      params = new Object[] {accountNumber, firstName, lastName, mobileNumber};
+      params = new Object[] {accountNumber, firstName, middleName, lastName, mobileNumber};
     }
+    
     int count = this.jdbcTemplate.queryForObject(sql, Integer.class, params);
     return count != 0;
   }

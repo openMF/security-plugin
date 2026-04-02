@@ -19,6 +19,7 @@ public interface SelfServiceRegistrationReadPlatformService {
   boolean isClientExist(
       String accountNumber,
       String firstName,
+      String middleName,
       String lastName,
       String mobileNumber,
       boolean isEmailAuthenticationMode);
