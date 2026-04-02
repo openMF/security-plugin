@@ -132,9 +132,7 @@ public class SelfServiceRegistrationWritePlatformServiceImpl
         .notBlank()
         .notExceedingLengthOf(100);
 
-    String username =
-        this.fromApiJsonHelper.extractStringNamed(
-            SelfServiceApiConstants.usernameParamName, element);
+    String username = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.usernameParamName, element);
     baseDataValidator
         .reset()
         .parameter(SelfServiceApiConstants.usernameParamName)
@@ -154,9 +152,7 @@ public class SelfServiceRegistrationWritePlatformServiceImpl
         .matchesRegularExpression(regex, description)
         .notExceedingLengthOf(100);
 
-    String authenticationMode =
-        this.fromApiJsonHelper.extractStringNamed(
-            SelfServiceApiConstants.authenticationModeParamName, element);
+    String authenticationMode = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.authenticationModeParamName, element);
     baseDataValidator
         .reset()
         .parameter(SelfServiceApiConstants.authenticationModeParamName)
@@ -166,8 +162,7 @@ public class SelfServiceRegistrationWritePlatformServiceImpl
             SelfServiceApiConstants.emailModeParamName,
             SelfServiceApiConstants.mobileModeParamName);
 
-    String email =
-        this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.emailParamName, element);
+    String email = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.emailParamName, element);
     baseDataValidator
         .reset()
         .parameter(SelfServiceApiConstants.emailParamName)
@@ -176,14 +171,11 @@ public class SelfServiceRegistrationWritePlatformServiceImpl
         .notBlank()
         .notExceedingLengthOf(100);
 
-    boolean isEmailAuthenticationMode =
-        authenticationMode.equalsIgnoreCase(SelfServiceApiConstants.emailModeParamName);
+    boolean isEmailAuthenticationMode = authenticationMode.equalsIgnoreCase(SelfServiceApiConstants.emailModeParamName);
     String mobileNumber = null;
     if (!isEmailAuthenticationMode) {
-      mobileNumber =
-          this.fromApiJsonHelper.extractStringNamed(
-              SelfServiceApiConstants.mobileNumberParamName, element);
-      baseDataValidator
+        mobileNumber = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.mobileNumberParamName, element);
+        baseDataValidator
           .reset()
           .parameter(SelfServiceApiConstants.mobileNumberParamName)
           .value(mobileNumber)
@@ -196,24 +188,24 @@ public class SelfServiceRegistrationWritePlatformServiceImpl
         dataValidationErrors,
         accountNumber,
         firstName,
+        middleName,
         lastName,
         mobileNumber,
-        isEmailAuthenticationMode,
-        middleName);
+        isEmailAuthenticationMode);
 
     String authenticationToken = randomAuthorizationTokenGeneration();
     Client client = this.clientRepository.getClientByAccountNumber(accountNumber);
     SelfServiceRegistration selfServiceRegistration =
-        SelfServiceRegistration.instance(
-            client,
-            accountNumber,
-            firstName,
-            lastName,
-            mobileNumber,
-            email,
-            authenticationToken,
-            username,
-            password);
+                                                SelfServiceRegistration.instance(
+                                                    client,
+                                                    accountNumber,
+                                                    firstName,
+                                                    lastName,
+                                                    mobileNumber,
+                                                    email,
+                                                    authenticationToken,
+                                                    username,
+                                                    password);
     this.selfServiceRegistrationRepository.saveAndFlush(selfServiceRegistration);
     sendAuthorizationToken(selfServiceRegistration, isEmailAuthenticationMode);
     return selfServiceRegistration;
@@ -307,10 +299,10 @@ public class SelfServiceRegistrationWritePlatformServiceImpl
       final List<ApiParameterError> dataValidationErrors,
       String accountNumber,
       String firstName,
+      String middleName,
       String lastName,
       String mobileNumber,
-      boolean isEmailAuthenticationMode,
-      String middleName) {
+      boolean isEmailAuthenticationMode) {
     if (!dataValidationErrors.isEmpty()) {
       throw new PlatformApiDataValidationException(dataValidationErrors);
     }
