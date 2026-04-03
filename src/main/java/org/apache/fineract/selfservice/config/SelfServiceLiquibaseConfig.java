@@ -43,7 +43,7 @@ public class SelfServiceLiquibaseConfig {
                 SpringLiquibase liquibase = new SpringLiquibase();
                 liquibase.setDataSource(routingDataSource);
                 
-                // Ensure this matches the exact path of your plugin's master changelog
+                // Ensure this matches the exact path of the plugin's master changelog
                 liquibase.setChangeLog("classpath:/db/changelog/tenant/module/selfservice/module-changelog-master.xml");
                 liquibase.setShouldRun(true);
                 
