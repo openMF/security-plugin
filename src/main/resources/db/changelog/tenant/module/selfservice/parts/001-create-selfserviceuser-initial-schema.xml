@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+          http://www.liquibase.org/xml/ns/dbchangelog
+          http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+    
+    <changeSet author="fineract" id="30026">
+        <createTable tableName="m_appselfserviceuser">
+            <column autoIncrement="true" name="id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column defaultValueBoolean="false" name="is_deleted" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="NULL" name="office_id" type="BIGINT"/>
+            <column defaultValueComputed="NULL" name="staff_id" type="BIGINT"/>
+            <column name="username" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="firstname" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="lastname" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="password" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="email" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="firsttime_login_remaining" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+            <column name="nonexpired" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+            <column name="nonlocked" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+            <column name="nonexpired_credentials" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+            <column name="enabled" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueDate="1970-01-01" name="last_time_password_updated" type="date">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueNumeric="0" name="password_never_expires"
+                    remarks="define if the password, should be check for validity period or not" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueBoolean="false" name="is_self_service_user" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueBoolean="false" name="cannot_change_password" type="boolean"/>
+        </createTable>
+        <addUniqueConstraint columnNames="username" constraintName="selfserviceusername_org" tableName="m_appselfserviceuser"/>
+    </changeSet>
+    <changeSet author="fineract" id="30027">
+        <createTable tableName="m_appselfserviceuser_previous_password">
+            <column autoIncrement="true" name="id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="user_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="password" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="removal_date" type="date">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <!--
+    <changeSet author="fineract" id="30028">
+        <createTable tableName="m_appselfserviceuser_role">
+            <column name="appuser_id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="role_id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+        </createTable>
+    </changeSet>          
+    -->
+    <changeSet author="fineract" id="300162">
+        <createTable tableName="m_selfservice_beneficiaries_tpt">
+            <column autoIncrement="true" name="id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="app_user_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="office_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="client_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="account_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="account_type" type="SMALLINT">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueNumeric="0" name="transfer_limit" type="BIGINT"/>
+            <column defaultValueBoolean="false" name="is_active" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="fineract" id="300163">
+        <createTable tableName="m_selfservice_user_client_mapping">
+            <column autoIncrement="true" name="id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="appuser_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="client_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="fineract" id="300224">
+        <addUniqueConstraint columnNames="appuser_id, client_id" constraintName="appuser_id_client_id"
+                             tableName="m_selfservice_user_client_mapping"/>
+        <addUniqueConstraint columnNames="client_id" constraintName="unique_self_client"
+                             tableName="m_selfservice_user_client_mapping"/>
+    </changeSet>
+    <changeSet author="fineract" id="300237">
+        <addUniqueConstraint columnNames="name, app_user_id, is_active" constraintName="uk_m_selfservice_beneficiaries_tpt_name"
+                             tableName="m_selfservice_beneficiaries_tpt"/>
+    </changeSet>
+    <changeSet author="fineract" id="300947">
+        <addForeignKeyConstraint baseColumnNames="appuser_id" baseTableName="m_selfservice_user_client_mapping"
+                                 constraintName="m_selfservice_appuser_id" deferrable="false" initiallyDeferred="false"
+                                 onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="id"
+                                 referencedTableName="m_appselfserviceuser" validate="true"/>
+    </changeSet>
+    <changeSet author="fineract" id="300948">
+        <addForeignKeyConstraint baseColumnNames="client_id" baseTableName="m_selfservice_user_client_mapping"
+                                 constraintName="m_selfservice_client_id" deferrable="false" initiallyDeferred="false"
+                                 onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="id"
+                                 referencedTableName="m_client" validate="true"/>
+    </changeSet>
+
+</databaseChangeLog>

@@ -34,6 +34,12 @@
   </properties>
 
   <dependencies>
+      <!-- Source: https://mvnrepository.com/artifact/org.liquibase/liquibase-core -->
+<dependency>
+    <groupId>org.liquibase</groupId>
+    <artifactId>liquibase-core</artifactId>
+    <scope>compile</scope>
+</dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-actuator</artifactId>
