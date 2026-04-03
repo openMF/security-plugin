@@ -20,7 +20,6 @@ import java.util.Set;
 import org.apache.fineract.organisation.office.data.OfficeData;
 import org.apache.fineract.organisation.staff.data.StaffData;
 import org.apache.fineract.portfolio.client.data.ClientData;
-import org.apache.fineract.useradministration.data.RoleData;
 
 /** Immutable data object for application user data. */
 public final class AppSelfServiceUserData {

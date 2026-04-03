@@ -48,8 +48,6 @@ import org.apache.fineract.infrastructure.security.service.RandomPasswordGenerat
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.organisation.staff.domain.Staff;
 import org.apache.fineract.portfolio.client.domain.Client;
-import org.apache.fineract.useradministration.domain.Permission;
-import org.apache.fineract.useradministration.domain.Role;
 import org.apache.fineract.useradministration.service.AppSelfServiceUserConstants;
 import org.apache.fineract.useradministration.service.AppUserConstants;
 import org.springframework.security.core.GrantedAuthority;
