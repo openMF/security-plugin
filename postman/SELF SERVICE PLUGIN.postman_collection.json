@@ -1,0 +1,1743 @@
+{
+  "info": {
+    "_postman_id": "5fd66966-79ba-4721-8f2e-c072b71ae22b",
+    "name": "SELF SERVICE PLUGIN",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "17038095",
+    "_collection_link": "https://go.postman.co/collection/17038095-5fd66966-79ba-4721-8f2e-c072b71ae22b?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "SELF SERVICE (MOBILE OR WEB BANKING) - LOCALHOST Copy 2",
+      "item": [
+        {
+          "name": "USER",
+          "item": [
+            {
+              "name": "00. CREATE PERSON",
+              "request": {
+                "auth": {
+                  "type": "basic",
+                  "basic": [
+                    {
+                      "key": "username",
+                      "value": "mifos",
+                      "type": "string"
+                    },
+                    {
+                      "key": "password",
+                      "value": "password",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "fineract-platform-tenantid",
+                    "value": "default",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"officeId\": 1,\n    \"legalFormId\": 1,\n    \"isStaff\": false,\n    \"active\": true,\n    \"submittedOnDate\": \"17 febrero 2026\",\n    \"firstname\": \"PEDRO\",\n    \"middlename\": \"MARMOL\",\n    \"lastname\": \"PEREZ\",\n    \"activationDate\": \"17 febrero 2026\",\n    \"familyMembers\": [],\n    \"dateFormat\": \"dd MMMM yyyy\",\n    \"locale\": \"es\",\n    \"datatables\": [\n        {\n            \"registeredTableName\": \"PERFIL_TRANSACCIONAL\",\n            \"data\": {\n                \"locale\": \"es\",\n                \"NUMERO_DE_REMESAS\": \"\",\n                \"MONTO_TRANSACCIONAL\": 0,\n                \"NUMERO_REMITENTES\": 0\n            }\n        },\n        {\n            \"registeredTableName\": \"DATOS_SOCIO_ECONOMICOS\",\n            \"data\": {\n                \"locale\": \"es\",\n                \"OCUPACION\": \"\",\n                \"ACTIVIDAD_ECONOMICA\": \"\"\n            }\n        }\n    ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/clients",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "clients"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "01. REGISTER SELF SERVICE FOR EXISTING CLIENT",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "default",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"username\": \"pedro.marmol\",\n    \"accountNumber\": \"000000036\",\n    \"password\": \"MifosInitiative2026#\",\n    \"firstName\": \"PEDRO\",\n    \"middleName\": \"MARMOL\",\n    \"lastName\": \"PEREZ\",\n    \"mobileNumber\": \"5522649498\",    \n    \"email\": \"vic_romero@hotmail.com\",\n    \"authenticationMode\": \"email\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/registration",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "registration"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "02. CONFIRM SELF SERVICE USER REGISTRATION",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "default",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"requestId\": 2,\n    \"authenticationToken\": \"9076\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/registration/user",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "registration",
+                    "user"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "03 LOGIN",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "default",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"password\": \"ApoloCapital2026#\",\n    \"username\": \"roberto@gmail.com\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/authentication",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "authentication"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "BENEFICIARIES",
+          "item": [
+            {
+              "name": "01. GET BENEFICIARIES TEMPLATE",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "default",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/beneficiaries/tpt",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "beneficiaries",
+                    "tpt"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "02. ADD BENEFICIARY - SAVINGS",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "default",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"locale\": \"en\",\n\t\"name\": \"EMANUEL CASTILLO\",\n\t\"officeName\": \"Head Office\",\n\t\"accountNumber\": \"000000059\",\n\t\"accountType\": 2,\n\t\"transferLimit\": 1000\n\n}\n",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/beneficiaries/tpt",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "beneficiaries",
+                    "tpt"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "03. ADD BENEFICIARY - LOAN",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "default",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"locale\": \"en\",\n\t\"name\": \"JHON WAULT - LOAN\",\n\t\"officeName\": \"Head Office\",\n\t\"accountNumber\": \"000000001\",\n\t\"accountType\": 2,\n\t\"transferLimit\": 1000\n\n}\n",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/beneficiaries/tpt",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "beneficiaries",
+                    "tpt"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "04. UPDATE BENEFICIARY - SAVINGS",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "default",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n\t\"name\": \"JHON WAULT - SAVINGS\",\n\t\"transferLimit\": 500\n}\n",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/beneficiaries/tpt/1",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "beneficiaries",
+                    "tpt",
+                    "1"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "05. UPDATE BENEFICIARY - LOAN",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "default",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n\t\"name\": \"JHON WAULT - LOAN\",\n\t\"transferLimit\": 200\n}\n",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/beneficiaries/tpt/2",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "beneficiaries",
+                    "tpt",
+                    "2"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "06. DELETE BENEFICIARY",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "default",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/beneficiaries/tpt/68",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "beneficiaries",
+                    "tpt",
+                    "68"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "LOANS",
+          "item": [
+            {
+              "name": "01. GET LIST OF LOAN PRODUCTS",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "default",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/loanproducts?clientId=104",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "loanproducts"
+                  ],
+                  "query": [
+                    {
+                      "key": "clientId",
+                      "value": "104"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "02. GET DETAIL OF A LOAN PRODUCT",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "default",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/loanproducts?clientId=104&productId=1",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "loanproducts"
+                  ],
+                  "query": [
+                    {
+                      "key": "clientId",
+                      "value": "104"
+                    },
+                    {
+                      "key": "productId",
+                      "value": "1"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "03. GET LOAN ACCOUNT DETAILS",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "default",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/loans/53",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "loans",
+                    "53"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "04. GET LOAN ACCOUNT TRANSACTION DETAIL",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "default",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/loans/18/transactions/68",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "loans",
+                    "18",
+                    "transactions",
+                    "68"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "05. GET LOAN ACCOUNT CHARGES",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "default",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/loans/18/charges",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "loans",
+                    "18",
+                    "charges"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "06. GET LOAN ACCOUNT TEMPLATE",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "default",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/loans/template?clientId=104&productId=1&templateType=individual",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "loans",
+                    "template"
+                  ],
+                  "query": [
+                    {
+                      "key": "clientId",
+                      "value": "104"
+                    },
+                    {
+                      "key": "productId",
+                      "value": "1"
+                    },
+                    {
+                      "key": "templateType",
+                      "value": "individual"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "07. REQUEST A NEW LOAN ACCOUNT (CALCULATE LOAN REPAYMENT CALENDAR)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "default",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"productId\": 1,\n    \"loanOfficerId\": \"\",\n    \"loanPurposeId\": \"\",\n    \"fundId\": \"\",\n    \"submittedOnDate\": \"30 August 2025\",\n    \"expectedDisbursementDate\": \"31 August 2025\",\n    \"externalId\": \"\",\n    \"linkAccountId\": \"\",\n    \"createStandingInstructionAtDisbursement\": \"\",\n    \"loanTermFrequency\": 12,\n    \"loanTermFrequencyType\": 2,\n    \"numberOfRepayments\": 12,\n    \"repaymentEvery\": 1,\n    \"repaymentFrequencyType\": 2,\n    \"repaymentFrequencyNthDayType\": \"\",\n    \"repaymentFrequencyDayOfWeekType\": \"\",\n    \"repaymentsStartingFromDate\": null,\n    \"interestChargedFromDate\": null,\n    \"interestType\": 0,\n    \"isEqualAmortization\": false,\n    \"amortizationType\": 1,\n    \"interestCalculationPeriodType\": 1,\n    \"loanIdToClose\": \"\",\n    \"isTopup\": \"\",\n    \"transactionProcessingStrategyCode\": \"creocore-strategy\",\n    \"interestRateFrequencyType\": 2,\n    \"interestRatePerPeriod\": 10,\n    \"charges\": [],\n    \"collateral\": [],\n    \"dateFormat\": \"dd MMMM yyyy\",\n    \"locale\": \"en\",\n    \"clientId\": 104,\n    \"loanType\": \"individual\",\n    \"principal\": 10000,\n    \"allowPartialPeriodInterestCalcualtion\": false\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/loans?command=calculateLoanSchedule",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "loans"
+                  ],
+                  "query": [
+                    {
+                      "key": "command",
+                      "value": "calculateLoanSchedule"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "08. REQUEST A NEW LOAN ACCOUNT (SUBMIT AN APPLICATION)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "default",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"productId\": 1,\n    \"loanOfficerId\": \"\",\n    \"loanPurposeId\": \"\",\n    \"fundId\": \"\",\n    \"submittedOnDate\": \"30 August 2025\",\n    \"expectedDisbursementDate\": \"31 August 2025\",\n    \"externalId\": \"\",\n    \"linkAccountId\": \"\",\n    \"createStandingInstructionAtDisbursement\": \"\",\n    \"loanTermFrequency\": 12,\n    \"loanTermFrequencyType\": 2,\n    \"numberOfRepayments\": 12,\n    \"repaymentEvery\": 1,\n    \"repaymentFrequencyType\": 2,\n    \"repaymentFrequencyNthDayType\": \"\",\n    \"repaymentFrequencyDayOfWeekType\": \"\",\n    \"repaymentsStartingFromDate\": null,\n    \"interestChargedFromDate\": null,\n    \"interestType\": 0,\n    \"isEqualAmortization\": false,\n    \"amortizationType\": 1,\n    \"interestCalculationPeriodType\": 1,\n    \"loanIdToClose\": \"\",\n    \"isTopup\": \"\",\n    \"transactionProcessingStrategyCode\": \"creocore-strategy\",\n    \"interestRateFrequencyType\": 2,\n    \"interestRatePerPeriod\": 10,\n    \"charges\": [],\n    \"collateral\": [],\n    \"dateFormat\": \"dd MMMM yyyy\",\n    \"locale\": \"en\",\n    \"clientId\": 104,\n    \"loanType\": \"individual\",\n    \"principal\": 10000,\n    \"allowPartialPeriodInterestCalcualtion\": false\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/loans",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "loans"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "09. UPDATE A NEW LOAN ACCOUNT (UPDATE AN APPLICATION)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "default",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"productId\": 1,\n    \"loanOfficerId\": \"\",\n    \"loanPurposeId\": \"\",\n    \"fundId\": \"\",\n    \"submittedOnDate\": \"30 August 2025\",\n    \"expectedDisbursementDate\": \"31 August 2025\",\n    \"externalId\": \"\",\n    \"linkAccountId\": \"\",\n    \"createStandingInstructionAtDisbursement\": \"\",\n    \"loanTermFrequency\": 12,\n    \"loanTermFrequencyType\": 2,\n    \"numberOfRepayments\": 12,\n    \"repaymentEvery\": 1,\n    \"repaymentFrequencyType\": 2,\n    \"repaymentFrequencyNthDayType\": \"\",\n    \"repaymentFrequencyDayOfWeekType\": \"\",\n    \"repaymentsStartingFromDate\": null,\n    \"interestChargedFromDate\": null,\n    \"interestType\": 0,\n    \"isEqualAmortization\": false,\n    \"amortizationType\": 1,\n    \"interestCalculationPeriodType\": 1,\n    \"loanIdToClose\": \"\",\n    \"isTopup\": \"\",\n    \"transactionProcessingStrategyCode\": \"creocore-strategy\",\n    \"interestRateFrequencyType\": 2,\n    \"interestRatePerPeriod\": 10,\n    \"charges\": [],\n    \"collateral\": [],\n    \"dateFormat\": \"dd MMMM yyyy\",\n    \"locale\": \"en\",\n    \"clientId\": 104,\n    \"loanType\": \"individual\",\n    \"principal\": 10000,\n    \"allowPartialPeriodInterestCalcualtion\": false\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/loans/52",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "loans",
+                    "52"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "10. WITHDRAWN LOAN ACCOUNT APPLICATION",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "default",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"withdrawnOnDate\": \"30 August 2025\",\n    \"note\": \"CANCEL BY CLIENT\",\n    \"dateFormat\": \"dd MMMM yyyy\",\n    \"locale\": \"en\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/loans/52?command=withdrawnByApplicant",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "loans",
+                    "52"
+                  ],
+                  "query": [
+                    {
+                      "key": "command",
+                      "value": "withdrawnByApplicant"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "SAVINGS",
+          "item": [
+            {
+              "name": "01. GET LIST OF SAVINGS PRODUCTS",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "default",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/savingsproducts?clientId=104",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "savingsproducts"
+                  ],
+                  "query": [
+                    {
+                      "key": "clientId",
+                      "value": "104"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "02. GET DETAIL OF SAVINGS PRODUCTS",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "default",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/savingsproducts?clientId=104&productId=1",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "savingsproducts"
+                  ],
+                  "query": [
+                    {
+                      "key": "clientId",
+                      "value": "104"
+                    },
+                    {
+                      "key": "productId",
+                      "value": "1"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "03. GET DETAIL OF SAVINGS ACCOUNT",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "default",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/savingsaccounts/58",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "savingsaccounts",
+                    "58"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "04. GET LIST SAVINGS ACCOUNT TRANSACTIONS",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "default",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/savingsaccounts/58?associations=transactions",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "savingsaccounts",
+                    "58"
+                  ],
+                  "query": [
+                    {
+                      "key": "associations",
+                      "value": "transactions"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "05. GET DETAIL OF SAVINGS ACCOUNT TRANSACTION",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "default",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/savingsaccounts/58/transactions/550",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "savingsaccounts",
+                    "58",
+                    "transactions",
+                    "550"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "06. GET LIST OF SAVINGS ACCOUNT CHARGES",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "default",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/savingsaccounts/58/charges",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "savingsaccounts",
+                    "58",
+                    "charges"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "07. GET SAVINGS ACCOUNT TEMPLATE",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "default",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/savingsaccounts/template?clientId=104&productId=1",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "savingsaccounts",
+                    "template"
+                  ],
+                  "query": [
+                    {
+                      "key": "clientId",
+                      "value": "104"
+                    },
+                    {
+                      "key": "productId",
+                      "value": "1"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "08. REQUEST A NEW SAVINGS ACCOUNT (SUBMIT APPLICATIONS)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "default",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"productId\": 5,\n    \"submittedOnDate\": \"30 August 2025\",\n    \"fieldOfficerId\": \"\",\n    \"externalId\": \"\",\n    \"nominalAnnualInterestRate\": 0,\n    \"interestCompoundingPeriodType\": 1,\n    \"interestPostingPeriodType\": 4,\n    \"interestCalculationType\": 1,\n    \"interestCalculationDaysInYearType\": 365,\n    \"withdrawalFeeForTransfers\": false,\n    \"lockinPeriodFrequency\": \"\",\n    \"lockinPeriodFrequencyType\": \"\",\n    \"allowOverdraft\": false,\n    \"enforceMinRequiredBalance\": false,\n    \"charges\": [],\n    \"dateFormat\": \"dd MMMM yyyy\",\n    \"monthDayFormat\": \"dd MMMM\",\n    \"locale\": \"en\",\n    \"clientId\": 104\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/savingsaccounts",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "savingsaccounts"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "09. UPDATE A NEW SAVINGS ACCOUNT APPLICATION",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "default",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"productId\": 5,\n    \"submittedOnDate\": \"30 August 2025\",\n    \"fieldOfficerId\": \"\",\n    \"externalId\": \"\",\n    \"nominalAnnualInterestRate\": 0,\n    \"interestCompoundingPeriodType\": 1,\n    \"interestPostingPeriodType\": 4,\n    \"interestCalculationType\": 1,\n    \"interestCalculationDaysInYearType\": 365,\n    \"withdrawalFeeForTransfers\": false,\n    \"lockinPeriodFrequency\": \"\",\n    \"lockinPeriodFrequencyType\": \"\",\n    \"allowOverdraft\": false,\n    \"enforceMinRequiredBalance\": false,\n    \"charges\": [],\n    \"dateFormat\": \"dd MMMM yyyy\",\n    \"monthDayFormat\": \"dd MMMM\",\n    \"locale\": \"en\",\n    \"clientId\": 104\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/savingsaccounts/62",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "savingsaccounts",
+                    "62"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "TRANSFERS",
+          "item": [
+            {
+              "name": "01. TRANSFER TO THIRD PARTY (TEMPLATE)",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "default",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/accounttransfers/template?type=tpt",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "accounttransfers",
+                    "template"
+                  ],
+                  "query": [
+                    {
+                      "key": "type",
+                      "value": "tpt"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "02. TRANSFER BETWEEN ACCOUNTS",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "default",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"toOfficeId\": 1,\n    \"toClientId\": 104,\n    \"toAccountType\": 2,\n    \"toAccountId\": \"000000025\",\n    \"transferAmount\": 10.53,\n    \"transferDate\": \"30 August 2025\",\n    \"transferDescription\": \"TV PAYMENT\",\n    \"dateFormat\": \"dd MMMM yyyy\",\n    \"locale\": \"en\",\n    \"fromAccountId\": \"000000058\",\n    \"fromAccountType\": 2,\n    \"fromClientId\": 104,\n    \"fromOfficeId\": 1\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/accounttransfers",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "accounttransfers"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "03. TRANSFER TO THIRD PARTY",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "default",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"toOfficeId\": 1,\n    \"toClientId\": 113,\n    \"toAccountType\": 2,\n    \"toAccountId\": \"000000059\",\n    \"transferAmount\": 10.53,\n    \"transferDate\": \"30 August 2025\",\n    \"transferDescription\": \"TV PAYMENT\",\n    \"dateFormat\": \"dd MMMM yyyy\",\n    \"locale\": \"en\",\n    \"fromAccountId\": \"000000058\",\n    \"fromAccountType\": 2,\n    \"fromClientId\": 104,\n    \"fromOfficeId\": 1,\n    \"externalID\": \"ABC1234\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/accounttransfers?type=tpt",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "accounttransfers"
+                  ],
+                  "query": [
+                    {
+                      "key": "type",
+                      "value": "tpt"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "SHARES",
+          "item": [
+            {
+              "name": "01. GET LIST OF SHARE PRODUCT",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "default",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/products/share?clientId=104",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "products",
+                    "share"
+                  ],
+                  "query": [
+                    {
+                      "key": "clientId",
+                      "value": "104"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "02. GET SHARE PRODUCT DETAILS",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "default",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/products/share?clientId=104&productId=1",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "products",
+                    "share"
+                  ],
+                  "query": [
+                    {
+                      "key": "clientId",
+                      "value": "104"
+                    },
+                    {
+                      "key": "productId",
+                      "value": "1"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "CLIENTS",
+          "item": [
+            {
+              "name": "01. GET LIST OF CLIENTS LINKED TO THE USER",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "default",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/clients",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "clients"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "02. GET LIST OF CLIENT DETAILS",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "desarrollo",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Basic bWFyaWE6RmluYWJpZW4yMDI1Iw==",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/clients/5",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "clients",
+                    "5"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "03. GET LIST OF ACCOUNTS",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "desarrollo",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Basic bWFyaWE6RmluYWJpZW4yMDI1Iw==",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/clients/5/accounts",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "clients",
+                    "5",
+                    "accounts"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "04. GET LIST OF IMAGES",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "default",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/clients/104/images",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "clients",
+                    "104",
+                    "images"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "05. GET LIST OF CHARGES",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "default",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/clients/104/charges",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "clients",
+                    "104",
+                    "charges"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "06. GET LIST OF CLIENT TRANSACTIONS",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "default",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/clients/104/transactions",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "clients",
+                    "104",
+                    "transactions"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "07. GET LIST OF CLIENT TRANSACTION DETAIL",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "default",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/clients/104/transactions/233",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "clients",
+                    "104",
+                    "transactions",
+                    "233"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
