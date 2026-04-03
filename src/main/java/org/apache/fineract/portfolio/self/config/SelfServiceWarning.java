@@ -26,12 +26,12 @@ public class SelfServiceWarning implements InitializingBean {
 
   @Override
   public void afterPropertiesSet() throws Exception {
-    log.warn("------------------------------------------------------------");
-    log.warn("                                                            ");
-    log.warn("DO NOT USE THIS IN PRODUCTION!");
-    log.warn("Self service capabilities of Fineract are NOT considered safe!");
-    log.warn("DO NOT USE THIS IN PRODUCTION!");
-    log.warn("                                                            ");
-    log.warn("------------------------------------------------------------");
+    log.warn("*******************************************************");
+    log.warn("*                                                     *");
+    log.warn("*           DO NOT USE THIS IN PRODUCTION!            *");
+    log.warn("*   Self service capabilities of Apache Fineract      *");
+    log.warn("*              are NOT considered safe!               *");
+    log.warn("*                                                     *");
+    log.warn("*******************************************************");
   }
 }
