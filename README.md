@@ -3,7 +3,7 @@
 ## For Users
 
 
-1. [Download link for Self Service Plugin ](https://sourceforge.net/projects/mifos/files/mifos-plugins/SelfServicePlugin/SelfServicePlugin-1.9.0.zip/download)  and extract the files (java jar files are on it)
+1. [Download link for Self Service Plugin ](https://mifos.jfrog.io/ui/native/libs-snapshot-local/community/mifos/selfservice-plugin/1.15.0-SNAPSHOT/)  and use the latest version (java jar)
 
 1a. Execute only for DOCKER - Create a directory, copy the Self Service Plugin libraries in it
 
