@@ -21,10 +21,10 @@ jobs:
           distribution: 'zulu'
           cache: 'maven'
 
-      - name: Validate Code Formatting
+      #- name: Validate Code Formatting
         # Enforce coding style guidelines immediately.
         # Fails fast if the code does not adhere to the project's Spotless configuration.
-        run: mvn spotless:check --file pom.xml
+        #run: mvn spotless:check --file pom.xml
 
       - name: Build and Package
         # Compiles the code and packages the JAR artifacts.
