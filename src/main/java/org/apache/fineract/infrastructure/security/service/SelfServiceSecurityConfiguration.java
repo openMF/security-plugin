@@ -73,9 +73,7 @@ public class SelfServiceSecurityConfiguration {
     @Autowired
     private TenantAwareJpaPlatformUserDetailsService userDetailsService;
     @Autowired
-    private FineractProperties fineractProperties;
-    @Autowired
-    private ServerProperties serverProperties;
+    private FineractProperties fineractProperties;    
     @Autowired
     private ToApiJsonSerializer<PlatformRequestLog> toApiJsonSerializer;
     @Autowired
@@ -95,9 +93,7 @@ public class SelfServiceSecurityConfiguration {
     @Autowired(required = false)
     private LoanCOBFilterHelper loanCOBFilterHelper;
     @Autowired
-    private IdempotencyStoreHelper idempotencyStoreHelper;
-    @Autowired
-    private ProgressiveLoanModelCheckerFilter progressiveLoanModelCheckerFilter;
+    private IdempotencyStoreHelper idempotencyStoreHelper;    
     @Autowired
     private PlatformUserDetailsChecker platformUserDetailsChecker;
 
