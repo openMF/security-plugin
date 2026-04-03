@@ -16,11 +16,6 @@ package org.apache.fineract.portfolio.self.registration.service;
 
 public interface SelfServiceRegistrationReadPlatformService {
 
-    boolean isClientExist(
-        String accountNumber,
-        String firstName,
-        String middleName,
-        String lastName,
-        String mobileNumber,
-        boolean isEmailAuthenticationMode);
+    boolean isClientExist(String accountNumber, String firstName, String middleName, String lastName, String mobileNumber, boolean isEmailAuthenticationMode);
+    
 }
