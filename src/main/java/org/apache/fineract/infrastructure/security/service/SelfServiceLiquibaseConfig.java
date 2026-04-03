@@ -60,7 +60,7 @@ public class SelfServiceLiquibaseConfig {
             }
         }
         LOG.info("*******************************************************");
-        LOG.info("*       Self-Service Migrations Completed             *");        
+        LOG.info("*     Self-Service Plugin Migrations Completed        *");        
         LOG.info("*******************************************************");
         return "Self-Service Migrations Completed";
     }
