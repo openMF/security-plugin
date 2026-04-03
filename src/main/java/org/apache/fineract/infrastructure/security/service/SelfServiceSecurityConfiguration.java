@@ -1,11 +1,22 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 package org.apache.fineract.infrastructure.security.service;
-
-import static org.springframework.security.authorization.AuthenticatedAuthorizationManager.fullyAuthenticated;
-import static org.springframework.security.authorization.AuthorityAuthorizationManager.hasAuthority;
-import static org.springframework.security.authorization.AuthorizationManagers.allOf;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import org.apache.fineract.infrastructure.businessdate.service.BusinessDateReadPlatformService;
 import org.apache.fineract.infrastructure.cache.service.CacheWritePlatformService;
@@ -26,10 +37,8 @@ import org.apache.fineract.infrastructure.jobs.filter.ProgressiveLoanModelChecke
 import org.apache.fineract.infrastructure.security.data.PlatformRequestLog;
 import org.apache.fineract.infrastructure.security.filter.TenantAwareBasicAuthenticationFilter;
 import org.apache.fineract.infrastructure.security.filter.TwoFactorAuthenticationFilter;
-import static org.apache.fineract.infrastructure.security.service.SelfServiceUserAuthorizationManager.selfServiceUserAuthManager;
 import org.apache.fineract.notification.service.UserNotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.web.ServerProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -39,9 +48,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.authorization.AuthorizationManager;
-import org.springframework.security.config.Customizer;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -49,7 +55,6 @@ import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.ExceptionTranslationFilter;
-import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.security.web.authentication.www.BasicAuthenticationEntryPoint;
 import org.springframework.security.web.context.SecurityContextHolderFilter;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
@@ -58,9 +63,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
-@ConditionalOnProperty("fineract.security.basicauth.enabled")
-@EnableMethodSecurity
-@Order(1) // Ensures this is checked BEFORE the main API security chain
+@Order(1)  // Very important: Must have higher priority than main security config
 public class SelfServiceSecurityConfiguration {
 
     private static final PathPatternRequestMatcher.Builder API_MATCHER = PathPatternRequestMatcher.withDefaults();
@@ -99,78 +102,47 @@ public class SelfServiceSecurityConfiguration {
     private PlatformUserDetailsChecker platformUserDetailsChecker;
 
     @Bean
-    @Order(1)
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain selfServiceSecurityFilterChain(HttpSecurity http) throws Exception {
 
-        // CRITICAL: Scope this filter chain ONLY to /api/v1/self/**
-        // This prevents it from conflicting with the main API endpoints
-        http.securityMatcher(API_MATCHER.matcher("/api/v1/self/**"))
-            .authorizeHttpRequests(auth -> {
-
-                List<AuthorizationManager<RequestAuthorizationContext>> authorizationManagers = new ArrayList<>();
-                authorizationManagers.add(fullyAuthenticated());
-
-                // 1. Public Endpoints (Authentication & Registration)
-                auth.requestMatchers(API_MATCHER.matcher(HttpMethod.POST, "/api/*/self/authentication")).permitAll()
-                        .requestMatchers(API_MATCHER.matcher(HttpMethod.POST, "/api/*/self/registration")).permitAll()
-                        .requestMatchers(API_MATCHER.matcher(HttpMethod.POST, "/api/*/self/registration/user")).permitAll()
-                        .requestMatchers(API_MATCHER.matcher(HttpMethod.OPTIONS, "/api/**")).permitAll();
-
-                // 2. Two-Factor Authentication endpoints (if enabled)
-                if (fineractProperties.getSecurity().getTwoFactor().isEnabled()) {
-                    auth.requestMatchers(API_MATCHER.matcher(HttpMethod.POST, "/api/*/self/twofactor/validate")).permitAll();
-                    authorizationManagers.add(hasAuthority("TWOFACTOR_AUTHENTICATED"));
-                }
-
-                // 3. Add Self-Service specific authorization manager
-                // This ensures the user is authenticated AND has the correct self-service permissions
-                authorizationManagers.add(selfServiceUserAuthManager());
-
-                // 4. Apply the authorization managers to all other /api/v1/self/** requests
-                auth.requestMatchers(API_MATCHER.matcher("/api/v1/self/**"))
-                        .access(allOf(authorizationManagers.toArray(new AuthorizationManager[0])));
-
-            }).httpBasic(hb -> hb.authenticationEntryPoint(basicAuthenticationEntryPoint()))
+        http
+            // Apply only to self-service endpoints
+            .securityMatcher("/api/v1/self/**", "/v1/self/**")
+            
+            // Disable CSRF for public self-service APIs
             .csrf(AbstractHttpConfigurer::disable)
+            
+            // Stateless session
             .sessionManagement(smc -> smc.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .addFilterBefore(tenantAwareBasicAuthenticationFilter(), SecurityContextHolderFilter.class)
             .addFilterAfter(requestResponseFilter(), ExceptionTranslationFilter.class)
             .addFilterAfter(correlationHeaderFilter(), RequestResponseFilter.class)
-            .addFilterAfter(fineractInstanceModeApiFilter(), CorrelationHeaderFilter.class);
+            .addFilterAfter(fineractInstanceModeApiFilter(), CorrelationHeaderFilter.class)
+        
+            .authorizeHttpRequests(auth -> auth
+                // === PUBLIC ENDPOINTS ===
+                .requestMatchers(HttpMethod.POST, "/api/v1/self/registration").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/self/registration/user").permitAll()
+                .requestMatchers(HttpMethod.POST, "/v1/self/registration").permitAll()
+                .requestMatchers(HttpMethod.POST, "/v1/self/registration/user").permitAll()
 
-        if (loanCOBFilterHelper != null) {
-            http.addFilterAfter(loanCOBApiFilter(), FineractInstanceModeApiFilter.class).addFilterAfter(idempotencyStoreFilter(),
-                    LoanCOBApiFilter.class);
-            http.addFilterBefore(progressiveLoanModelCheckerFilter, LoanCOBApiFilter.class);
-        } else {
-            http.addFilterAfter(idempotencyStoreFilter(), FineractInstanceModeApiFilter.class);
-            http.addFilterAfter(progressiveLoanModelCheckerFilter, FineractInstanceModeApiFilter.class);
-        }
+                // Self authentication (login)
+                .requestMatchers(HttpMethod.POST, "/api/v1/self/authentication").permitAll()
+                .requestMatchers(HttpMethod.POST, "/v1/self/authentication").permitAll()
 
-        if (fineractProperties.getIpTracking().isEnabled()) {
-            http.addFilterAfter(callerIpTrackingFilter(), RequestResponseFilter.class);
-        }
+                // All other self-service endpoints require self-service authentication
+                .requestMatchers("/api/v1/self/**", "/v1/self/**").authenticated()
 
-        if (fineractProperties.getSecurity().getTwoFactor().isEnabled()) {
-            http.addFilterAfter(twoFactorAuthenticationFilter(), CorrelationHeaderFilter.class);
-        }
+                .anyRequest().permitAll()
+            );
 
-        if (serverProperties.getSsl().isEnabled()) {
-            http.requiresChannel(channel -> channel.requestMatchers(API_MATCHER.matcher("/api/**")).requiresSecure());
-        }
-
-        if (fineractProperties.getSecurity().getHsts().isEnabled()) {
-            http.requiresChannel(channel -> channel.anyRequest().requiresSecure()).headers(
-                    headers -> headers.httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31536000)));
-        }
-
+        // Optional: CORS if needed for mobile/web clients
         if (fineractProperties.getSecurity().getCors().isEnabled()) {
-            http.cors(Customizer.withDefaults());
+            http.cors(cors -> cors.configurationSource(corsConfigurationSource()));
         }
 
         return http.build();
     }
-
+    
     public RequestResponseFilter requestResponseFilter() {
         return new RequestResponseFilter();
     }
@@ -252,4 +224,6 @@ public class SelfServiceSecurityConfiguration {
         source.registerCorsConfiguration("/**", config);
         return source;
     }
+    
+    
 }
