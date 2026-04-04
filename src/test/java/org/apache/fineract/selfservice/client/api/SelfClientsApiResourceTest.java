@@ -44,7 +44,6 @@ import org.apache.fineract.portfolio.client.service.ClientTransactionReadPlatfor
 import org.apache.fineract.portfolio.loanaccount.guarantor.data.ObligeeData;
 import org.apache.fineract.portfolio.loanaccount.guarantor.service.GuarantorReadPlatformService;
 import org.apache.fineract.selfservice.client.data.SelfClientDataValidator;
-import org.apache.fineract.selfservice.client.service.AppuserClientMapperReadService;
 import org.apache.fineract.selfservice.client.service.SelfServiceClientReadPlatformService;
 import org.apache.fineract.selfservice.client.service.SelfServiceSearchParameters;
 import org.apache.fineract.selfservice.security.service.PlatformSelfServiceSecurityContext;
@@ -55,6 +54,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.apache.fineract.selfservice.client.service.AppSelfServiceUserClientMapperReadService;
 
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings("unchecked")
@@ -72,7 +72,7 @@ class SelfClientsApiResourceTest {
   @Mock private DefaultToApiJsonSerializer<ClientTransactionData> clientTransactionSerializer;
   @Mock private DefaultToApiJsonSerializer<ObligeeData> obligeeSerializer;
   @Mock private ApiRequestParameterHelper apiRequestParameterHelper;
-  @Mock private AppuserClientMapperReadService appUserClientMapperReadService;
+  @Mock private AppSelfServiceUserClientMapperReadService appUserClientMapperReadService;
   @Mock private SelfClientDataValidator dataValidator;
   @Mock private UriInfo uriInfo;
 
@@ -124,12 +124,12 @@ class SelfClientsApiResourceTest {
 
   private void mockClientMapped() {
     mockAuthenticatedUser();
-    when(appUserClientMapperReadService.isClientMappedToUser(CLIENT_ID, USER_ID)).thenReturn(true);
+    when(appUserClientMapperReadService.isClientMappedToSelfServiceUser(CLIENT_ID, USER_ID)).thenReturn(true);
   }
 
   private void mockClientNotMapped() {
     mockAuthenticatedUser();
-    when(appUserClientMapperReadService.isClientMappedToUser(CLIENT_ID, USER_ID)).thenReturn(false);
+    when(appUserClientMapperReadService.isClientMappedToSelfServiceUser(CLIENT_ID, USER_ID)).thenReturn(false);
   }
 
   // --- MX-206: retrieveAll ---
@@ -159,7 +159,7 @@ class SelfClientsApiResourceTest {
 
     resource.retrieveAll(uriInfo, null, null, null, null, null, null, null, null, null);
 
-    verify(appUserClientMapperReadService, never()).isClientMappedToUser(anyLong(), anyLong());
+    verify(appUserClientMapperReadService, never()).isClientMappedToSelfServiceUser(anyLong(), anyLong());
   }
 
   // --- MX-207: retrieveOne ---

@@ -14,9 +14,9 @@
  */
 package org.apache.fineract.selfservice.client.service;
 
-public interface AppuserClientMapperReadService {
+public interface AppSelfServiceUserClientMapperReadService {
 
-  Boolean isClientMappedToUser(Long clientId, Long appUserId);
+  Boolean isClientMappedToSelfServiceUser(Long clientId, Long appSelfServiceUserId);
 
-  void validateAppuserClientsMapping(Long clientId);
+  void validateAppSelfServiceUserClientsMapping(Long clientId);
 }

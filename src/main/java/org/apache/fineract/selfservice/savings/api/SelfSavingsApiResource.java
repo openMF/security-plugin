@@ -43,12 +43,12 @@ import org.apache.fineract.portfolio.savings.api.SavingsAccountTransactionsApiRe
 import org.apache.fineract.portfolio.savings.api.SavingsAccountsApiResource;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountData;
 import org.apache.fineract.portfolio.savings.exception.SavingsAccountNotFoundException;
-import org.apache.fineract.selfservice.client.service.AppuserClientMapperReadService;
 import org.apache.fineract.selfservice.savings.data.SelfSavingsAccountConstants;
 import org.apache.fineract.selfservice.savings.data.SelfSavingsDataValidator;
 import org.apache.fineract.selfservice.savings.service.AppuserSavingsMapperReadService;
 import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
 import org.springframework.stereotype.Component;
+import org.apache.fineract.selfservice.client.service.AppSelfServiceUserClientMapperReadService;
 
 @Path("/v1/self/savingsaccounts")
 @Component
@@ -62,7 +62,7 @@ public class SelfSavingsApiResource {
   private final SavingsAccountTransactionsApiResource savingsAccountTransactionsApiResource;
   private final AppuserSavingsMapperReadService appuserSavingsMapperReadService;
   private final SelfSavingsDataValidator dataValidator;
-  private final AppuserClientMapperReadService appUserClientMapperReadService;
+  private final AppSelfServiceUserClientMapperReadService appUserClientMapperReadService;
 
   @GET
   @Path("{accountId}")
@@ -279,7 +279,7 @@ public class SelfSavingsApiResource {
   private void validateAppSelfServiceUserClientsMapping(final Long clientId) {
     AppSelfServiceUser user = this.context.authenticatedSelfServiceUser();
     final boolean mappedClientId =
-        this.appUserClientMapperReadService.isClientMappedToUser(clientId, user.getId());
+        this.appUserClientMapperReadService.isClientMappedToSelfServiceUser(clientId, user.getId());
     if (!mappedClientId) {
       throw new ClientNotFoundException(clientId);
     }

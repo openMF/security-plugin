@@ -26,12 +26,12 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.apache.fineract.selfservice.security.service.PlatformSelfServiceSecurityContext;
 import org.apache.fineract.portfolio.client.exception.ClientNotFoundException;
-import org.apache.fineract.selfservice.client.service.AppuserClientMapperReadService;
 import org.apache.fineract.spm.api.ScorecardApiResource;
 import org.apache.fineract.spm.data.ScorecardData;
 import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.apache.fineract.selfservice.client.service.AppSelfServiceUserClientMapperReadService;
 
 @Path("/v1/self/surveys/scorecards")
 @Component
@@ -41,7 +41,7 @@ public class SelfScorecardApiResource {
 
   private final PlatformSelfServiceSecurityContext context;
   private final ScorecardApiResource scorecardApiResource;
-  private final AppuserClientMapperReadService appuserClientMapperReadService;
+  private final AppSelfServiceUserClientMapperReadService appuserClientMapperReadService;
 
   @GET
   @Path("clients/{clientId}")
@@ -70,7 +70,7 @@ public class SelfScorecardApiResource {
   private void validateAppSelfServiceUserClientsMapping(final Long clientId) {
     AppSelfServiceUser user = this.context.authenticatedSelfServiceUser();
     final boolean mappedClientId =
-        this.appuserClientMapperReadService.isClientMappedToUser(clientId, user.getId());
+        this.appuserClientMapperReadService.isClientMappedToSelfServiceUser(clientId, user.getId());
     if (!mappedClientId) {
       throw new ClientNotFoundException(clientId);
     }

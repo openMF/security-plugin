@@ -87,7 +87,6 @@ import org.apache.fineract.portfolio.client.service.ClientTransactionReadPlatfor
 import org.apache.fineract.portfolio.loanaccount.guarantor.data.ObligeeData;
 import org.apache.fineract.portfolio.loanaccount.guarantor.service.GuarantorReadPlatformService;
 import org.apache.fineract.selfservice.client.data.SelfClientDataValidator;
-import org.apache.fineract.selfservice.client.service.AppuserClientMapperReadService;
 import org.apache.fineract.selfservice.client.service.SelfServiceClientReadPlatformService;
 import org.apache.fineract.selfservice.client.service.SelfServiceSearchParameters;
 import org.apache.fineract.selfservice.config.SelfServiceModuleIsEnabledCondition;
@@ -99,6 +98,7 @@ import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
+import org.apache.fineract.selfservice.client.service.AppSelfServiceUserClientMapperReadService;
 
 @Path("/v1/self/clients")
 @Component
@@ -119,7 +119,7 @@ public class SelfClientsApiResource {
   private final DefaultToApiJsonSerializer<ClientTransactionData> clientTransactionSerializer;
   private final DefaultToApiJsonSerializer<ObligeeData> obligeeSerializer;
   private final ApiRequestParameterHelper apiRequestParameterHelper;
-  private final AppuserClientMapperReadService appUserClientMapperReadService;
+  private final AppSelfServiceUserClientMapperReadService appUserClientMapperReadService;
   private final SelfClientDataValidator dataValidator;
   private final ImageReadPlatformService imageReadPlatformService;
   private final CommandDispatcher commandPipeline;
@@ -474,7 +474,7 @@ public class SelfClientsApiResource {
   private void validateAppuserClientsMapping(final Long clientId) {
     AppSelfServiceUser user = this.context.authenticatedSelfServiceUser();
     final boolean mappedClientId =
-        this.appUserClientMapperReadService.isClientMappedToUser(clientId, user.getId());
+        this.appUserClientMapperReadService.isClientMappedToSelfServiceUser(clientId, user.getId());
     if (!mappedClientId) {
       throw new ClientNotFoundException(clientId);
     }

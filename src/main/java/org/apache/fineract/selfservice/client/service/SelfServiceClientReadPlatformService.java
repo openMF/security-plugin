@@ -49,11 +49,11 @@ public interface SelfServiceClientReadPlatformService {
      * <p>
      * This is used in self service authentication
      *
-     * @param aUserID
+     * @param selfServiceUserId
      *            the user id (not null)
      * @return client IDs listing (may be null)
      */
-    Collection<Long> retrieveUserClients(Long aUserID);
+    Collection<Long> retrieveSelfServiceUserClients(Long selfServiceUserId);
 
     LocalDate retrieveClientTransferProposalDate(Long clientId);
 

@@ -51,11 +51,11 @@ import org.apache.fineract.portfolio.loanaccount.exception.LoanTemplateTypeRequi
 import org.apache.fineract.portfolio.loanaccount.exception.NotSupportedLoanTemplateTypeException;
 import org.apache.fineract.portfolio.loanaccount.guarantor.api.GuarantorsApiResource;
 import org.apache.fineract.portfolio.loanaccount.guarantor.data.GuarantorData;
-import org.apache.fineract.selfservice.client.service.AppuserClientMapperReadService;
 import org.apache.fineract.selfservice.loanaccount.data.SelfLoansDataValidator;
 import org.apache.fineract.selfservice.loanaccount.service.AppuserLoansMapperReadService;
 import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
 import org.springframework.stereotype.Component;
+import org.apache.fineract.selfservice.client.service.AppSelfServiceUserClientMapperReadService;
 
 @Path("/v1/self/loans")
 @Component
@@ -68,7 +68,7 @@ public class SelfLoansApiResource {
   private final LoanTransactionsApiResource loanTransactionsApiResource;
   private final LoanChargesApiResource loanChargesApiResource;
   private final AppuserLoansMapperReadService appuserLoansMapperReadService;
-  private final AppuserClientMapperReadService appUserClientMapperReadService;
+  private final AppSelfServiceUserClientMapperReadService appUserClientMapperReadService;
   private final SelfLoansDataValidator dataValidator;
   private final GuarantorsApiResource guarantorsApiResource;
 
@@ -425,7 +425,7 @@ public class SelfLoansApiResource {
   private void validateAppSelfServiceUserClientsMapping(final Long clientId) {
     AppSelfServiceUser user = this.context.authenticatedSelfServiceUser();
     final boolean mappedClientId =
-        this.appUserClientMapperReadService.isClientMappedToUser(clientId, user.getId());
+        this.appUserClientMapperReadService.isClientMappedToSelfServiceUser(clientId, user.getId());
     if (!mappedClientId) {
       throw new ClientNotFoundException(clientId);
     }

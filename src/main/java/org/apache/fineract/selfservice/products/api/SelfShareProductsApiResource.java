@@ -27,8 +27,8 @@ import jakarta.ws.rs.core.UriInfo;
 import lombok.RequiredArgsConstructor;
 import org.apache.fineract.portfolio.accounts.constants.ShareAccountApiConstants;
 import org.apache.fineract.portfolio.products.api.ProductsApiResource;
-import org.apache.fineract.selfservice.client.service.AppuserClientMapperReadService;
 import org.springframework.stereotype.Component;
+import org.apache.fineract.selfservice.client.service.AppSelfServiceUserClientMapperReadService;
 
 @Path("/v1/self/products/share")
 @Component
@@ -37,7 +37,7 @@ import org.springframework.stereotype.Component;
 public class SelfShareProductsApiResource {
 
   private final ProductsApiResource productsApiResource;
-  private final AppuserClientMapperReadService appUserClientMapperReadService;
+  private final AppSelfServiceUserClientMapperReadService appUserClientMapperReadService;
 
   @GET
   @Path("{productId}")
@@ -48,7 +48,7 @@ public class SelfShareProductsApiResource {
       @PathParam("productId") final Long productId,
       @PathParam("type") final String productType,
       @Context final UriInfo uriInfo) {
-    this.appUserClientMapperReadService.validateAppuserClientsMapping(clientId);
+    this.appUserClientMapperReadService.validateAppSelfServiceUserClientsMapping(clientId);
     return this.productsApiResource.retrieveProduct(
         productId, ShareAccountApiConstants.shareEntityType, uriInfo);
   }
@@ -61,7 +61,7 @@ public class SelfShareProductsApiResource {
       @QueryParam("offset") final Integer offset,
       @QueryParam("limit") final Integer limit,
       @Context final UriInfo uriInfo) {
-    this.appUserClientMapperReadService.validateAppuserClientsMapping(clientId);
+    this.appUserClientMapperReadService.validateAppSelfServiceUserClientsMapping(clientId);
     return this.productsApiResource.retrieveAllProducts(
         ShareAccountApiConstants.shareEntityType, offset, limit, uriInfo);
   }

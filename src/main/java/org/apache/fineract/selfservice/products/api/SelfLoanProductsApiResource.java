@@ -27,8 +27,8 @@ import jakarta.ws.rs.core.UriInfo;
 import lombok.RequiredArgsConstructor;
 import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
 import org.apache.fineract.portfolio.loanproduct.api.LoanProductsApiResource;
-import org.apache.fineract.selfservice.client.service.AppuserClientMapperReadService;
 import org.springframework.stereotype.Component;
+import org.apache.fineract.selfservice.client.service.AppSelfServiceUserClientMapperReadService;
 
 @Path("/v1/self/loanproducts")
 @Component
@@ -170,7 +170,7 @@ import org.springframework.stereotype.Component;
 public class SelfLoanProductsApiResource {
 
   private final LoanProductsApiResource loanProductsApiResource;
-  private final AppuserClientMapperReadService appUserClientMapperReadService;
+  private final AppSelfServiceUserClientMapperReadService appUserClientMapperReadService;
 
   @GET
   @Consumes({MediaType.APPLICATION_JSON})
@@ -179,7 +179,7 @@ public class SelfLoanProductsApiResource {
       @QueryParam(LoanApiConstants.clientIdParameterName) final Long clientId,
       @Context final UriInfo uriInfo) {
 
-    this.appUserClientMapperReadService.validateAppuserClientsMapping(clientId);
+    this.appUserClientMapperReadService.validateAppSelfServiceUserClientsMapping(clientId);
     return this.loanProductsApiResource.retrieveAllLoanProducts(uriInfo);
   }
 
@@ -192,7 +192,7 @@ public class SelfLoanProductsApiResource {
       @PathParam(LoanApiConstants.productIdParameterName) final Long productId,
       @Context final UriInfo uriInfo) {
 
-    this.appUserClientMapperReadService.validateAppuserClientsMapping(clientId);
+    this.appUserClientMapperReadService.validateAppSelfServiceUserClientsMapping(clientId);
     return this.loanProductsApiResource.retrieveLoanProductDetails(productId, uriInfo);
   }
 }

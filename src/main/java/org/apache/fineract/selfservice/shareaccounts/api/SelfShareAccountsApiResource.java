@@ -51,13 +51,13 @@ import org.apache.fineract.portfolio.charge.service.ChargeReadPlatformService;
 import org.apache.fineract.portfolio.client.exception.ClientNotFoundException;
 import org.apache.fineract.portfolio.products.data.ProductData;
 import org.apache.fineract.portfolio.products.service.ShareProductReadPlatformService;
-import org.apache.fineract.selfservice.client.service.AppuserClientMapperReadService;
 import org.apache.fineract.selfservice.shareaccounts.data.SelfShareAccountsDataValidator;
 import org.apache.fineract.selfservice.shareaccounts.service.AppUserShareAccountsMapperReadPlatformService;
 import org.apache.fineract.portfolio.shareaccounts.data.ShareAccountData;
 import org.apache.fineract.portfolio.shareaccounts.service.ShareAccountReadPlatformService;
 import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
 import org.springframework.stereotype.Component;
+import org.apache.fineract.selfservice.client.service.AppSelfServiceUserClientMapperReadService;
 
 @Path("/v1/self/shareaccounts")
 @Component
@@ -70,7 +70,7 @@ public class SelfShareAccountsApiResource {
   private final ShareAccountReadPlatformService readPlatformService;
   private final ApiRequestParameterHelper apiRequestParameterHelper;
   private final DefaultToApiJsonSerializer<AccountData> toApiJsonSerializer;
-  private final AppuserClientMapperReadService appuserClientMapperReadService;
+  private final AppSelfServiceUserClientMapperReadService appuserClientMapperReadService;
   private final SelfShareAccountsDataValidator selfShareAccountsDataValidator;
   private final ShareProductReadPlatformService shareProductReadPlatformService;
   private final ChargeReadPlatformService chargeReadPlatformService;
@@ -212,7 +212,7 @@ public class SelfShareAccountsApiResource {
   private void validateAppuserClientsMapping(final Long clientId) {
     AppSelfServiceUser user = context.authenticatedSelfServiceUser();
     final boolean mappedClientId =
-        appuserClientMapperReadService.isClientMappedToUser(clientId, user.getId());
+        appuserClientMapperReadService.isClientMappedToSelfServiceUser(clientId, user.getId());
     if (!mappedClientId) {
       throw new ClientNotFoundException(clientId);
     }

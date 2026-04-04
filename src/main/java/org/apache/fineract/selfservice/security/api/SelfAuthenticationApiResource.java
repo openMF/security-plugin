@@ -38,7 +38,6 @@ import lombok.RequiredArgsConstructor;
 
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.serialization.ToApiJsonSerializer;
-import org.apache.fineract.infrastructure.security.api.AuthenticationApiResourceSwagger;
 import org.apache.fineract.infrastructure.security.constants.TwoFactorConstants;
 import org.apache.fineract.selfservice.client.service.SelfServiceClientReadPlatformService;
 import org.apache.fineract.selfservice.security.data.SelfServiceAuthenticatedUserData;
@@ -88,7 +87,7 @@ public class SelfAuthenticationApiResource {
     @ApiResponse(responseCode = "400", description = "Unauthenticated. Please login")
     @ApiResponse(responseCode = "403", description = "Password reset required")
     public String authenticate(@Parameter(hidden = true) final String apiRequestBodyAsJson,
-            @QueryParam("returnClientList") @DefaultValue("false") boolean returnClientList) {
+            @QueryParam("returnClientList") @DefaultValue("true") boolean returnClientList) {
         // TODO FINERACT-819: sort out Jersey so JSON conversion does not have
         // to be done explicitly via GSON here, but implicit by arg
         AuthenticateRequest request = new Gson().fromJson(apiRequestBodyAsJson, AuthenticateRequest.class);
@@ -147,7 +146,7 @@ public class SelfAuthenticationApiResource {
                         .setAuthenticated(true)
                         .setBase64EncodedAuthenticationKey(new String(base64EncodedAuthenticationKey, StandardCharsets.UTF_8))
                         .setTwoFactorAuthenticationRequired(isTwoFactorRequired)
-                        .setClients(returnClientList ? clientReadPlatformService.retrieveUserClients(userId) : null);
+                        .setClients(returnClientList ? clientReadPlatformService.retrieveSelfServiceUserClients(userId) : null);
 
             }
 

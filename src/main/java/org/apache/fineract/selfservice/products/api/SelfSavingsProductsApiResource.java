@@ -27,8 +27,8 @@ import jakarta.ws.rs.core.UriInfo;
 import lombok.RequiredArgsConstructor;
 import org.apache.fineract.portfolio.savings.SavingsApiConstants;
 import org.apache.fineract.portfolio.savings.api.SavingsProductsApiResource;
-import org.apache.fineract.selfservice.client.service.AppuserClientMapperReadService;
 import org.springframework.stereotype.Component;
+import org.apache.fineract.selfservice.client.service.AppSelfServiceUserClientMapperReadService;
 
 @Path("/v1/self/savingsproducts")
 @Component
@@ -37,7 +37,7 @@ import org.springframework.stereotype.Component;
 public class SelfSavingsProductsApiResource {
 
   private final SavingsProductsApiResource savingsProductsApiResource;
-  private final AppuserClientMapperReadService appUserClientMapperReadService;
+  private final AppSelfServiceUserClientMapperReadService appUserClientMapperReadService;
 
   @GET
   @Consumes({MediaType.APPLICATION_JSON})
@@ -46,7 +46,7 @@ public class SelfSavingsProductsApiResource {
       @QueryParam(SavingsApiConstants.clientIdParamName) final Long clientId,
       @Context final UriInfo uriInfo) {
 
-    this.appUserClientMapperReadService.validateAppuserClientsMapping(clientId);
+    this.appUserClientMapperReadService.validateAppSelfServiceUserClientsMapping(clientId);
     return this.savingsProductsApiResource.retrieveAll(uriInfo);
   }
 
@@ -59,7 +59,7 @@ public class SelfSavingsProductsApiResource {
       @QueryParam(SavingsApiConstants.clientIdParamName) final Long clientId,
       @Context final UriInfo uriInfo) {
 
-    this.appUserClientMapperReadService.validateAppuserClientsMapping(clientId);
+    this.appUserClientMapperReadService.validateAppSelfServiceUserClientsMapping(clientId);
     return this.savingsProductsApiResource.retrieveOne(productId, uriInfo);
   }
 }
