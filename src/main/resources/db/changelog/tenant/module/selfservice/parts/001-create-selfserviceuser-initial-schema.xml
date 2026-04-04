@@ -153,7 +153,7 @@
         <addForeignKeyConstraint baseColumnNames="appuser_id" baseTableName="m_selfservice_user_client_mapping"
                                  constraintName="m_selfservice_appuser_id" deferrable="false" initiallyDeferred="false"
                                  onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="id"
-                                 referencedTableName="m_appselfserviceuser" validate="true"/>
+                                 referencedTableName="m_appselfservice_user" validate="true"/>
     </changeSet>
     <!-- Alter App Self Service User Client Mapping Table -->
     <changeSet author="fineract" id="ss-0001-8">
