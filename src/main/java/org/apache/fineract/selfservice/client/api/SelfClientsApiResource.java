@@ -68,16 +68,22 @@ import org.apache.fineract.infrastructure.documentmanagement.data.ImageCreateRes
 import org.apache.fineract.infrastructure.documentmanagement.data.ImageDeleteRequest;
 import org.apache.fineract.infrastructure.documentmanagement.data.ImageDeleteResponse;
 import org.apache.fineract.infrastructure.documentmanagement.service.ImageReadPlatformService;
-import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
+import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
+import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
+import org.apache.fineract.infrastructure.core.service.Page;
+import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.portfolio.client.api.ClientApiConstants;
 import org.apache.fineract.portfolio.client.api.ClientChargesApiResource;
-import org.apache.fineract.portfolio.client.api.ClientTransactionsApiResource;
 import org.apache.fineract.portfolio.client.api.ClientsApiResource;
+import org.apache.fineract.portfolio.client.data.ClientTransactionData;
 import org.apache.fineract.portfolio.client.exception.ClientNotFoundException;
+import org.apache.fineract.portfolio.client.service.ClientTransactionReadPlatformService;
 import org.apache.fineract.selfservice.client.data.SelfClientDataValidator;
 import org.apache.fineract.selfservice.client.service.AppuserClientMapperReadService;
 import org.apache.fineract.selfservice.config.SelfServiceModuleIsEnabledCondition;
-import org.apache.fineract.useradministration.domain.AppUser;
+import org.apache.fineract.selfservice.security.service.PlatformSelfServiceSecurityContext;
+import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
 import org.apache.fineract.util.StreamResponseUtil;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
@@ -92,10 +98,12 @@ import org.springframework.stereotype.Component;
 @Conditional(SelfServiceModuleIsEnabledCondition.class)
 public class SelfClientsApiResource {
 
-  private final PlatformSecurityContext context;
+  private final PlatformSelfServiceSecurityContext context;
   private final ClientsApiResource clientApiResource;
   private final ClientChargesApiResource clientChargesApiResource;
-  private final ClientTransactionsApiResource clientTransactionsApiResource;
+  private final ClientTransactionReadPlatformService clientTransactionReadPlatformService;
+  private final DefaultToApiJsonSerializer<ClientTransactionData> clientTransactionSerializer;
+  private final ApiRequestParameterHelper apiRequestParameterHelper;
   private final AppuserClientMapperReadService appUserClientMapperReadService;
   private final SelfClientDataValidator dataValidator;
   private final ImageReadPlatformService imageReadPlatformService;
@@ -399,8 +407,14 @@ public class SelfClientsApiResource {
 
     validateAppuserClientsMapping(clientId);
 
-    return this.clientTransactionsApiResource.retrieveAllClientTransactions(
-        clientId, uriInfo, offset, limit);
+    final SearchParameters searchParameters =
+        SearchParameters.builder().limit(limit).offset(offset).build();
+    final Page<ClientTransactionData> clientTransactions =
+        this.clientTransactionReadPlatformService.retrieveAllTransactions(
+            clientId, searchParameters);
+    final ApiRequestJsonSerializationSettings settings =
+        this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+    return this.clientTransactionSerializer.serialize(settings, clientTransactions);
   }
 
   @GET
@@ -435,12 +449,15 @@ public class SelfClientsApiResource {
 
     validateAppuserClientsMapping(clientId);
 
-    return this.clientTransactionsApiResource.retrieveClientTransaction(
-        clientId, transactionId, uriInfo);
+    final ClientTransactionData clientTransaction =
+        this.clientTransactionReadPlatformService.retrieveTransaction(clientId, transactionId);
+    final ApiRequestJsonSerializationSettings settings =
+        this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+    return this.clientTransactionSerializer.serialize(settings, clientTransaction);
   }
 
   private void validateAppuserClientsMapping(final Long clientId) {
-    AppUser user = this.context.authenticatedUser();
+    AppSelfServiceUser user = this.context.authenticatedSelfServiceUser();
     final boolean mappedClientId =
         this.appUserClientMapperReadService.isClientMappedToUser(clientId, user.getId());
     if (!mappedClientId) {
