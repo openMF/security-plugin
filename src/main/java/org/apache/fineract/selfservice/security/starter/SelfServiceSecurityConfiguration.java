@@ -38,9 +38,9 @@ import org.apache.fineract.infrastructure.security.filter.TenantAwareBasicAuthen
 import org.apache.fineract.infrastructure.security.filter.TwoFactorAuthenticationFilter;
 import org.apache.fineract.infrastructure.security.service.AuthTenantDetailsService;
 import org.apache.fineract.infrastructure.security.service.PlatformUserDetailsChecker;
-import org.apache.fineract.infrastructure.security.service.TenantAwareJpaPlatformUserDetailsService;
 import org.apache.fineract.infrastructure.security.service.TwoFactorService;
 import org.apache.fineract.notification.service.UserNotificationService;
+import org.apache.fineract.selfservice.security.service.TenantAwareJpaPlatformSelfServiceUserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -73,7 +73,7 @@ public class SelfServiceSecurityConfiguration {
     @Autowired
     private ApplicationContext applicationContext;
     @Autowired
-    private TenantAwareJpaPlatformUserDetailsService userDetailsService;
+    private TenantAwareJpaPlatformSelfServiceUserDetailsService userDetailsService;
     @Autowired
     private FineractProperties fineractProperties;    
     @Autowired
