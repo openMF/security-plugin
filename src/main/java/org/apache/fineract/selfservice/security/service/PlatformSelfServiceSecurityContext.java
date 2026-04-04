@@ -20,17 +20,24 @@ import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceU
 
 public interface PlatformSelfServiceSecurityContext extends PlatformUserRightsContext {
 
-  public AppSelfServiceUser authenticatedSelfServiceUser();
 
-  public AppSelfServiceUser getAuthenticatedSelfServiceUserIfPresent();
+    AppSelfServiceUser authenticatedSelfServiceUser();
 
-  public void validateAccessRights(String resourceOfficeHierarchy);
+    /**
+     * Convenience method returns null (does not throw an exception) if an authenticated user is not present
+     *
+     * To be used only in service layer methods that can be triggered via both the API and batch Jobs (which do not have
+     * an authenticated user)
+     *
+     * @return
+     */
+    AppSelfServiceUser getAuthenticatedUserIfPresent();
 
-  public String officeHierarchy();
+    void validateAccessRights(String resourceOfficeHierarchy);
 
-  public boolean doesPasswordHasToBeRenewed(AppSelfServiceUser currentSelfServiceUser);
+    String officeHierarchy();
 
-  public AppSelfServiceUser authenticatedUser(CommandWrapper commandWrapper);
-  
-  public void isAuthenticated();
+    boolean doesPasswordHasToBeRenewed(AppSelfServiceUser currentUser);
+
+    AppSelfServiceUser authenticatedUser(CommandWrapper commandWrapper);
 }

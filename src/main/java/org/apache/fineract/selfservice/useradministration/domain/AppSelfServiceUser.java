@@ -120,6 +120,17 @@ public class AppSelfServiceUser extends AbstractPersistableCustom<Long> implemen
 
     @Column(name = "cannot_change_password", nullable = true)
     private Boolean cannotChangePassword;
+    
+    @Column(name = "password_reset_required", nullable = false)
+    private boolean passwordResetRequired;
+    
+    public boolean isPasswordResetRequired() {
+        return this.passwordResetRequired;
+    }
+
+    public void updatePasswordResetRequired(final boolean required) {
+        this.passwordResetRequired = required;
+    }
 
     public static AppSelfServiceUser fromJson(
                                         final Office userOffice,

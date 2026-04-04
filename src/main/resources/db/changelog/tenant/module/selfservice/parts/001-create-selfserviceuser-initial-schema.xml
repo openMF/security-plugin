@@ -63,6 +63,10 @@
                     remarks="define if the password, should be check for validity period or not" type="boolean">
                 <constraints nullable="false"/>
             </column>
+            <column defaultValueBoolean="false" name="password_reset_required"
+                    remarks="define if the password, should be reset or not" type="boolean">
+                <constraints nullable="false"/>
+            </column>
             <column defaultValueBoolean="false" name="is_self_service_user" type="boolean">
                 <constraints nullable="false"/>
             </column>
