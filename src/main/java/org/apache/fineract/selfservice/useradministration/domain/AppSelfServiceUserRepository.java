@@ -15,12 +15,13 @@
 package org.apache.fineract.selfservice.useradministration.domain;
 
 import java.util.Collection;
+import org.apache.fineract.selfservice.security.domain.PlatformSelfServiceUserRepository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface AppSelfServiceUserRepository extends JpaRepository<AppSelfServiceUser, Long>, JpaSpecificationExecutor<AppSelfServiceUser> {
+public interface AppSelfServiceUserRepository extends JpaRepository<AppSelfServiceUser, Long>, JpaSpecificationExecutor<AppSelfServiceUser>, PlatformSelfServiceUserRepository {
 
 
   @Query(
