@@ -22,12 +22,14 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
-import org.apache.fineract.infrastructure.security.exception.NoAuthorizationException;
-import org.apache.fineract.infrastructure.security.exception.ResetPasswordException;
+import org.apache.fineract.selfservice.security.exception.SelfServiceNoAuthorizationException;
+import org.apache.fineract.selfservice.security.exception.SelfServiceResetPasswordException;
+import org.apache.fineract.selfservice.security.exception.SelfServiceUnAuthenticatedUserException;
 import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
 import org.apache.fineract.useradministration.exception.UnAuthenticatedUserException;
 import org.springframework.context.annotation.Primary;
@@ -36,14 +38,11 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
-
 @Component
 @Primary 
 @RequiredArgsConstructor
+@Slf4j
 public class PlatformSelfServiceSecurityContextImpl implements PlatformSelfServiceSecurityContext {
-
-    // private static final Logger LOG =
-    // LoggerFactory.getLogger(SpringSecurityPlatformSecurityContext.class);
 
     private final ConfigurationDomainService configurationDomainService;
 
@@ -52,6 +51,12 @@ public class PlatformSelfServiceSecurityContextImpl implements PlatformSelfServi
 
     @Override
     public AppSelfServiceUser authenticatedSelfServiceUser() {
+        
+        log.warn("*************************************************************");
+        log.warn("*                                                           *");
+        log.warn("* public AppSelfServiceUser authenticatedSelfServiceUser()  *");
+        log.warn("*                                                           *");
+        log.warn("*************************************************************");
 
         AppSelfServiceUser currentUser = null;
         final SecurityContext context = SecurityContextHolder.getContext();
@@ -64,15 +69,12 @@ public class PlatformSelfServiceSecurityContextImpl implements PlatformSelfServi
                 }
             }
         }
-
         if (currentUser == null) {
             throw new UnAuthenticatedUserException();
         }
-
         if (this.doesPasswordHasToBeRenewed(currentUser)) {
-            throw new ResetPasswordException(currentUser.getId());
+            throw new SelfServiceResetPasswordException(currentUser.getId());
         }
-
         return currentUser;
     }
 
@@ -83,6 +85,12 @@ public class PlatformSelfServiceSecurityContextImpl implements PlatformSelfServi
 
     @Override
     public AppSelfServiceUser getAuthenticatedUserIfPresent() {
+        
+        log.warn("*************************************************************");
+        log.warn("*                                                           *");
+        log.warn("* public AppSelfServiceUser getAuthenticatedUserIfPresent() *");
+        log.warn("*                                                           *");
+        log.warn("*************************************************************");
 
         AppSelfServiceUser currentUser = null;
         final SecurityContext context = SecurityContextHolder.getContext();
@@ -92,20 +100,23 @@ public class PlatformSelfServiceSecurityContextImpl implements PlatformSelfServi
                 currentUser = (AppSelfServiceUser) auth.getPrincipal();
             }
         }
-
         if (currentUser == null) {
             return null;
         }
-
         if (this.doesPasswordHasToBeRenewed(currentUser)) {
-            throw new ResetPasswordException(currentUser.getId());
+            throw new SelfServiceResetPasswordException(currentUser.getId());
         }
-
         return currentUser;
     }
 
     @Override
     public AppSelfServiceUser authenticatedUser(CommandWrapper commandWrapper) {
+        
+        log.warn("******************************************************************************");
+        log.warn("*                                                                            *");
+        log.warn("* public AppSelfServiceUser authenticatedUser(CommandWrapper commandWrapper) *");
+        log.warn("*                                                                            *");
+        log.warn("******************************************************************************");
 
         AppSelfServiceUser currentUser = null;
         final SecurityContext context = SecurityContextHolder.getContext();
@@ -115,17 +126,13 @@ public class PlatformSelfServiceSecurityContextImpl implements PlatformSelfServi
                 currentUser = (AppSelfServiceUser) auth.getPrincipal();
             }
         }
-
         if (currentUser == null) {
-            throw new UnAuthenticatedUserException();
+            throw new SelfServiceUnAuthenticatedUserException();
         }
-
         if (this.shouldCheckForPasswordForceReset(commandWrapper, currentUser) && this.doesPasswordHasToBeRenewed(currentUser)) {
-            throw new ResetPasswordException(currentUser.getId());
+            throw new SelfServiceResetPasswordException(currentUser.getId());
         }
-
         return currentUser;
-
     }
 
     @Override
@@ -135,9 +142,8 @@ public class PlatformSelfServiceSecurityContextImpl implements PlatformSelfServi
         final String userOfficeHierarchy = user.getOffice().getHierarchy();
 
         if (!resourceOfficeHierarchy.startsWith(userOfficeHierarchy)) {
-            throw new NoAuthorizationException("The user doesn't have enough permissions to access the resource.");
+            throw new SelfServiceNoAuthorizationException("The user doesn't have enough permissions to access the resource.");
         }
-
     }
 
     @Override
@@ -164,7 +170,6 @@ public class PlatformSelfServiceSecurityContextImpl implements PlatformSelfServi
             }
         }
         return false;
-
     }
 
     private boolean shouldCheckForPasswordForceReset(CommandWrapper commandWrapper, AppSelfServiceUser currentUser) {
@@ -176,5 +181,4 @@ public class PlatformSelfServiceSecurityContextImpl implements PlatformSelfServi
         }
         return true;
     }
-
 }
