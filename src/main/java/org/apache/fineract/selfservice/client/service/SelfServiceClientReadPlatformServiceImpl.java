@@ -42,7 +42,7 @@ import org.apache.fineract.infrastructure.core.service.Page;
 import org.apache.fineract.infrastructure.core.service.PaginationHelper;
 import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.infrastructure.core.service.database.DatabaseSpecificSQLGenerator;
-import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.selfservice.security.service.PlatformSelfServiceSecurityContext;
 import org.apache.fineract.infrastructure.security.utils.ColumnValidator;
 import org.apache.fineract.portfolio.client.data.ClientCollateralManagementData;
 import org.apache.fineract.portfolio.client.data.ClientData;
@@ -58,7 +58,7 @@ import org.apache.fineract.portfolio.client.service.ClientReadPlatformService;
 import org.apache.fineract.portfolio.collateralmanagement.domain.ClientCollateralManagement;
 import org.apache.fineract.portfolio.collateralmanagement.domain.ClientCollateralManagementRepositoryWrapper;
 import org.apache.fineract.portfolio.group.data.GroupGeneralData;
-import org.apache.fineract.useradministration.domain.AppUser;
+import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -69,7 +69,7 @@ import org.springframework.stereotype.Service;
 public class SelfServiceClientReadPlatformServiceImpl implements SelfServiceClientReadPlatformService {
 
     private final JdbcTemplate jdbcTemplate;
-    private final PlatformSecurityContext context;
+    private final PlatformSelfServiceSecurityContext context;
     private final CodeValueReadPlatformService codeValueReadPlatformService;
     // data mappers
     private final PaginationHelper paginationHelper;
@@ -99,7 +99,7 @@ public class SelfServiceClientReadPlatformServiceImpl implements SelfServiceClie
 
         final String userOfficeHierarchy = this.context.officeHierarchy();
         final String underHierarchySearchString = userOfficeHierarchy + "%";
-        final String appUserID = String.valueOf(context.authenticatedUser().getId());
+        final String appUserID = String.valueOf(context.authenticatedSelfServiceUser().getId());
 
         // if (searchParameters.isScopedByOfficeHierarchy()) {
         // this.context.validateAccessRights(searchParameters.getHierarchy());
@@ -266,7 +266,7 @@ public class SelfServiceClientReadPlatformServiceImpl implements SelfServiceClie
     @Override
     public Collection<ClientData> retrieveClientMembersOfGroup(final Long groupId) {
 
-        final AppUser currentUser = this.context.authenticatedUser();
+        final AppSelfServiceUser currentUser = this.context.authenticatedSelfServiceUser();
         final String hierarchy = currentUser.getOffice().getHierarchy();
         final String hierarchySearchString = hierarchy + "%";
 
@@ -278,7 +278,7 @@ public class SelfServiceClientReadPlatformServiceImpl implements SelfServiceClie
     @Override
     public Collection<ClientData> retrieveActiveClientMembersOfGroup(final Long groupId) {
 
-        final AppUser currentUser = this.context.authenticatedUser();
+        final AppSelfServiceUser currentUser = this.context.authenticatedSelfServiceUser();
         final String hierarchy = currentUser.getOffice().getHierarchy();
         final String hierarchySearchString = hierarchy + "%";
 
@@ -467,7 +467,7 @@ public class SelfServiceClientReadPlatformServiceImpl implements SelfServiceClie
     @Override
     public Collection<ClientData> retrieveActiveClientMembersOfCenter(final Long centerId) {
 
-        final AppUser currentUser = this.context.authenticatedUser();
+        final AppSelfServiceUser currentUser = this.context.authenticatedSelfServiceUser();
         final String hierarchy = currentUser.getOffice().getHierarchy();
         final String hierarchySearchString = hierarchy + "%";
 

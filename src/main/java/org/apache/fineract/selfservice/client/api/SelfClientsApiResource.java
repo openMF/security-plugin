@@ -46,6 +46,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 import java.io.InputStream;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -60,7 +61,13 @@ import org.apache.fineract.infrastructure.contentstore.processor.DataUrlDecoderC
 import org.apache.fineract.infrastructure.contentstore.processor.DataUrlEncoderContentProcessor;
 import org.apache.fineract.infrastructure.contentstore.processor.ImageResizeContentProcessor;
 import org.apache.fineract.infrastructure.contentstore.processor.SizeContentProcessor;
+import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
 import org.apache.fineract.infrastructure.core.data.UploadRequest;
+import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
+import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
+import org.apache.fineract.infrastructure.core.serialization.ToApiJsonSerializer;
+import org.apache.fineract.infrastructure.core.service.Page;
+import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.infrastructure.documentmanagement.command.ImageCreateCommand;
 import org.apache.fineract.infrastructure.documentmanagement.command.ImageDeleteCommand;
 import org.apache.fineract.infrastructure.documentmanagement.data.ImageCreateRequest;
@@ -68,16 +75,24 @@ import org.apache.fineract.infrastructure.documentmanagement.data.ImageCreateRes
 import org.apache.fineract.infrastructure.documentmanagement.data.ImageDeleteRequest;
 import org.apache.fineract.infrastructure.documentmanagement.data.ImageDeleteResponse;
 import org.apache.fineract.infrastructure.documentmanagement.service.ImageReadPlatformService;
-import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.portfolio.accountdetails.data.AccountSummaryCollectionData;
+import org.apache.fineract.portfolio.accountdetails.service.AccountDetailsReadPlatformService;
 import org.apache.fineract.portfolio.client.api.ClientApiConstants;
-import org.apache.fineract.portfolio.client.api.ClientChargesApiResource;
-import org.apache.fineract.portfolio.client.api.ClientTransactionsApiResource;
-import org.apache.fineract.portfolio.client.api.ClientsApiResource;
+import org.apache.fineract.portfolio.client.data.ClientChargeData;
+import org.apache.fineract.portfolio.client.data.ClientData;
+import org.apache.fineract.portfolio.client.data.ClientTransactionData;
 import org.apache.fineract.portfolio.client.exception.ClientNotFoundException;
+import org.apache.fineract.portfolio.client.service.ClientChargeReadPlatformService;
+import org.apache.fineract.portfolio.client.service.ClientTransactionReadPlatformService;
+import org.apache.fineract.portfolio.loanaccount.guarantor.data.ObligeeData;
+import org.apache.fineract.portfolio.loanaccount.guarantor.service.GuarantorReadPlatformService;
 import org.apache.fineract.selfservice.client.data.SelfClientDataValidator;
 import org.apache.fineract.selfservice.client.service.AppuserClientMapperReadService;
+import org.apache.fineract.selfservice.client.service.SelfServiceClientReadPlatformService;
+import org.apache.fineract.selfservice.client.service.SelfServiceSearchParameters;
 import org.apache.fineract.selfservice.config.SelfServiceModuleIsEnabledCondition;
-import org.apache.fineract.useradministration.domain.AppUser;
+import org.apache.fineract.selfservice.security.service.PlatformSelfServiceSecurityContext;
+import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
 import org.apache.fineract.util.StreamResponseUtil;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
@@ -92,10 +107,18 @@ import org.springframework.stereotype.Component;
 @Conditional(SelfServiceModuleIsEnabledCondition.class)
 public class SelfClientsApiResource {
 
-  private final PlatformSecurityContext context;
-  private final ClientsApiResource clientApiResource;
-  private final ClientChargesApiResource clientChargesApiResource;
-  private final ClientTransactionsApiResource clientTransactionsApiResource;
+  private final PlatformSelfServiceSecurityContext context;
+  private final SelfServiceClientReadPlatformService selfServiceClientReadPlatformService;
+  private final AccountDetailsReadPlatformService accountDetailsReadPlatformService;
+  private final ClientChargeReadPlatformService clientChargeReadPlatformService;
+  private final ClientTransactionReadPlatformService clientTransactionReadPlatformService;
+  private final GuarantorReadPlatformService guarantorReadPlatformService;
+  private final ToApiJsonSerializer<ClientData> clientSerializer;
+  private final ToApiJsonSerializer<AccountSummaryCollectionData> accountSummarySerializer;
+  private final DefaultToApiJsonSerializer<ClientChargeData> clientChargeSerializer;
+  private final DefaultToApiJsonSerializer<ClientTransactionData> clientTransactionSerializer;
+  private final DefaultToApiJsonSerializer<ObligeeData> obligeeSerializer;
+  private final ApiRequestParameterHelper apiRequestParameterHelper;
   private final AppuserClientMapperReadService appUserClientMapperReadService;
   private final SelfClientDataValidator dataValidator;
   private final ImageReadPlatformService imageReadPlatformService;
@@ -144,27 +167,16 @@ public class SelfClientsApiResource {
       @QueryParam("sortOrder") @Parameter(description = "sortOrder") final String sortOrder,
       @QueryParam("legalForm") final Integer legalForm) {
 
-    final Long officeId = null;
-    final String externalId = null;
-    final String hierarchy = null;
-    final Boolean orphansOnly = null;
-    return this.clientApiResource.retrieveAll(
-        uriInfo,
-        officeId,
-        externalId,
-        displayName,
-        firstname,
-        lastname,
-        status,
-        legalForm,
-        hierarchy,
-        offset,
-        limit,
-        orderBy,
-        sortOrder,
-        orphansOnly);
-    // .retrieveAll(uriInfo, officeId, externalId, displayName, firstname, lastname, status,
-    // legalForm, hierarchy, offset, limit, orderBy, sortOrder, orphansOnly, true);
+    final SelfServiceSearchParameters searchParameters = SelfServiceSearchParameters.builder()
+        .isSelfUser(true)
+        .name(displayName).firstname(firstname).lastname(lastname)
+        .status(status).legalForm(legalForm)
+        .offset(offset).limit(limit).orderBy(orderBy).sortOrder(sortOrder)
+        .build();
+    final Page<ClientData> clientData = selfServiceClientReadPlatformService.retrieveAll(searchParameters);
+    final ApiRequestJsonSerializationSettings settings =
+        apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+    return clientSerializer.serialize(settings, clientData);
   }
 
   @GET
@@ -194,11 +206,12 @@ public class SelfClientsApiResource {
       @Context final UriInfo uriInfo) {
 
     this.dataValidator.validateRetrieveOne(uriInfo);
-
     validateAppuserClientsMapping(clientId);
 
-    final boolean staffInSelectedOfficeOnly = false;
-    return this.clientApiResource.retrieveOne(clientId, uriInfo, staffInSelectedOfficeOnly);
+    final ClientData clientData = selfServiceClientReadPlatformService.retrieveOne(clientId);
+    final ApiRequestJsonSerializationSettings settings =
+        apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+    return clientSerializer.serialize(settings, clientData);
   }
 
   @GET
@@ -233,7 +246,11 @@ public class SelfClientsApiResource {
 
     validateAppuserClientsMapping(clientId);
 
-    return this.clientApiResource.retrieveAssociatedAccounts(clientId, uriInfo);
+    final AccountSummaryCollectionData accounts =
+        accountDetailsReadPlatformService.retrieveClientAccountDetails(clientId);
+    final ApiRequestJsonSerializationSettings settings =
+        apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+    return accountSummarySerializer.serialize(settings, accounts);
   }
 
   @GET
@@ -260,7 +277,6 @@ public class SelfClientsApiResource {
     final var content =
         imageReadPlatformService.retrieveImage(ClientApiConstants.clientEntityName, clientId);
 
-    // stream base64 encoded original format
     final var detectorCtx =
         contentDetectorManager.detect(
             ContentDetectorContext.builder().fileName(content.getFileName()).build());
@@ -329,8 +345,13 @@ public class SelfClientsApiResource {
 
     validateAppuserClientsMapping(clientId);
 
-    return this.clientChargesApiResource.retrieveAllClientCharges(
-        clientId, chargeStatus, pendingPayment, uriInfo, limit, offset);
+    final SearchParameters searchParameters =
+        SearchParameters.builder().limit(limit).offset(offset).build();
+    final Page<ClientChargeData> charges = clientChargeReadPlatformService.retrieveClientCharges(
+        clientId, chargeStatus, pendingPayment, searchParameters);
+    final ApiRequestJsonSerializationSettings settings =
+        apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+    return clientChargeSerializer.serialize(settings, charges);
   }
 
   @GET
@@ -363,10 +384,13 @@ public class SelfClientsApiResource {
       @Context final UriInfo uriInfo) {
 
     this.dataValidator.validateClientCharges(uriInfo);
-
     validateAppuserClientsMapping(clientId);
 
-    return this.clientChargesApiResource.retrieveClientCharge(clientId, chargeId, uriInfo);
+    final ClientChargeData charge =
+        clientChargeReadPlatformService.retrieveClientCharge(clientId, chargeId);
+    final ApiRequestJsonSerializationSettings settings =
+        apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+    return clientChargeSerializer.serialize(settings, charge);
   }
 
   @GET
@@ -399,8 +423,13 @@ public class SelfClientsApiResource {
 
     validateAppuserClientsMapping(clientId);
 
-    return this.clientTransactionsApiResource.retrieveAllClientTransactions(
-        clientId, uriInfo, offset, limit);
+    final SearchParameters searchParameters =
+        SearchParameters.builder().limit(limit).offset(offset).build();
+    final Page<ClientTransactionData> clientTransactions =
+        clientTransactionReadPlatformService.retrieveAllTransactions(clientId, searchParameters);
+    final ApiRequestJsonSerializationSettings settings =
+        apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+    return clientTransactionSerializer.serialize(settings, clientTransactions);
   }
 
   @GET
@@ -435,12 +464,15 @@ public class SelfClientsApiResource {
 
     validateAppuserClientsMapping(clientId);
 
-    return this.clientTransactionsApiResource.retrieveClientTransaction(
-        clientId, transactionId, uriInfo);
+    final ClientTransactionData clientTransaction =
+        clientTransactionReadPlatformService.retrieveTransaction(clientId, transactionId);
+    final ApiRequestJsonSerializationSettings settings =
+        apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+    return clientTransactionSerializer.serialize(settings, clientTransaction);
   }
 
   private void validateAppuserClientsMapping(final Long clientId) {
-    AppUser user = this.context.authenticatedUser();
+    AppSelfServiceUser user = this.context.authenticatedSelfServiceUser();
     final boolean mappedClientId =
         this.appUserClientMapperReadService.isClientMappedToUser(clientId, user.getId());
     if (!mappedClientId) {
@@ -468,7 +500,6 @@ public class SelfClientsApiResource {
 
     validateAppuserClientsMapping(clientId);
 
-    // TODO: add proper error messages
     requireNonNull(fileDetails, "");
     requireNonNull(filePart, "");
     requireNonNull(is, "");
@@ -553,6 +584,10 @@ public class SelfClientsApiResource {
 
     validateAppuserClientsMapping(clientId);
 
-    return this.clientApiResource.retrieveObligeeDetails(clientId, uriInfo);
+    final List<ObligeeData> obligeeList =
+        guarantorReadPlatformService.retrieveObligeeDetails(clientId);
+    final ApiRequestJsonSerializationSettings settings =
+        apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+    return obligeeSerializer.serialize(settings, obligeeList);
   }
 }
