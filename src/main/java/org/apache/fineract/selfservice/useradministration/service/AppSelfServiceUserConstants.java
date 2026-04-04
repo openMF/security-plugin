@@ -12,20 +12,20 @@
  * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.fineract.useradministration.domain;
+package org.apache.fineract.selfservice.useradministration.service;
 
-import java.util.Collection;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+public final class AppSelfServiceUserConstants {
 
-public interface AppSelfServiceUserRepository extends JpaRepository<AppSelfServiceUser, Long>, JpaSpecificationExecutor<AppSelfServiceUser> {
+  private AppSelfServiceUserConstants() {}
 
+  public static final String PASSWORD = "password";
+  public static final String REPEAT_PASSWORD = "repeatPassword";
+  public static final String PASSWORD_NEVER_EXPIRES = "passwordNeverExpires";
+  public static final String IS_SELF_SERVICE_USER = "isSelfServiceUser";
+  public static final String CLIENTS = "clients";
 
-  @Query(
-      "Select appSelfServiceUser from AppSelfServiceUser appSelfServiceUser where appSelfServiceUser.username = :username")
-  AppSelfServiceUser findAppSelfServiceUserByName(@Param("username") String username);
-
-  Collection<AppSelfServiceUser> findByOfficeId(Long officeId);
+  // TODO: Remove hard coding of system user name and make this a configurable parameter
+  public static final String SYSTEM_USER_NAME = "system";
+  public static final Long ADMIN_USER_ID = 1L;
+  public static final Long SYSTEM_USER_ID = 2L;
 }

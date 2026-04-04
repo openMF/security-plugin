@@ -47,7 +47,7 @@ import org.apache.fineract.selfservice.client.service.AppuserClientMapperReadSer
 import org.apache.fineract.selfservice.savings.data.SelfSavingsAccountConstants;
 import org.apache.fineract.selfservice.savings.data.SelfSavingsDataValidator;
 import org.apache.fineract.selfservice.savings.service.AppuserSavingsMapperReadService;
-import org.apache.fineract.useradministration.domain.AppSelfServiceUser;
+import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
 import org.springframework.stereotype.Component;
 
 @Path("/v1/self/savingsaccounts")

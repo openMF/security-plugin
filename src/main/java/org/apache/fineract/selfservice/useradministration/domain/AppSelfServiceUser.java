@@ -12,7 +12,7 @@
  * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.fineract.useradministration.domain;
+package org.apache.fineract.selfservice.useradministration.domain;
 
 import static org.apache.fineract.useradministration.service.AppUserConstants.PASSWORD;
 
@@ -48,7 +48,9 @@ import org.apache.fineract.infrastructure.security.service.RandomPasswordGenerat
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.organisation.staff.domain.Staff;
 import org.apache.fineract.portfolio.client.domain.Client;
-import org.apache.fineract.useradministration.service.AppSelfServiceUserConstants;
+import org.apache.fineract.useradministration.domain.Permission;
+import org.apache.fineract.useradministration.domain.Role;
+import org.apache.fineract.selfservice.useradministration.service.AppSelfServiceUserConstants;
 import org.apache.fineract.useradministration.service.AppUserConstants;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;

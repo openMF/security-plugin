@@ -16,7 +16,7 @@ package org.apache.fineract.selfservice.security.service;
 
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.infrastructure.security.service.PlatformUserRightsContext;
-import org.apache.fineract.useradministration.domain.AppSelfServiceUser;
+import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
 
 public interface PlatformSelfServiceSecurityContext extends PlatformUserRightsContext {
 

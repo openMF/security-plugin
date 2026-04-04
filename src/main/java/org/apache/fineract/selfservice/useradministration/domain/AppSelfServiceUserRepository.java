@@ -12,20 +12,20 @@
  * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.fineract.useradministration.service;
+package org.apache.fineract.selfservice.useradministration.domain;
 
 import java.util.Collection;
-import org.apache.fineract.useradministration.data.AppSelfServiceUserData;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
-public interface AppSelfServiceUserReadPlatformService {
+public interface AppSelfServiceUserRepository extends JpaRepository<AppSelfServiceUser, Long>, JpaSpecificationExecutor<AppSelfServiceUser> {
 
-  Collection<AppSelfServiceUserData> retrieveAllSelfServiceUsers();
 
-  Collection<AppSelfServiceUserData> retrieveSearchTemplate();
+  @Query(
+      "Select appSelfServiceUser from AppSelfServiceUser appSelfServiceUser where appSelfServiceUser.username = :username")
+  AppSelfServiceUser findAppSelfServiceUserByName(@Param("username") String username);
 
-  AppSelfServiceUserData retrieveNewSelfServiceUserDetails();
-
-  AppSelfServiceUserData retrieveSelfServiceUser(Long userId);
-
-  boolean isUsernameExist(String username);
+  Collection<AppSelfServiceUser> findByOfficeId(Long officeId);
 }

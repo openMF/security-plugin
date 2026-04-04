@@ -19,7 +19,7 @@ import java.sql.SQLException;
 import java.util.Collection;
 import lombok.RequiredArgsConstructor;
 import org.apache.fineract.selfservice.account.data.SelfAccountTemplateData;
-import org.apache.fineract.useradministration.domain.AppSelfServiceUser;
+import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 

@@ -15,7 +15,7 @@
 package org.apache.fineract.selfservice.registration.service;
 
 import org.apache.fineract.selfservice.registration.domain.SelfServiceRegistration;
-import org.apache.fineract.useradministration.domain.AppSelfServiceUser;
+import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
 
 public interface SelfServiceRegistrationWritePlatformService {
 

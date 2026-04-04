@@ -25,11 +25,11 @@ import org.apache.fineract.selfservice.registration.service.SelfServiceRegistrat
 import org.apache.fineract.selfservice.registration.service.SelfServiceRegistrationReadPlatformServiceImpl;
 import org.apache.fineract.selfservice.registration.service.SelfServiceRegistrationWritePlatformService;
 import org.apache.fineract.selfservice.registration.service.SelfServiceRegistrationWritePlatformServiceImpl;
-import org.apache.fineract.useradministration.domain.AppSelfServiceUserClientMappingRepository;
+import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUserClientMappingRepository;
 import org.apache.fineract.useradministration.domain.PasswordValidationPolicyRepository;
 import org.apache.fineract.useradministration.domain.RoleRepository;
-import org.apache.fineract.useradministration.domain.SelfServiceUserDomainService;
-import org.apache.fineract.useradministration.service.AppSelfServiceUserReadPlatformService;
+import org.apache.fineract.selfservice.useradministration.domain.SelfServiceUserDomainService;
+import org.apache.fineract.selfservice.useradministration.service.AppSelfServiceUserReadPlatformService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

@@ -12,7 +12,7 @@
  * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.fineract.useradministration.service;
+package org.apache.fineract.selfservice.useradministration.service;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -29,11 +29,11 @@ import org.apache.fineract.organisation.staff.data.StaffData;
 import org.apache.fineract.organisation.staff.service.StaffReadService;
 import org.apache.fineract.portfolio.client.data.ClientData;
 import org.apache.fineract.portfolio.client.domain.Client;
-import org.apache.fineract.useradministration.data.AppSelfServiceUserData;
+import org.apache.fineract.selfservice.useradministration.data.AppSelfServiceUserData;
 import org.apache.fineract.useradministration.data.RoleData;
-import org.apache.fineract.useradministration.domain.AppSelfServiceUser;
-import org.apache.fineract.useradministration.domain.AppSelfServiceUserClientMapping;
-import org.apache.fineract.useradministration.domain.AppSelfServiceUserRepository;
+import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
+import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUserClientMapping;
+import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUserRepository;
 import org.apache.fineract.useradministration.domain.Role;
 import org.apache.fineract.useradministration.exception.UserNotFoundException;
 import org.springframework.cache.annotation.Cacheable;
@@ -49,7 +49,7 @@ public class AppSelfServiceUserReadPlatformServiceImpl
   private final PlatformSelfServiceSecurityContext context;
   private final JdbcTemplate jdbcTemplate;
   private final OfficeReadPlatformService officeReadPlatformService;
-  private final RoleReadPlatformService roleReadPlatformService;
+  private final SelfServiceRoleReadPlatformService roleReadPlatformService;
   private final AppSelfServiceUserRepository appUserRepository;
   private final StaffReadService staffReadPlatformService;
 
@@ -168,11 +168,11 @@ public class AppSelfServiceUserReadPlatformServiceImpl
 
   private static final class AppSelfServiceUserMapper implements RowMapper<AppSelfServiceUserData> {
 
-    private final RoleReadPlatformService roleReadPlatformService;
+    private final SelfServiceRoleReadPlatformService roleReadPlatformService;
     private final StaffReadService staffReadPlatformService;
 
     AppSelfServiceUserMapper(
-        final RoleReadPlatformService roleReadPlatformService,
+        final SelfServiceRoleReadPlatformService roleReadPlatformService,
         final StaffReadService staffReadPlatformService) {
       this.roleReadPlatformService = roleReadPlatformService;
       this.staffReadPlatformService = staffReadPlatformService;

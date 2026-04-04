@@ -12,7 +12,7 @@
  * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.fineract.useradministration.data;
+package org.apache.fineract.selfservice.useradministration.data;
 
 import java.util.Collection;
 import java.util.List;
@@ -20,6 +20,7 @@ import java.util.Set;
 import org.apache.fineract.organisation.office.data.OfficeData;
 import org.apache.fineract.organisation.staff.data.StaffData;
 import org.apache.fineract.portfolio.client.data.ClientData;
+import org.apache.fineract.useradministration.data.RoleData;
 
 /** Immutable data object for application user data. */
 public final class AppSelfServiceUserData {

@@ -40,7 +40,7 @@ import org.apache.fineract.selfservice.account.domain.SelfBeneficiariesTPT;
 import org.apache.fineract.selfservice.account.domain.SelfBeneficiariesTPTRepository;
 import org.apache.fineract.selfservice.account.exception.InvalidAccountInformationException;
 import org.apache.fineract.selfservice.account.exception.InvalidBeneficiaryException;
-import org.apache.fineract.useradministration.domain.AppSelfServiceUser;
+import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
 import org.springframework.dao.DataAccessException;
 import org.springframework.transaction.annotation.Transactional;
 

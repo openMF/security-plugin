@@ -17,7 +17,7 @@ package org.apache.fineract.selfservice.account.service;
 import java.util.Collection;
 import org.apache.fineract.selfservice.account.data.SelfAccountTemplateData;
 import org.apache.fineract.selfservice.account.data.SelfBeneficiariesTPTData;
-import org.apache.fineract.useradministration.domain.AppSelfServiceUser;
+import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
 
 public interface SelfBeneficiariesTPTReadPlatformService {
 

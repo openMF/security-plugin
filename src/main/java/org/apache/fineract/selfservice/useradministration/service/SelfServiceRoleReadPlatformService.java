@@ -12,12 +12,12 @@
  * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.fineract.useradministration.service;
+package org.apache.fineract.selfservice.useradministration.service;
 
 import java.util.Collection;
 import org.apache.fineract.useradministration.data.RoleData;
 
-public interface RoleReadPlatformService {
+public interface SelfServiceRoleReadPlatformService {
 
   Collection<RoleData> retrieveAll();
 

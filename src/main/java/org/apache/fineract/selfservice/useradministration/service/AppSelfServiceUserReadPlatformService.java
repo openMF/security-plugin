@@ -12,20 +12,20 @@
  * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.fineract.useradministration.service;
+package org.apache.fineract.selfservice.useradministration.service;
 
-public final class AppSelfServiceUserConstants {
+import java.util.Collection;
+import org.apache.fineract.selfservice.useradministration.data.AppSelfServiceUserData;
 
-  private AppSelfServiceUserConstants() {}
+public interface AppSelfServiceUserReadPlatformService {
 
-  public static final String PASSWORD = "password";
-  public static final String REPEAT_PASSWORD = "repeatPassword";
-  public static final String PASSWORD_NEVER_EXPIRES = "passwordNeverExpires";
-  public static final String IS_SELF_SERVICE_USER = "isSelfServiceUser";
-  public static final String CLIENTS = "clients";
+  Collection<AppSelfServiceUserData> retrieveAllSelfServiceUsers();
 
-  // TODO: Remove hard coding of system user name and make this a configurable parameter
-  public static final String SYSTEM_USER_NAME = "system";
-  public static final Long ADMIN_USER_ID = 1L;
-  public static final Long SYSTEM_USER_ID = 2L;
+  Collection<AppSelfServiceUserData> retrieveSearchTemplate();
+
+  AppSelfServiceUserData retrieveNewSelfServiceUserDetails();
+
+  AppSelfServiceUserData retrieveSelfServiceUser(Long userId);
+
+  boolean isUsernameExist(String username);
 }

@@ -20,7 +20,7 @@ package org.apache.fineract.selfservice.security.service;
 
 import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.fineract.useradministration.domain.AppSelfServiceUser;
+import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.core.Authentication;

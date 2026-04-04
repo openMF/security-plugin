@@ -12,7 +12,7 @@
  * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.fineract.useradministration.service;
+package org.apache.fineract.selfservice.useradministration.service;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -24,13 +24,15 @@ import org.apache.fineract.useradministration.exception.RoleNotFoundException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.stereotype.Component;
 
-public class RoleReadPlatformServiceImpl implements RoleReadPlatformService {
+@Component
+public class SelfServiceRoleReadPlatformServiceImpl implements SelfServiceRoleReadPlatformService {
 
   private final JdbcTemplate jdbcTemplate;
   private final RoleMapper roleRowMapper;
 
-  public RoleReadPlatformServiceImpl(final JdbcTemplate jdbcTemplate) {
+  public SelfServiceRoleReadPlatformServiceImpl(final JdbcTemplate jdbcTemplate) {
     this.jdbcTemplate = jdbcTemplate;
     this.roleRowMapper = new RoleMapper();
   }
