@@ -78,4 +78,20 @@ class SelfServiceSecurityWiringTest {
     void selfServiceFilterChain_exists() {
         assertNotNull(ctx.getBean("selfServiceSecurityFilterChain"));
     }
+
+    @Test
+    void authResourceConstructor_hasQualifierAnnotation() throws NoSuchMethodException {
+        java.lang.reflect.Constructor<?> ctor = org.apache.fineract.selfservice.security.api.SelfAuthenticationApiResource.class
+                .getDeclaredConstructors()[0];
+        java.lang.annotation.Annotation[][] paramAnnotations = ctor.getParameterAnnotations();
+        boolean found = false;
+        for (java.lang.annotation.Annotation ann : paramAnnotations[0]) {
+            if (ann instanceof Qualifier q) {
+                org.junit.jupiter.api.Assertions.assertEquals("selfServiceAuthenticationProvider", q.value());
+                found = true;
+            }
+        }
+        org.junit.jupiter.api.Assertions.assertTrue(found,
+                "@Qualifier annotation missing on constructor parameter. Check lombok.config has: lombok.copyableAnnotations += org.springframework.beans.factory.annotation.Qualifier");
+    }
 }
