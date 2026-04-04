@@ -73,7 +73,7 @@ public class SelfAuthenticationApiResource {
         public String password;
     }
 
-    @Qualifier("customAuthenticationProvider")
+    @Qualifier("selfServiceAuthenticationProvider")
     private final DaoAuthenticationProvider customAuthenticationProvider;
     private final ToApiJsonSerializer<AppSelfServiceUserData> apiJsonSerializerService;
     private final PlatformSelfServiceSecurityContext springSecurityPlatformSecurityContext;
