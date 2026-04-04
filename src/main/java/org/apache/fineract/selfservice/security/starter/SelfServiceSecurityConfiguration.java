@@ -171,39 +171,36 @@ public class SelfServiceSecurityConfiguration {
     }
 
     public SelfServiceBasicAuthenticationFilter tenantAwareBasicAuthenticationFilter() throws Exception {
-        SelfServiceBasicAuthenticationFilter filter = new SelfServiceBasicAuthenticationFilter(authenticationManagerBean(),
-                basicAuthenticationEntryPoint(), toApiJsonSerializer, configurationDomainService, cacheWritePlatformService,
+        SelfServiceBasicAuthenticationFilter filter = new SelfServiceBasicAuthenticationFilter(selfServiceAuthenticationManager(),
+                selfServiceBasicAuthenticationEntryPoint(), toApiJsonSerializer, configurationDomainService, cacheWritePlatformService,
                 userNotificationService, basicAuthTenantDetailsService, businessDateReadPlatformService);
 
-        // Scope the auth filter to /api/** so it can pick up the tenant header
         filter.setRequestMatcher(API_MATCHER.matcher("/api/**"));
         return filter;
     }
 
-    @Bean
-    public BasicAuthenticationEntryPoint basicAuthenticationEntryPoint() {
-        BasicAuthenticationEntryPoint basicAuthenticationEntryPoint = new BasicAuthenticationEntryPoint();
-        basicAuthenticationEntryPoint.setRealmName("Fineract Platform API");
-        return basicAuthenticationEntryPoint;
+    @Bean(name = "selfServiceBasicAuthenticationEntryPoint")
+    public BasicAuthenticationEntryPoint selfServiceBasicAuthenticationEntryPoint() {
+        BasicAuthenticationEntryPoint entryPoint = new BasicAuthenticationEntryPoint();
+        entryPoint.setRealmName("Fineract Self Service API");
+        return entryPoint;
     }
 
-    @Bean(name = "customAuthenticationProvider")
-    public DaoAuthenticationProvider authProvider() {
+    @Bean(name = "selfServiceAuthenticationProvider")
+    public DaoAuthenticationProvider selfServiceAuthProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
         authProvider.setUserDetailsService(userDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder());
+        authProvider.setPasswordEncoder(selfServicePasswordEncoder());
         authProvider.setPostAuthenticationChecks(platformUserDetailsChecker);
         return authProvider;
     }
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
+    public PasswordEncoder selfServicePasswordEncoder() {
         return PasswordEncoderFactories.createDelegatingPasswordEncoder();
     }
 
-    @Bean
-    public AuthenticationManager authenticationManagerBean() throws Exception {
-        ProviderManager providerManager = new ProviderManager(authProvider());
+    public AuthenticationManager selfServiceAuthenticationManager() throws Exception {
+        ProviderManager providerManager = new ProviderManager(selfServiceAuthProvider());
         providerManager.setEraseCredentialsAfterAuthentication(false);
         return providerManager;
     }
