@@ -69,5 +69,17 @@
             <column defaultValueBoolean="false" name="cannot_change_password" type="boolean"/>
         </createTable>
     </changeSet>
+    <changeSet author="fineract" id="ss-0001-2">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="request_audit_table" columnName="middlename"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="request_audit_table">
+            <column name="middlename" type="VARCHAR(100)">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
 
 </databaseChangeLog>
