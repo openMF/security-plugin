@@ -9,8 +9,8 @@
 -->
 <databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
-    <!-- Mifos Self Service User Plugin -->
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">    
+    <!-- Add App Self Service User Table -->
     <changeSet author="fineract" id="ss-0001-1">
         <preConditions onFail="MARK_RAN">
             <not>
@@ -69,6 +69,7 @@
             <column defaultValueBoolean="false" name="cannot_change_password" type="boolean"/>
         </createTable>
     </changeSet>
+    <!-- Modify Request Audit Table -->
     <changeSet author="fineract" id="ss-0001-2">
         <preConditions onFail="MARK_RAN">
             <not>
@@ -81,7 +82,43 @@
             </column>
         </addColumn>
     </changeSet>
+    <!-- Add Self Service Beneficiaries Third Party Transfer Table -->
     <changeSet author="fineract" id="ss-0001-3">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="m_selfservice_beneficiaries_tpt"/>
+            </not>
+        </preConditions>
+        <createTable tableName="m_selfservice_beneficiaries_tpt">
+            <column autoIncrement="true" name="id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="app_user_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="office_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="client_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="account_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="account_type" type="SMALLINT">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueNumeric="0" name="transfer_limit" type="BIGINT"/>
+            <column defaultValueBoolean="false" name="is_active" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <!-- Add App Self Service User Client Mapping Table -->
+    <changeSet author="fineract" id="ss-0001-4">
         <preConditions onFail="MARK_RAN">
             <not>
                 <tableExists tableName="m_selfservice_user_client_mapping"/>
@@ -99,23 +136,27 @@
             </column>
         </createTable>
     </changeSet>
-    <changeSet author="fineract" id="ss-0001-4">
+    <!-- Alter App Self Service User Client Mapping Table -->
+    <changeSet author="fineract" id="ss-0001-5">
         <addUniqueConstraint columnNames="appuser_id, client_id" constraintName="appuser_id_client_id"
                              tableName="m_selfservice_user_client_mapping"/>
         <addUniqueConstraint columnNames="client_id" constraintName="unique_self_client"
                              tableName="m_selfservice_user_client_mapping"/>
     </changeSet>
-    <changeSet author="fineract" id="ss-0001-5">
+    <!-- Alter App Self Service Beneficiaries Table -->
+    <changeSet author="fineract" id="ss-0001-6">
         <addUniqueConstraint columnNames="name, app_user_id, is_active" constraintName="uk_m_selfservice_beneficiaries_tpt_name"
                              tableName="m_selfservice_beneficiaries_tpt"/>
     </changeSet>
-    <changeSet author="fineract" id="ss-0001-6">
+    <!-- Alter App Self Service User Client Mapping Table -->
+    <changeSet author="fineract" id="ss-0001-7">
         <addForeignKeyConstraint baseColumnNames="appuser_id" baseTableName="m_selfservice_user_client_mapping"
                                  constraintName="m_selfservice_appuser_id" deferrable="false" initiallyDeferred="false"
                                  onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="id"
                                  referencedTableName="m_appselfserviceuser" validate="true"/>
     </changeSet>
-    <changeSet author="fineract" id="ss-0001-7">
+    <!-- Alter App Self Service User Client Mapping Table -->
+    <changeSet author="fineract" id="ss-0001-8">
         <addForeignKeyConstraint baseColumnNames="client_id" baseTableName="m_selfservice_user_client_mapping"
                                  constraintName="m_selfservice_client_id" deferrable="false" initiallyDeferred="false"
                                  onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="id"
