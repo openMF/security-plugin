@@ -36,7 +36,6 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.UriInfo;
 import java.util.HashMap;
 import lombok.RequiredArgsConstructor;
-import org.apache.fineract.selfservice.security.service.PlatformSelfServiceSecurityContext;
 import org.apache.fineract.portfolio.client.exception.ClientNotFoundException;
 import org.apache.fineract.portfolio.savings.api.SavingsAccountChargesApiResource;
 import org.apache.fineract.portfolio.savings.api.SavingsAccountTransactionsApiResource;
@@ -47,6 +46,7 @@ import org.apache.fineract.selfservice.client.service.AppuserClientMapperReadSer
 import org.apache.fineract.selfservice.savings.data.SelfSavingsAccountConstants;
 import org.apache.fineract.selfservice.savings.data.SelfSavingsDataValidator;
 import org.apache.fineract.selfservice.savings.service.AppuserSavingsMapperReadService;
+import org.apache.fineract.selfservice.security.service.PlatformSelfServiceSecurityContext;
 import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
 import org.springframework.stereotype.Component;
 

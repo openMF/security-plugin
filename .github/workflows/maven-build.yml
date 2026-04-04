@@ -21,14 +21,23 @@ jobs:
           distribution: 'zulu'
           cache: 'maven'
 
-      #- name: Validate Code Formatting
-        # Enforce coding style guidelines immediately.
-        # Fails fast if the code does not adhere to the project's Spotless configuration.
-        #run: mvn spotless:check --file pom.xml
+      - name: Validate Code Formatting
+        # Fail fast if code does not match Google Java Style (Spotless).
+        # Run 'mvn spotless:apply' locally to auto-fix formatting.
+        run: mvn -B spotless:check --file pom.xml
 
-      - name: Build and Package
-        # Compiles the code and packages the JAR artifacts.
-        # Tests are currently skipped (-DskipTests) as integration tests require
-        # a running Fineract backend instance (localhost:8443) which is not
-        # available in this standard runner environment.
-        run: mvn -B clean package -U -DskipTests --file pom.xml
+      - name: Build and Run Unit Tests
+        # Compiles, runs unit tests, and packages the JAR.
+        # Spotless check already ran above, so skip it during compile to avoid double-checking.
+        # Smoke/integration tests (*SmokeTest, *IntegrationTest) are excluded by surefire config.
+        run: mvn -B clean package -U -Dspotless.check.skip=true --file pom.xml
+
+      - name: Upload Test Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            target/surefire-reports/
+            target/site/jacoco/
+          retention-days: 14

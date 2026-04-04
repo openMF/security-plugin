@@ -42,7 +42,6 @@ import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
-import org.apache.fineract.selfservice.security.service.PlatformSelfServiceSecurityContext;
 import org.apache.fineract.portfolio.account.api.AccountTransfersApiResource;
 import org.apache.fineract.portfolio.account.data.request.AccountTransferRequest;
 import org.apache.fineract.portfolio.account.service.AccountTransfersReadPlatformService;
@@ -53,6 +52,7 @@ import org.apache.fineract.selfservice.account.exception.BeneficiaryTransferLimi
 import org.apache.fineract.selfservice.account.exception.DailyTPTTransactionAmountLimitExceededException;
 import org.apache.fineract.selfservice.account.service.SelfAccountTransferReadService;
 import org.apache.fineract.selfservice.account.service.SelfBeneficiariesTPTReadPlatformService;
+import org.apache.fineract.selfservice.security.service.PlatformSelfServiceSecurityContext;
 import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
 import org.springframework.stereotype.Component;
 

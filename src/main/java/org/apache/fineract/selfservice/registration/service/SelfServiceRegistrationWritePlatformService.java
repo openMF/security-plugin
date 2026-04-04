@@ -19,7 +19,7 @@ import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceU
 
 public interface SelfServiceRegistrationWritePlatformService {
 
-    SelfServiceRegistration createRegistrationRequest(String apiRequestBodyAsJson);
+  SelfServiceRegistration createRegistrationRequest(String apiRequestBodyAsJson);
 
-    AppSelfServiceUser createSelfServiceUser(String apiRequestBodyAsJson);
+  AppSelfServiceUser createSelfServiceUser(String apiRequestBodyAsJson);
 }

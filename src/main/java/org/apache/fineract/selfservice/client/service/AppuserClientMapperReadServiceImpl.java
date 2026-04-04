@@ -15,8 +15,8 @@
 package org.apache.fineract.selfservice.client.service;
 
 import lombok.RequiredArgsConstructor;
-import org.apache.fineract.selfservice.security.service.PlatformSelfServiceSecurityContext;
 import org.apache.fineract.portfolio.client.exception.ClientNotFoundException;
+import org.apache.fineract.selfservice.security.service.PlatformSelfServiceSecurityContext;
 import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
 import org.springframework.jdbc.core.JdbcTemplate;
 

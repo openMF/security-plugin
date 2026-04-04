@@ -1,20 +1,16 @@
 /**
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements. See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License. You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more contributor license
+ * agreements. See the NOTICE file distributed with this work for additional information regarding
+ * copyright ownership. The ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the License. You may obtain a
+ * copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.apache.fineract.selfservice.security.starter;
 
@@ -33,7 +29,6 @@ import org.apache.fineract.infrastructure.core.service.MDCWrapper;
 import org.apache.fineract.infrastructure.instancemode.filter.FineractInstanceModeApiFilter;
 import org.apache.fineract.infrastructure.jobs.filter.LoanCOBApiFilter;
 import org.apache.fineract.infrastructure.jobs.filter.LoanCOBFilterHelper;
-import org.apache.fineract.infrastructure.jobs.filter.ProgressiveLoanModelCheckerFilter;
 import org.apache.fineract.infrastructure.security.data.PlatformRequestLog;
 import org.apache.fineract.infrastructure.security.filter.TenantAwareBasicAuthenticationFilter;
 import org.apache.fineract.infrastructure.security.filter.TwoFactorAuthenticationFilter;
@@ -43,7 +38,6 @@ import org.apache.fineract.infrastructure.security.service.TenantAwareJpaPlatfor
 import org.apache.fineract.infrastructure.security.service.TwoFactorService;
 import org.apache.fineract.notification.service.UserNotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.web.ServerProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -67,163 +61,169 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
-@Order(1)  // Very important: Must have higher priority than main security config
+@Order(1) // Very important: Must have higher priority than main security config
 public class SelfServiceSecurityConfiguration {
 
-    private static final PathPatternRequestMatcher.Builder API_MATCHER = PathPatternRequestMatcher.withDefaults();
+  private static final PathPatternRequestMatcher.Builder API_MATCHER =
+      PathPatternRequestMatcher.withDefaults();
 
-    @Autowired
-    private ApplicationContext applicationContext;
-    @Autowired
-    private TenantAwareJpaPlatformUserDetailsService userDetailsService;
-    @Autowired
-    private FineractProperties fineractProperties;    
-    @Autowired
-    private ToApiJsonSerializer<PlatformRequestLog> toApiJsonSerializer;
-    @Autowired
-    private ConfigurationDomainService configurationDomainService;
-    @Autowired
-    private CacheWritePlatformService cacheWritePlatformService;
-    @Autowired
-    private UserNotificationService userNotificationService;
-    @Autowired
-    private AuthTenantDetailsService basicAuthTenantDetailsService;
-    @Autowired
-    private BusinessDateReadPlatformService businessDateReadPlatformService;
-    @Autowired
-    private MDCWrapper mdcWrapper;
-    @Autowired
-    private FineractRequestContextHolder fineractRequestContextHolder;
-    @Autowired(required = false)
-    private LoanCOBFilterHelper loanCOBFilterHelper;
-    @Autowired
-    private IdempotencyStoreHelper idempotencyStoreHelper;    
-    @Autowired
-    private PlatformUserDetailsChecker platformUserDetailsChecker;
+  @Autowired private ApplicationContext applicationContext;
+  @Autowired private TenantAwareJpaPlatformUserDetailsService userDetailsService;
+  @Autowired private FineractProperties fineractProperties;
+  @Autowired private ToApiJsonSerializer<PlatformRequestLog> toApiJsonSerializer;
+  @Autowired private ConfigurationDomainService configurationDomainService;
+  @Autowired private CacheWritePlatformService cacheWritePlatformService;
+  @Autowired private UserNotificationService userNotificationService;
+  @Autowired private AuthTenantDetailsService basicAuthTenantDetailsService;
+  @Autowired private BusinessDateReadPlatformService businessDateReadPlatformService;
+  @Autowired private MDCWrapper mdcWrapper;
+  @Autowired private FineractRequestContextHolder fineractRequestContextHolder;
 
-    @Bean
-    public SecurityFilterChain selfServiceSecurityFilterChain(HttpSecurity http) throws Exception {
+  @Autowired(required = false)
+  private LoanCOBFilterHelper loanCOBFilterHelper;
 
-        http
-            // Apply only to self-service endpoints
-            .securityMatcher("/api/v1/self/**", "/v1/self/**")
-            
-            // Disable CSRF for public self-service APIs
-            .csrf(AbstractHttpConfigurer::disable)
-            
-            // Stateless session
-            .sessionManagement(smc -> smc.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .addFilterBefore(tenantAwareBasicAuthenticationFilter(), SecurityContextHolderFilter.class)
-            .addFilterAfter(requestResponseFilter(), ExceptionTranslationFilter.class)
-            .addFilterAfter(correlationHeaderFilter(), RequestResponseFilter.class)
-            .addFilterAfter(fineractInstanceModeApiFilter(), CorrelationHeaderFilter.class)
-        
-            .authorizeHttpRequests(auth -> auth
-                // === PUBLIC ENDPOINTS ===
-                .requestMatchers(HttpMethod.POST, "/api/v1/self/registration").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/v1/self/registration/user").permitAll()
-                .requestMatchers(HttpMethod.POST, "/v1/self/registration").permitAll()
-                .requestMatchers(HttpMethod.POST, "/v1/self/registration/user").permitAll()
+  @Autowired private IdempotencyStoreHelper idempotencyStoreHelper;
+  @Autowired private PlatformUserDetailsChecker platformUserDetailsChecker;
 
-                // Self authentication (login)
-                .requestMatchers(HttpMethod.POST, "/api/v1/self/authentication").permitAll()
-                .requestMatchers(HttpMethod.POST, "/v1/self/authentication").permitAll()
+  @Bean
+  public SecurityFilterChain selfServiceSecurityFilterChain(HttpSecurity http) throws Exception {
 
-                // All other self-service endpoints require self-service authentication
-                .requestMatchers("/api/v1/self/**", "/v1/self/**").authenticated()
+    http
+        // Apply only to self-service endpoints
+        .securityMatcher("/api/v1/self/**", "/v1/self/**")
 
-                .anyRequest().permitAll()
-            );
+        // Disable CSRF for public self-service APIs
+        .csrf(AbstractHttpConfigurer::disable)
 
-        // Optional: CORS if needed for mobile/web clients
-        if (fineractProperties.getSecurity().getCors().isEnabled()) {
-            http.cors(cors -> cors.configurationSource(corsConfigurationSource()));
-        }
+        // Stateless session
+        .sessionManagement(smc -> smc.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .addFilterBefore(tenantAwareBasicAuthenticationFilter(), SecurityContextHolderFilter.class)
+        .addFilterAfter(requestResponseFilter(), ExceptionTranslationFilter.class)
+        .addFilterAfter(correlationHeaderFilter(), RequestResponseFilter.class)
+        .addFilterAfter(fineractInstanceModeApiFilter(), CorrelationHeaderFilter.class)
+        .authorizeHttpRequests(
+            auth ->
+                auth
+                    // === PUBLIC ENDPOINTS ===
+                    .requestMatchers(HttpMethod.POST, "/api/v1/self/registration")
+                    .permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/v1/self/registration/user")
+                    .permitAll()
+                    .requestMatchers(HttpMethod.POST, "/v1/self/registration")
+                    .permitAll()
+                    .requestMatchers(HttpMethod.POST, "/v1/self/registration/user")
+                    .permitAll()
 
-        return http.build();
-    }
-    
-    public RequestResponseFilter requestResponseFilter() {
-        return new RequestResponseFilter();
+                    // Self authentication (login)
+                    .requestMatchers(HttpMethod.POST, "/api/v1/self/authentication")
+                    .permitAll()
+                    .requestMatchers(HttpMethod.POST, "/v1/self/authentication")
+                    .permitAll()
+
+                    // All other self-service endpoints require self-service authentication
+                    .requestMatchers("/api/v1/self/**", "/v1/self/**")
+                    .authenticated()
+                    .anyRequest()
+                    .permitAll());
+
+    // Optional: CORS if needed for mobile/web clients
+    if (fineractProperties.getSecurity().getCors().isEnabled()) {
+      http.cors(cors -> cors.configurationSource(corsConfigurationSource()));
     }
 
-    public LoanCOBApiFilter loanCOBApiFilter() {
-        return new LoanCOBApiFilter(loanCOBFilterHelper);
-    }
+    return http.build();
+  }
 
-    public TwoFactorAuthenticationFilter twoFactorAuthenticationFilter() {
-        TwoFactorService twoFactorService = applicationContext.getBean(TwoFactorService.class);
-        return new TwoFactorAuthenticationFilter(twoFactorService);
-    }
+  public RequestResponseFilter requestResponseFilter() {
+    return new RequestResponseFilter();
+  }
 
-    public FineractInstanceModeApiFilter fineractInstanceModeApiFilter() {
-        return new FineractInstanceModeApiFilter(fineractProperties);
-    }
+  public LoanCOBApiFilter loanCOBApiFilter() {
+    return new LoanCOBApiFilter(loanCOBFilterHelper);
+  }
 
-    public IdempotencyStoreFilter idempotencyStoreFilter() {
-        return new IdempotencyStoreFilter(fineractRequestContextHolder, idempotencyStoreHelper, fineractProperties);
-    }
+  public TwoFactorAuthenticationFilter twoFactorAuthenticationFilter() {
+    TwoFactorService twoFactorService = applicationContext.getBean(TwoFactorService.class);
+    return new TwoFactorAuthenticationFilter(twoFactorService);
+  }
 
-    public CorrelationHeaderFilter correlationHeaderFilter() {
-        return new CorrelationHeaderFilter(fineractProperties, mdcWrapper);
-    }
+  public FineractInstanceModeApiFilter fineractInstanceModeApiFilter() {
+    return new FineractInstanceModeApiFilter(fineractProperties);
+  }
 
-    public CallerIpTrackingFilter callerIpTrackingFilter() {
-        return new CallerIpTrackingFilter(fineractProperties);
-    }
+  public IdempotencyStoreFilter idempotencyStoreFilter() {
+    return new IdempotencyStoreFilter(
+        fineractRequestContextHolder, idempotencyStoreHelper, fineractProperties);
+  }
 
-    public TenantAwareBasicAuthenticationFilter tenantAwareBasicAuthenticationFilter() throws Exception {
-        TenantAwareBasicAuthenticationFilter filter = new TenantAwareBasicAuthenticationFilter(authenticationManagerBean(),
-                basicAuthenticationEntryPoint(), toApiJsonSerializer, configurationDomainService, cacheWritePlatformService,
-                userNotificationService, basicAuthTenantDetailsService, businessDateReadPlatformService);
+  public CorrelationHeaderFilter correlationHeaderFilter() {
+    return new CorrelationHeaderFilter(fineractProperties, mdcWrapper);
+  }
 
-        // Scope the auth filter to /api/** so it can pick up the tenant header
-        filter.setRequestMatcher(API_MATCHER.matcher("/api/**"));
-        return filter;
-    }
+  public CallerIpTrackingFilter callerIpTrackingFilter() {
+    return new CallerIpTrackingFilter(fineractProperties);
+  }
 
-    @Bean
-    public BasicAuthenticationEntryPoint basicAuthenticationEntryPoint() {
-        BasicAuthenticationEntryPoint basicAuthenticationEntryPoint = new BasicAuthenticationEntryPoint();
-        basicAuthenticationEntryPoint.setRealmName("Fineract Platform API");
-        return basicAuthenticationEntryPoint;
-    }
+  public TenantAwareBasicAuthenticationFilter tenantAwareBasicAuthenticationFilter()
+      throws Exception {
+    TenantAwareBasicAuthenticationFilter filter =
+        new TenantAwareBasicAuthenticationFilter(
+            authenticationManagerBean(),
+            basicAuthenticationEntryPoint(),
+            toApiJsonSerializer,
+            configurationDomainService,
+            cacheWritePlatformService,
+            userNotificationService,
+            basicAuthTenantDetailsService,
+            businessDateReadPlatformService);
 
-    @Bean(name = "customAuthenticationProvider")
-    public DaoAuthenticationProvider authProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(userDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder());
-        authProvider.setPostAuthenticationChecks(platformUserDetailsChecker);
-        return authProvider;
-    }
+    // Scope the auth filter to /api/** so it can pick up the tenant header
+    filter.setRequestMatcher(API_MATCHER.matcher("/api/**"));
+    return filter;
+  }
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return PasswordEncoderFactories.createDelegatingPasswordEncoder();
-    }
+  @Bean
+  public BasicAuthenticationEntryPoint basicAuthenticationEntryPoint() {
+    BasicAuthenticationEntryPoint basicAuthenticationEntryPoint =
+        new BasicAuthenticationEntryPoint();
+    basicAuthenticationEntryPoint.setRealmName("Fineract Platform API");
+    return basicAuthenticationEntryPoint;
+  }
 
-    @Bean
-    public AuthenticationManager authenticationManagerBean() throws Exception {
-        ProviderManager providerManager = new ProviderManager(authProvider());
-        providerManager.setEraseCredentialsAfterAuthentication(false);
-        return providerManager;
-    }
+  @Bean(name = "customAuthenticationProvider")
+  public DaoAuthenticationProvider authProvider() {
+    DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+    authProvider.setUserDetailsService(userDetailsService);
+    authProvider.setPasswordEncoder(passwordEncoder());
+    authProvider.setPostAuthenticationChecks(platformUserDetailsChecker);
+    return authProvider;
+  }
 
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration config = new CorsConfiguration();
-        FineractProperties.CorsProperties corsConfiguration = fineractProperties.getSecurity().getCors();
-        config.setAllowedOriginPatterns(corsConfiguration.getAllowedOriginPatterns());
-        config.setAllowedMethods(corsConfiguration.getAllowedMethods());
-        config.setAllowedHeaders(corsConfiguration.getAllowedHeaders());
-        config.setExposedHeaders(corsConfiguration.getExposedHeaders());
-        config.setAllowCredentials(corsConfiguration.isAllowCredentials());
+  @Bean
+  public PasswordEncoder passwordEncoder() {
+    return PasswordEncoderFactories.createDelegatingPasswordEncoder();
+  }
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", config);
-        return source;
-    }
-    
-    
+  @Bean
+  public AuthenticationManager authenticationManagerBean() throws Exception {
+    ProviderManager providerManager = new ProviderManager(authProvider());
+    providerManager.setEraseCredentialsAfterAuthentication(false);
+    return providerManager;
+  }
+
+  @Bean
+  public CorsConfigurationSource corsConfigurationSource() {
+    CorsConfiguration config = new CorsConfiguration();
+    FineractProperties.CorsProperties corsConfiguration =
+        fineractProperties.getSecurity().getCors();
+    config.setAllowedOriginPatterns(corsConfiguration.getAllowedOriginPatterns());
+    config.setAllowedMethods(corsConfiguration.getAllowedMethods());
+    config.setAllowedHeaders(corsConfiguration.getAllowedHeaders());
+    config.setExposedHeaders(corsConfiguration.getExposedHeaders());
+    config.setAllowCredentials(corsConfiguration.isAllowCredentials());
+
+    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    source.registerCorsConfiguration("/**", config);
+    return source;
+  }
 }

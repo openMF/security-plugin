@@ -3,68 +3,69 @@ package org.apache.fineract.selfservice.security.service;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
-import org.springframework.context.annotation.Primary;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 @Component
-@Primary   // ← This is the key addition
 public class PlatformSelfServiceSecurityContextImpl implements PlatformSelfServiceSecurityContext {
-    
-    
-    @Override
-    public AppSelfServiceUser authenticatedSelfServiceUser() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
-        if (auth == null || !auth.isAuthenticated()) {
-            throw new PlatformApiDataValidationException("error.msg.self.service.user.not.authenticated",
-                    "Self service user is not authenticated", null);
-        }
+  @Override
+  public AppSelfServiceUser authenticatedSelfServiceUser() {
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
-        Object principal = auth.getPrincipal();
-        if (principal instanceof AppSelfServiceUser user) {
-            return user;
-        }
-
-        throw new PlatformApiDataValidationException("error.msg.self.service.user.not.found",
-                "No self service user found in security context", null);
+    if (auth == null || !auth.isAuthenticated()) {
+      throw new PlatformApiDataValidationException(
+          "error.msg.self.service.user.not.authenticated",
+          "Self service user is not authenticated",
+          null);
     }
 
-    @Override
-    public AppSelfServiceUser getAuthenticatedSelfServiceUserIfPresent() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.isAuthenticated()) {
-            Object principal = auth.getPrincipal();
-            if (principal instanceof AppSelfServiceUser user) {
-                return user;
-            }
-        }
-        return null;
+    Object principal = auth.getPrincipal();
+    if (principal instanceof AppSelfServiceUser user) {
+      return user;
     }
 
-    @Override
-    public AppSelfServiceUser authenticatedUser(CommandWrapper commandWrapper) {
-        return authenticatedSelfServiceUser();
-    }
+    throw new PlatformApiDataValidationException(
+        "error.msg.self.service.user.not.found",
+        "No self service user found in security context",
+        null);
+  }
 
-    @Override
-    public void validateAccessRights(String resourceOfficeHierarchy) {
-        authenticatedSelfServiceUser();
+  @Override
+  public AppSelfServiceUser getAuthenticatedSelfServiceUserIfPresent() {
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    if (auth != null && auth.isAuthenticated()) {
+      Object principal = auth.getPrincipal();
+      if (principal instanceof AppSelfServiceUser user) {
+        return user;
+      }
     }
+    return null;
+  }
 
-    @Override
-    public String officeHierarchy() {
-        return null;
-    }
+  @Override
+  public AppSelfServiceUser authenticatedUser(CommandWrapper commandWrapper) {
+    return authenticatedSelfServiceUser();
+  }
 
-    @Override
-    public boolean doesPasswordHasToBeRenewed(AppSelfServiceUser currentSelfServiceUser) {
-        return false;
-    }
+  @Override
+  public void validateAccessRights(String resourceOfficeHierarchy) {
+    authenticatedSelfServiceUser();
+  }
 
-    @Override
-    public void isAuthenticated() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();        
-    }
+  @Override
+  public String officeHierarchy() {
+    return null;
+  }
+
+  @Override
+  public boolean doesPasswordHasToBeRenewed(AppSelfServiceUser currentSelfServiceUser) {
+    return false;
+  }
+
+  @Override
+  public void isAuthenticated() {
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+  }
 }

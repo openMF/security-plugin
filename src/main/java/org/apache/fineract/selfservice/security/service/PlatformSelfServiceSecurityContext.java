@@ -31,6 +31,6 @@ public interface PlatformSelfServiceSecurityContext extends PlatformUserRightsCo
   public boolean doesPasswordHasToBeRenewed(AppSelfServiceUser currentSelfServiceUser);
 
   public AppSelfServiceUser authenticatedUser(CommandWrapper commandWrapper);
-  
+
   public void isAuthenticated();
 }

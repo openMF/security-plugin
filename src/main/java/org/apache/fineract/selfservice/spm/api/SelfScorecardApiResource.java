@@ -24,12 +24,12 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.apache.fineract.selfservice.security.service.PlatformSelfServiceSecurityContext;
 import org.apache.fineract.portfolio.client.exception.ClientNotFoundException;
 import org.apache.fineract.selfservice.client.service.AppuserClientMapperReadService;
+import org.apache.fineract.selfservice.security.service.PlatformSelfServiceSecurityContext;
+import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
 import org.apache.fineract.spm.api.ScorecardApiResource;
 import org.apache.fineract.spm.data.ScorecardData;
-import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 

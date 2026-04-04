@@ -20,8 +20,8 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface AppSelfServiceUserRepository extends JpaRepository<AppSelfServiceUser, Long>, JpaSpecificationExecutor<AppSelfServiceUser> {
-
+public interface AppSelfServiceUserRepository
+    extends JpaRepository<AppSelfServiceUser, Long>, JpaSpecificationExecutor<AppSelfServiceUser> {
 
   @Query(
       "Select appSelfServiceUser from AppSelfServiceUser appSelfServiceUser where appSelfServiceUser.username = :username")

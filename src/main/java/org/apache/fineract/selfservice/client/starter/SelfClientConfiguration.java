@@ -14,9 +14,9 @@
  */
 package org.apache.fineract.selfservice.client.starter;
 
-import org.apache.fineract.selfservice.security.service.PlatformSelfServiceSecurityContext;
 import org.apache.fineract.selfservice.client.service.AppuserClientMapperReadService;
 import org.apache.fineract.selfservice.client.service.AppuserClientMapperReadServiceImpl;
+import org.apache.fineract.selfservice.security.service.PlatformSelfServiceSecurityContext;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

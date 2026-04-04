@@ -32,7 +32,20 @@
     <lombok.version>1.18.44</lombok.version>
     <spotless.version>3.4.0</spotless.version>
     <swagger.version>2.2.46</swagger.version>
+    <testcontainers.version>1.20.6</testcontainers.version>
   </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>testcontainers-bom</artifactId>
+        <version>${testcontainers.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <dependencies>      
     <dependency>
@@ -114,6 +127,22 @@
       <artifactId>truth</artifactId>
       <version>${truth.version}</version>
       <scope>compile</scope>
+    </dependency>
+    <!-- Test: Testcontainers for integration/smoke tests -->
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>postgresql</artifactId>
+      <scope>test</scope>
     </dependency>
     <!-- Apache Fineract Libraries -->
     <dependency>
@@ -435,35 +464,71 @@
   </pluginRepositories>
 
   <build>
+    <plugins>
+      <!-- Surefire: run unit tests -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <includes>
+            <include>**/*Test.java</include>
+          </includes>
+          <excludes>
+            <exclude>**/*SmokeTest.java</exclude>
+            <exclude>**/*IntegrationTest.java</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+      <!-- JaCoCo: code coverage -->
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>0.8.13</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>report</id>
+            <phase>test</phase>
+            <goals>
+              <goal>report</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <!-- Spotless: enforce code style -->
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <version>${spotless.version}</version>
+        <configuration>
+          <java>
+            <googleJavaFormat>
+              <version>1.17.0</version>
+              <style>GOOGLE</style>
+            </googleJavaFormat>
+            <importOrder />
+            <removeUnusedImports />
+          </java>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <phase>compile</phase>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
     <pluginManagement>
       <plugins>
         <plugin>
           <groupId>org.springframework.boot</groupId>
           <artifactId>spring-boot-maven-plugin</artifactId>
-        </plugin>
-        <!-- Spotless Code Formatter -->
-        <plugin>
-            <groupId>com.diffplug.spotless</groupId>
-            <artifactId>spotless-maven-plugin</artifactId>
-            <version>${spotless.version}</version>
-            <configuration>
-                <java>
-                    <googleJavaFormat>
-                        <version>1.17.0</version>
-                        <style>GOOGLE</style>
-                    </googleJavaFormat>
-                    <importOrder />
-                    <removeUnusedImports />
-                </java>
-            </configuration>
-            <executions>
-                <execution>
-                    <goals>
-                        <goal>check</goal>
-                    </goals>
-                    <phase>compile</phase>
-                </execution>
-            </executions>
         </plugin>
       </plugins>
     </pluginManagement>
