@@ -81,5 +81,45 @@
             </column>
         </addColumn>
     </changeSet>
+    <changeSet author="fineract" id="ss-0001-3">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="m_selfservice_user_client_mapping"/>
+            </not>
+        </preConditions>
+        <createTable tableName="m_selfservice_user_client_mapping">
+            <column autoIncrement="true" name="id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="appuser_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="client_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="fineract" id="ss-0001-4">
+        <addUniqueConstraint columnNames="appuser_id, client_id" constraintName="appuser_id_client_id"
+                             tableName="m_selfservice_user_client_mapping"/>
+        <addUniqueConstraint columnNames="client_id" constraintName="unique_self_client"
+                             tableName="m_selfservice_user_client_mapping"/>
+    </changeSet>
+    <changeSet author="fineract" id="ss-0001-5">
+        <addUniqueConstraint columnNames="name, app_user_id, is_active" constraintName="uk_m_selfservice_beneficiaries_tpt_name"
+                             tableName="m_selfservice_beneficiaries_tpt"/>
+    </changeSet>
+    <changeSet author="fineract" id="ss-0001-6">
+        <addForeignKeyConstraint baseColumnNames="appuser_id" baseTableName="m_selfservice_user_client_mapping"
+                                 constraintName="m_selfservice_appuser_id" deferrable="false" initiallyDeferred="false"
+                                 onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="id"
+                                 referencedTableName="m_appselfserviceuser" validate="true"/>
+    </changeSet>
+    <changeSet author="fineract" id="ss-0001-7">
+        <addForeignKeyConstraint baseColumnNames="client_id" baseTableName="m_selfservice_user_client_mapping"
+                                 constraintName="m_selfservice_client_id" deferrable="false" initiallyDeferred="false"
+                                 onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="id"
+                                 referencedTableName="m_client" validate="true"/>
+    </changeSet>
 
 </databaseChangeLog>
