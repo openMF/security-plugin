@@ -167,4 +167,56 @@
                                  referencedTableName="m_client" validate="true"/>
     </changeSet>
 
+    <!-- Create dedicated self-service role mapping table to prevent ID collision with m_appuser_role -->
+    <changeSet author="fineract" id="ss-0001-9">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="m_appselfservice_user_role"/>
+            </not>
+        </preConditions>
+        <createTable tableName="m_appselfservice_user_role">
+            <column name="appuser_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="role_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="m_appselfservice_user_role"
+                       columnNames="appuser_id, role_id"/>
+        <addForeignKeyConstraint baseTableName="m_appselfservice_user_role"
+                                 baseColumnNames="appuser_id"
+                                 constraintName="fk_ss_user_role_appuser"
+                                 referencedTableName="m_appselfservice_user"
+                                 referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="m_appselfservice_user_role"
+                                 baseColumnNames="role_id"
+                                 constraintName="fk_ss_user_role_role"
+                                 referencedTableName="m_role"
+                                 referencedColumnNames="id"/>
+    </changeSet>
+
+    <!--
+        Migrate existing self-service role data.
+        SECURITY: Filter by role name to prevent privilege escalation.
+        m_appuser and m_appselfservice_user use independent auto-increment sequences,
+        so IDs collide. An unfiltered JOIN would copy back-office admin roles.
+    -->
+    <changeSet author="fineract" id="ss-0001-10">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="m_appselfservice_user_role"/>
+            <tableExists tableName="m_appuser_role"/>
+            <tableExists tableName="m_appselfservice_user"/>
+        </preConditions>
+        <sql>
+            INSERT INTO m_appselfservice_user_role (appuser_id, role_id)
+            SELECT ar.appuser_id, ar.role_id
+            FROM m_appuser_role ar
+            INNER JOIN m_appselfservice_user su ON su.id = ar.appuser_id
+            INNER JOIN m_role r ON r.id = ar.role_id
+            WHERE r.name = 'Self Service User'
+            ON CONFLICT DO NOTHING;
+        </sql>
+    </changeSet>
+
 </databaseChangeLog>

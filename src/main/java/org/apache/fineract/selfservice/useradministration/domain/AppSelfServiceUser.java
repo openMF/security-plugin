@@ -42,6 +42,7 @@ import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.AbstractPersistableCustom;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.security.domain.PlatformUser;
+import org.apache.fineract.selfservice.security.domain.PlatformSelfServiceUser;
 import org.apache.fineract.infrastructure.security.exception.NoAuthorizationException;
 import org.apache.fineract.infrastructure.security.service.PlatformPasswordEncoder;
 import org.apache.fineract.infrastructure.security.service.RandomPasswordGenerator;
@@ -58,7 +59,7 @@ import org.springframework.security.core.userdetails.User;
 
 @Entity
 @Table(name = "m_appselfservice_user", uniqueConstraints = @UniqueConstraint(columnNames = {"username"}, name = "username_org"))
-public class AppSelfServiceUser extends AbstractPersistableCustom<Long> implements PlatformUser {
+public class AppSelfServiceUser extends AbstractPersistableCustom<Long> implements PlatformUser, PlatformSelfServiceUser {
 
     @Column(name = "email", nullable = false, length = 100)
     private String email;
@@ -102,7 +103,7 @@ public class AppSelfServiceUser extends AbstractPersistableCustom<Long> implemen
     private Staff staff;
 
     @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(name = "m_appuser_role", joinColumns = @JoinColumn(name = "appuser_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
+    @JoinTable(name = "m_appselfservice_user_role", joinColumns = @JoinColumn(name = "appuser_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
     private Set<Role> roles;
 
     @Column(name = "last_time_password_updated")

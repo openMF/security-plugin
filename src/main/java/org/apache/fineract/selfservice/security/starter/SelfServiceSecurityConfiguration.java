@@ -34,7 +34,7 @@ import org.apache.fineract.infrastructure.instancemode.filter.FineractInstanceMo
 import org.apache.fineract.infrastructure.jobs.filter.LoanCOBApiFilter;
 import org.apache.fineract.infrastructure.jobs.filter.LoanCOBFilterHelper;
 import org.apache.fineract.infrastructure.security.data.PlatformRequestLog;
-import org.apache.fineract.infrastructure.security.filter.TenantAwareBasicAuthenticationFilter;
+import org.apache.fineract.selfservice.security.filter.SelfServiceBasicAuthenticationFilter;
 import org.apache.fineract.infrastructure.security.filter.TwoFactorAuthenticationFilter;
 import org.apache.fineract.infrastructure.security.service.AuthTenantDetailsService;
 import org.apache.fineract.infrastructure.security.service.PlatformUserDetailsChecker;
@@ -170,8 +170,8 @@ public class SelfServiceSecurityConfiguration {
         return new CallerIpTrackingFilter(fineractProperties);
     }
 
-    public TenantAwareBasicAuthenticationFilter tenantAwareBasicAuthenticationFilter() throws Exception {
-        TenantAwareBasicAuthenticationFilter filter = new TenantAwareBasicAuthenticationFilter(authenticationManagerBean(),
+    public SelfServiceBasicAuthenticationFilter tenantAwareBasicAuthenticationFilter() throws Exception {
+        SelfServiceBasicAuthenticationFilter filter = new SelfServiceBasicAuthenticationFilter(authenticationManagerBean(),
                 basicAuthenticationEntryPoint(), toApiJsonSerializer, configurationDomainService, cacheWritePlatformService,
                 userNotificationService, basicAuthTenantDetailsService, businessDateReadPlatformService);
 
