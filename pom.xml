@@ -32,7 +32,7 @@
     <lombok.version>1.18.44</lombok.version>
     <spotless.version>3.4.0</spotless.version>
     <swagger.version>2.2.46</swagger.version>
-    <testcontainers.version>1.20.6</testcontainers.version>
+    <testcontainers.version>1.21.4</testcontainers.version>
   </properties>
 
   <dependencyManagement>
