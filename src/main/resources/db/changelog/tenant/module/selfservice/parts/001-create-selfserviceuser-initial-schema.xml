@@ -195,7 +195,6 @@
                                  referencedTableName="m_role"
                                  referencedColumnNames="id"/>
     </changeSet>
-
     <!--
         Migrate existing self-service role data.
         SECURITY: Filter by role name to prevent privilege escalation.
@@ -218,5 +217,13 @@
             ON CONFLICT DO NOTHING;
         </sql>
     </changeSet>
-
+    <!-- Enable the Self Service User Role-->
+    <changeSet author="fineract" id="ss-0001-11">
+        <preConditions onFail="MARK_RAN">            
+            <tableExists tableName="m_appuser_role"/>            
+        </preConditions>
+        <sql>
+            UPDATE m_role SET is_disabled=false WHERE name = 'Self Service User';
+        </sql>
+    </changeSet>
 </databaseChangeLog>
