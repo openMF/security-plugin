@@ -226,4 +226,58 @@
             UPDATE m_role SET is_disabled=false WHERE name = 'Self Service User';
         </sql>
     </changeSet>
+    <!-- Migrate the existing Self Service Users-->
+    <changeSet author="fineract" id="ss-0001-11">
+        <preConditions onFail="MARK_RAN">            
+            <tableExists tableName="m_appuser"/>
+            <tableExists tableName="m_appselfservice_user"/>
+        </preConditions>
+        <sql>
+            INSERT INTO m_appselfservice_user (
+                id,
+                is_deleted,
+                office_id,
+                staff_id,
+                username,
+                firstname,
+                lastname,
+                password,
+                email,
+                firsttime_login_remaining,
+                nonexpired,
+                nonlocked,
+                nonexpired_credentials,
+                enabled,
+                last_time_password_updated,
+                password_never_expires,
+                password_reset_required,
+                is_self_service_user,
+                cannot_change_password
+            )
+            SELECT 
+                id,
+                is_deleted,
+                office_id,
+                staff_id,
+                username,
+                firstname,
+                lastname,
+                password,
+                email,
+                firsttime_login_remaining,
+                nonexpired,
+                nonlocked,
+                nonexpired_credentials,
+                enabled,
+                last_time_password_updated,
+                password_never_expires,
+                password_reset_required,
+                FALSE AS is_self_service_user,
+                cannot_change_password
+            FROM m_appuser 
+            WHERE is_self_service_user = TRUE 
+            AND id IS NOT NULL 
+            ON CONFLICT DO NOTHING;
+        </sql>
+    </changeSet>
 </databaseChangeLog>
