@@ -24,11 +24,16 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.UriInfo;
+import java.util.Collection;
 import lombok.RequiredArgsConstructor;
+import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
+import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
+import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
 import org.apache.fineract.portfolio.savings.SavingsApiConstants;
-import org.apache.fineract.portfolio.savings.api.SavingsProductsApiResource;
-import org.springframework.stereotype.Component;
+import org.apache.fineract.portfolio.savings.data.SavingsProductData;
+import org.apache.fineract.portfolio.savings.service.SavingsProductReadPlatformService;
 import org.apache.fineract.selfservice.client.service.AppSelfServiceUserClientMapperReadService;
+import org.springframework.stereotype.Component;
 
 @Path("/v1/self/savingsproducts")
 @Component
@@ -36,7 +41,9 @@ import org.apache.fineract.selfservice.client.service.AppSelfServiceUserClientMa
 @RequiredArgsConstructor
 public class SelfSavingsProductsApiResource {
 
-  private final SavingsProductsApiResource savingsProductsApiResource;
+  private final SavingsProductReadPlatformService savingsProductReadPlatformService;
+  private final DefaultToApiJsonSerializer<SavingsProductData> toApiJsonSerializer;
+  private final ApiRequestParameterHelper apiRequestParameterHelper;
   private final AppSelfServiceUserClientMapperReadService appUserClientMapperReadService;
 
   @GET
@@ -47,7 +54,11 @@ public class SelfSavingsProductsApiResource {
       @Context final UriInfo uriInfo) {
 
     this.appUserClientMapperReadService.validateAppSelfServiceUserClientsMapping(clientId);
-    return this.savingsProductsApiResource.retrieveAll(uriInfo);
+    final ApiRequestJsonSerializationSettings settings =
+        this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+    final Collection<SavingsProductData> products =
+        this.savingsProductReadPlatformService.retrieveAll();
+    return this.toApiJsonSerializer.serialize(settings, products);
   }
 
   @GET
@@ -60,6 +71,10 @@ public class SelfSavingsProductsApiResource {
       @Context final UriInfo uriInfo) {
 
     this.appUserClientMapperReadService.validateAppSelfServiceUserClientsMapping(clientId);
-    return this.savingsProductsApiResource.retrieveOne(productId, uriInfo);
+    final ApiRequestJsonSerializationSettings settings =
+        this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+    final SavingsProductData savingsProduct =
+        this.savingsProductReadPlatformService.retrieveOne(productId);
+    return this.toApiJsonSerializer.serialize(settings, savingsProduct);
   }
 }

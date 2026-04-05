@@ -22,15 +22,16 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
+import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.selfservice.security.exception.SelfServiceNoAuthorizationException;
 import org.apache.fineract.selfservice.security.exception.SelfServiceResetPasswordException;
 import org.apache.fineract.selfservice.security.exception.SelfServiceUnAuthenticatedUserException;
 import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
+import org.apache.fineract.useradministration.domain.AppUser;
 import org.apache.fineract.useradministration.exception.UnAuthenticatedUserException;
 import org.springframework.context.annotation.Primary;
 import org.springframework.security.core.Authentication;
@@ -38,147 +39,158 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
+/**
+ * Primary security context that bridges the self-service and core security models.
+ *
+ * Implements both {@link PlatformSelfServiceSecurityContext} (for self-service API resources)
+ * and {@link PlatformSecurityContext} (for core read services that call
+ * {@code context.authenticatedUser()} as a guard check).
+ *
+ * When the principal is an {@link AppSelfServiceUser}, the core {@link PlatformSecurityContext}
+ * methods return a minimal {@link AppUser} stub via {@link AppSelfServiceUserAdapter},
+ * allowing core read services to pass their guard checks without modification.
+ */
 @Component
-@Primary 
+@Primary
 @RequiredArgsConstructor
-@Slf4j
 public class PlatformSelfServiceSecurityContextImpl implements PlatformSelfServiceSecurityContext {
 
-    private final ConfigurationDomainService configurationDomainService;
+  private final ConfigurationDomainService configurationDomainService;
 
-    protected static final List<CommandWrapper> EXEMPT_FROM_PASSWORD_RESET_CHECK = new ArrayList<CommandWrapper>(
-            List.of(new CommandWrapperBuilder().changeUserPassword(null).build()));
+  protected static final List<CommandWrapper> EXEMPT_FROM_PASSWORD_RESET_CHECK =
+      new ArrayList<CommandWrapper>(
+          List.of(new CommandWrapperBuilder().changeUserPassword(null).build()));
 
-    @Override
-    public AppSelfServiceUser authenticatedSelfServiceUser() {
-        
-        log.warn("*************************************************************");
-        log.warn("*                                                           *");
-        log.warn("* public AppSelfServiceUser authenticatedSelfServiceUser()  *");
-        log.warn("*                                                           *");
-        log.warn("*************************************************************");
-
-        AppSelfServiceUser currentUser = null;
-        final SecurityContext context = SecurityContextHolder.getContext();
-        if (context != null) {
-            final Authentication auth = context.getAuthentication();
-            if (auth != null) {
-                Object principal = auth.getPrincipal();
-                if (principal instanceof AppSelfServiceUser appUser) {
-                    currentUser = appUser;
-                }
-            }
+  @Override
+  public AppSelfServiceUser authenticatedSelfServiceUser() {
+    AppSelfServiceUser currentUser = null;
+    final SecurityContext context = SecurityContextHolder.getContext();
+    if (context != null) {
+      final Authentication auth = context.getAuthentication();
+      if (auth != null) {
+        Object principal = auth.getPrincipal();
+        if (principal instanceof AppSelfServiceUser appUser) {
+          currentUser = appUser;
         }
-        if (currentUser == null) {
-            throw new UnAuthenticatedUserException();
-        }
-        if (this.doesPasswordHasToBeRenewed(currentUser)) {
-            throw new SelfServiceResetPasswordException(currentUser.getId());
-        }
-        return currentUser;
+      }
     }
-
-    @Override
-    public void isAuthenticated() {
-        authenticatedSelfServiceUser();
+    if (currentUser == null) {
+      throw new UnAuthenticatedUserException();
     }
-
-    @Override
-    public AppSelfServiceUser getAuthenticatedUserIfPresent() {
-        
-        log.warn("*************************************************************");
-        log.warn("*                                                           *");
-        log.warn("* public AppSelfServiceUser getAuthenticatedUserIfPresent() *");
-        log.warn("*                                                           *");
-        log.warn("*************************************************************");
-
-        AppSelfServiceUser currentUser = null;
-        final SecurityContext context = SecurityContextHolder.getContext();
-        if (context != null) {
-            final Authentication auth = context.getAuthentication();
-            if (auth != null) {
-                currentUser = (AppSelfServiceUser) auth.getPrincipal();
-            }
-        }
-        if (currentUser == null) {
-            return null;
-        }
-        if (this.doesPasswordHasToBeRenewed(currentUser)) {
-            throw new SelfServiceResetPasswordException(currentUser.getId());
-        }
-        return currentUser;
+    if (this.doesPasswordHasToBeRenewed(currentUser)) {
+      throw new SelfServiceResetPasswordException(currentUser.getId());
     }
+    return currentUser;
+  }
 
-    @Override
-    public AppSelfServiceUser authenticatedUser(CommandWrapper commandWrapper) {
-        
-        log.warn("******************************************************************************");
-        log.warn("*                                                                            *");
-        log.warn("* public AppSelfServiceUser authenticatedUser(CommandWrapper commandWrapper) *");
-        log.warn("*                                                                            *");
-        log.warn("******************************************************************************");
-
-        AppSelfServiceUser currentUser = null;
-        final SecurityContext context = SecurityContextHolder.getContext();
-        if (context != null) {
-            final Authentication auth = context.getAuthentication();
-            if (auth != null) {
-                currentUser = (AppSelfServiceUser) auth.getPrincipal();
-            }
-        }
-        if (currentUser == null) {
-            throw new SelfServiceUnAuthenticatedUserException();
-        }
-        if (this.shouldCheckForPasswordForceReset(commandWrapper, currentUser) && this.doesPasswordHasToBeRenewed(currentUser)) {
-            throw new SelfServiceResetPasswordException(currentUser.getId());
-        }
-        return currentUser;
+  @Override
+  public void isAuthenticated() {
+    final Object principal = extractPrincipal();
+    if (principal instanceof AppSelfServiceUser) {
+      authenticatedSelfServiceUser();
+    } else {
+      throw new UnAuthenticatedUserException();
     }
+  }
 
-    @Override
-    public void validateAccessRights(final String resourceOfficeHierarchy) {
-
-        final AppSelfServiceUser user = authenticatedSelfServiceUser();
-        final String userOfficeHierarchy = user.getOffice().getHierarchy();
-
-        if (!resourceOfficeHierarchy.startsWith(userOfficeHierarchy)) {
-            throw new SelfServiceNoAuthorizationException("The user doesn't have enough permissions to access the resource.");
+  @Override
+  public AppSelfServiceUser getAuthenticatedUserIfPresent() {
+    AppSelfServiceUser currentUser = null;
+    final SecurityContext context = SecurityContextHolder.getContext();
+    if (context != null) {
+      final Authentication auth = context.getAuthentication();
+      if (auth != null) {
+        Object principal = auth.getPrincipal();
+        if (principal instanceof AppSelfServiceUser ssUser) {
+          currentUser = ssUser;
         }
+      }
     }
-
-    @Override
-    public String officeHierarchy() {
-        return authenticatedSelfServiceUser().getOffice().getHierarchy();
+    if (currentUser == null) {
+      return null;
     }
-
-    @Override
-    public boolean doesPasswordHasToBeRenewed(AppSelfServiceUser currentUser) {
-
-        if (currentUser.isPasswordResetRequired()) {
-            return true;
-        }
-
-        if (this.configurationDomainService.isPasswordForcedResetEnable() && !currentUser.getPasswordNeverExpires()) {
-
-            Long passwordDurationDays = this.configurationDomainService.retrievePasswordLiveTime();
-            final LocalDate passWordLastUpdateDate = currentUser.getLastTimePasswordUpdated();
-
-            final LocalDate passwordExpirationDate = passWordLastUpdateDate.plusDays(passwordDurationDays);
-
-            if (DateUtils.isBeforeTenantDate(passwordExpirationDate)) {
-                return true;
-            }
-        }
-        return false;
+    if (this.doesPasswordHasToBeRenewed(currentUser)) {
+      throw new SelfServiceResetPasswordException(currentUser.getId());
     }
+    return currentUser;
+  }
 
-    private boolean shouldCheckForPasswordForceReset(CommandWrapper commandWrapper, AppSelfServiceUser currentUser) {
-        for (CommandWrapper commandItem : EXEMPT_FROM_PASSWORD_RESET_CHECK) {
-            if (commandItem.actionName().equals(commandWrapper.actionName())
-                    && commandItem.getEntityName().equals(commandWrapper.getEntityName())) {
-                return commandWrapper.getEntityId() == null || !commandWrapper.getEntityId().equals(currentUser.getId());
-            }
+  @Override
+  public AppSelfServiceUser authenticatedUser(CommandWrapper commandWrapper) {
+    AppSelfServiceUser currentUser = null;
+    final SecurityContext context = SecurityContextHolder.getContext();
+    if (context != null) {
+      final Authentication auth = context.getAuthentication();
+      if (auth != null) {
+        Object principal = auth.getPrincipal();
+        if (principal instanceof AppSelfServiceUser ssUser) {
+          currentUser = ssUser;
         }
+      }
+    }
+    if (currentUser == null) {
+      throw new SelfServiceUnAuthenticatedUserException();
+    }
+    if (this.shouldCheckForPasswordForceReset(commandWrapper, currentUser)
+        && this.doesPasswordHasToBeRenewed(currentUser)) {
+      throw new SelfServiceResetPasswordException(currentUser.getId());
+    }
+    return currentUser;
+  }
+
+  @Override
+  public void validateAccessRights(final String resourceOfficeHierarchy) {
+    final AppSelfServiceUser user = authenticatedSelfServiceUser();
+    final String userOfficeHierarchy = user.getOffice().getHierarchy();
+    if (!resourceOfficeHierarchy.startsWith(userOfficeHierarchy)) {
+      throw new SelfServiceNoAuthorizationException(
+          "The user doesn't have enough permissions to access the resource.");
+    }
+  }
+
+  @Override
+  public String officeHierarchy() {
+    return authenticatedSelfServiceUser().getOffice().getHierarchy();
+  }
+
+  @Override
+  public boolean doesPasswordHasToBeRenewed(AppSelfServiceUser currentUser) {
+    if (currentUser.isPasswordResetRequired()) {
+      return true;
+    }
+    if (this.configurationDomainService.isPasswordForcedResetEnable()
+        && !currentUser.getPasswordNeverExpires()) {
+      Long passwordDurationDays = this.configurationDomainService.retrievePasswordLiveTime();
+      final LocalDate passWordLastUpdateDate = currentUser.getLastTimePasswordUpdated();
+      final LocalDate passwordExpirationDate =
+          passWordLastUpdateDate.plusDays(passwordDurationDays);
+      if (DateUtils.isBeforeTenantDate(passwordExpirationDate)) {
         return true;
+      }
     }
+    return false;
+  }
+
+  private boolean shouldCheckForPasswordForceReset(
+      CommandWrapper commandWrapper, AppSelfServiceUser currentUser) {
+    for (CommandWrapper commandItem : EXEMPT_FROM_PASSWORD_RESET_CHECK) {
+      if (commandItem.actionName().equals(commandWrapper.actionName())
+          && commandItem.getEntityName().equals(commandWrapper.getEntityName())) {
+        return commandWrapper.getEntityId() == null
+            || !commandWrapper.getEntityId().equals(currentUser.getId());
+      }
+    }
+    return true;
+  }
+
+  private Object extractPrincipal() {
+    final SecurityContext context = SecurityContextHolder.getContext();
+    if (context != null) {
+      final Authentication auth = context.getAuthentication();
+      if (auth != null) {
+        return auth.getPrincipal();
+      }
+    }
+    return null;
+  }
 }

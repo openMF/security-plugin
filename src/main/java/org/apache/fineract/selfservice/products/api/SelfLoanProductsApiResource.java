@@ -24,11 +24,16 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.UriInfo;
+import java.util.Collection;
 import lombok.RequiredArgsConstructor;
+import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
+import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
+import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
 import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
-import org.apache.fineract.portfolio.loanproduct.api.LoanProductsApiResource;
-import org.springframework.stereotype.Component;
+import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
+import org.apache.fineract.portfolio.loanproduct.service.LoanProductReadPlatformService;
 import org.apache.fineract.selfservice.client.service.AppSelfServiceUserClientMapperReadService;
+import org.springframework.stereotype.Component;
 
 @Path("/v1/self/loanproducts")
 @Component
@@ -169,7 +174,9 @@ import org.apache.fineract.selfservice.client.service.AppSelfServiceUserClientMa
 @RequiredArgsConstructor
 public class SelfLoanProductsApiResource {
 
-  private final LoanProductsApiResource loanProductsApiResource;
+  private final LoanProductReadPlatformService loanProductReadPlatformService;
+  private final DefaultToApiJsonSerializer<LoanProductData> toApiJsonSerializer;
+  private final ApiRequestParameterHelper apiRequestParameterHelper;
   private final AppSelfServiceUserClientMapperReadService appUserClientMapperReadService;
 
   @GET
@@ -180,7 +187,11 @@ public class SelfLoanProductsApiResource {
       @Context final UriInfo uriInfo) {
 
     this.appUserClientMapperReadService.validateAppSelfServiceUserClientsMapping(clientId);
-    return this.loanProductsApiResource.retrieveAllLoanProducts(uriInfo);
+    final ApiRequestJsonSerializationSettings settings =
+        this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+    final Collection<LoanProductData> products =
+        this.loanProductReadPlatformService.retrieveAllLoanProducts();
+    return this.toApiJsonSerializer.serialize(settings, products);
   }
 
   @GET
@@ -193,6 +204,10 @@ public class SelfLoanProductsApiResource {
       @Context final UriInfo uriInfo) {
 
     this.appUserClientMapperReadService.validateAppSelfServiceUserClientsMapping(clientId);
-    return this.loanProductsApiResource.retrieveLoanProductDetails(productId, uriInfo);
+    final ApiRequestJsonSerializationSettings settings =
+        this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+    final LoanProductData loanProduct =
+        this.loanProductReadPlatformService.retrieveLoanProduct(productId);
+    return this.toApiJsonSerializer.serialize(settings, loanProduct);
   }
 }

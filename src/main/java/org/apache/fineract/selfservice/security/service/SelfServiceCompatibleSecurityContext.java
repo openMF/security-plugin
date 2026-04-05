@@ -1,0 +1,74 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one or more contributor license
+ * agreements. See the NOTICE file distributed with this work for additional information regarding
+ * copyright ownership. The ASF licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the License. You may obtain a
+ * copy of the License at
+ *
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.fineract.selfservice.security.service;
+
+import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
+import org.apache.fineract.infrastructure.security.service.SpringSecurityPlatformSecurityContext;
+import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
+import org.apache.fineract.useradministration.domain.AppUser;
+import org.apache.fineract.useradministration.exception.UnAuthenticatedUserException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+
+/**
+ * Extends the core {@link SpringSecurityPlatformSecurityContext} to handle both
+ * {@link AppUser} and {@link AppSelfServiceUser} principals.
+ *
+ * Overrides {@code authenticatedUser()} and {@code getAuthenticatedUserIfPresent()} so that
+ * when the principal is an {@link AppSelfServiceUser}, a minimal {@link AppUser} stub is
+ * returned via {@link AppSelfServiceUserAdapter}, allowing core read services to pass their
+ * guard checks.
+ */
+public class SelfServiceCompatibleSecurityContext extends SpringSecurityPlatformSecurityContext {
+
+  public SelfServiceCompatibleSecurityContext(
+      ConfigurationDomainService configurationDomainService) {
+    super(configurationDomainService);
+  }
+
+  @Override
+  public AppUser authenticatedUser() {
+    final Object principal = extractPrincipal();
+
+    if (principal instanceof AppSelfServiceUser selfServiceUser) {
+      return AppSelfServiceUserAdapter.fromSelfServiceUser(selfServiceUser);
+    }
+
+    return super.authenticatedUser();
+  }
+
+  @Override
+  public AppUser getAuthenticatedUserIfPresent() {
+    final Object principal = extractPrincipal();
+
+    if (principal instanceof AppSelfServiceUser selfServiceUser) {
+      return AppSelfServiceUserAdapter.fromSelfServiceUser(selfServiceUser);
+    }
+
+    return super.getAuthenticatedUserIfPresent();
+  }
+
+  private Object extractPrincipal() {
+    final SecurityContext context = SecurityContextHolder.getContext();
+    if (context != null) {
+      final Authentication auth = context.getAuthentication();
+      if (auth != null) {
+        return auth.getPrincipal();
+      }
+    }
+    return null;
+  }
+}
