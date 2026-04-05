@@ -95,7 +95,7 @@ public class SelfServiceRoleReadPlatformServiceImpl implements SelfServiceRoleRe
     final String sql =
         "select "
             + this.roleRowMapper.schema()
-            + " inner join m_appuser_role"
+            + " inner join m_appselfservice_user_role"
             + " ar on ar.role_id = r.id where ar.appuser_id= ?";
 
     return this.jdbcTemplate.query(sql, this.roleRowMapper, appUserId); // NOSONAR
