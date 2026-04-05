@@ -25,10 +25,15 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.UriInfo;
 import lombok.RequiredArgsConstructor;
+import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
+import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
+import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
+import org.apache.fineract.infrastructure.core.service.Page;
 import org.apache.fineract.portfolio.accounts.constants.ShareAccountApiConstants;
-import org.apache.fineract.portfolio.products.api.ProductsApiResource;
-import org.springframework.stereotype.Component;
+import org.apache.fineract.portfolio.products.data.ProductData;
+import org.apache.fineract.portfolio.products.service.ShareProductReadPlatformService;
 import org.apache.fineract.selfservice.client.service.AppSelfServiceUserClientMapperReadService;
+import org.springframework.stereotype.Component;
 
 @Path("/v1/self/products/share")
 @Component
@@ -36,7 +41,9 @@ import org.apache.fineract.selfservice.client.service.AppSelfServiceUserClientMa
 @RequiredArgsConstructor
 public class SelfShareProductsApiResource {
 
-  private final ProductsApiResource productsApiResource;
+  private final ShareProductReadPlatformService shareProductReadPlatformService;
+  private final DefaultToApiJsonSerializer<ProductData> toApiJsonSerializer;
+  private final ApiRequestParameterHelper apiRequestParameterHelper;
   private final AppSelfServiceUserClientMapperReadService appUserClientMapperReadService;
 
   @GET
@@ -46,11 +53,14 @@ public class SelfShareProductsApiResource {
   public String retrieveProduct(
       @QueryParam(ShareAccountApiConstants.clientid_paramname) final Long clientId,
       @PathParam("productId") final Long productId,
-      @PathParam("type") final String productType,
       @Context final UriInfo uriInfo) {
+
     this.appUserClientMapperReadService.validateAppSelfServiceUserClientsMapping(clientId);
-    return this.productsApiResource.retrieveProduct(
-        productId, ShareAccountApiConstants.shareEntityType, uriInfo);
+    final ApiRequestJsonSerializationSettings settings =
+        this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+    final ProductData productData =
+        this.shareProductReadPlatformService.retrieveOne(productId, false);
+    return this.toApiJsonSerializer.serialize(settings, productData);
   }
 
   @GET
@@ -61,8 +71,12 @@ public class SelfShareProductsApiResource {
       @QueryParam("offset") final Integer offset,
       @QueryParam("limit") final Integer limit,
       @Context final UriInfo uriInfo) {
+
     this.appUserClientMapperReadService.validateAppSelfServiceUserClientsMapping(clientId);
-    return this.productsApiResource.retrieveAllProducts(
-        ShareAccountApiConstants.shareEntityType, offset, limit, uriInfo);
+    final ApiRequestJsonSerializationSettings settings =
+        this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+    final Page<ProductData> products =
+        this.shareProductReadPlatformService.retrieveAllProducts(offset, limit);
+    return this.toApiJsonSerializer.serialize(settings, products);
   }
 }
