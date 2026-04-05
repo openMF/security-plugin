@@ -231,6 +231,7 @@
         <preConditions onFail="MARK_RAN">            
             <tableExists tableName="m_appuser"/>
             <tableExists tableName="m_appselfservice_user"/>
+            <columnExists tableName="m_appuser" columnName="is_self_service_user"/>
         </preConditions>
         <sql>
             INSERT INTO m_appselfservice_user (
