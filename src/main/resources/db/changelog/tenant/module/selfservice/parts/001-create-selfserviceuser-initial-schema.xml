@@ -67,7 +67,7 @@
                     remarks="define if the password, should be reset or not" type="boolean">
                 <constraints nullable="false"/>
             </column>
-            <column defaultValueBoolean="false" name="is_self_service_user" type="boolean">
+            <column defaultValueBoolean="true" name="is_self_service_user" type="boolean">
                 <constraints nullable="false"/>
             </column>
             <column defaultValueBoolean="false" name="cannot_change_password" type="boolean"/>

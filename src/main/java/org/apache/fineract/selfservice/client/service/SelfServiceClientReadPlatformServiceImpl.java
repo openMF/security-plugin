@@ -349,9 +349,9 @@ public class SelfServiceClientReadPlatformServiceImpl implements SelfServiceClie
             sqlBuilder.append("left join m_savings_product sp on sp.id = c.default_savings_product ");
             sqlBuilder.append("left join m_office transferToOffice on transferToOffice.id = c.transfer_to_office_id ");
 
-            sqlBuilder.append("left join m_appuser sbu on sbu.id = c.created_by ");
-            sqlBuilder.append("left join m_appuser acu on acu.id = c.activatedon_userid ");
-            sqlBuilder.append("left join m_appuser clu on clu.id = c.closedon_userid ");
+            sqlBuilder.append("left join m_appselfservice_user sbu on sbu.id = c.created_by ");
+            sqlBuilder.append("left join m_appselfservice_user acu on acu.id = c.activatedon_userid ");
+            sqlBuilder.append("left join m_appselfservice_user clu on clu.id = c.closedon_userid ");
             sqlBuilder.append("left join m_code_value cv on cv.id = c.gender_cv_id ");
             sqlBuilder.append("left join m_code_value cvclienttype on cvclienttype.id = c.client_type_cv_id ");
             sqlBuilder.append("left join m_code_value cvclassification on cvclassification.id = c.client_classification_cv_id ");
@@ -661,9 +661,9 @@ public class SelfServiceClientReadPlatformServiceImpl implements SelfServiceClie
             builder.append("left join m_staff s on s.id = c.staff_id ");
             builder.append("left join m_savings_product sp on sp.id = c.default_savings_product ");
             builder.append("left join m_office transferToOffice on transferToOffice.id = c.transfer_to_office_id ");
-            builder.append("left join m_appuser sbu on sbu.id = c.created_by ");
-            builder.append("left join m_appuser acu on acu.id = c.activatedon_userid ");
-            builder.append("left join m_appuser clu on clu.id = c.closedon_userid ");
+            builder.append("left join m_appselfservice_user sbu on sbu.id = c.created_by ");
+            builder.append("left join m_appselfservice_user acu on acu.id = c.activatedon_userid ");
+            builder.append("left join m_appselfservice_user clu on clu.id = c.closedon_userid ");
             builder.append("left join m_code_value cv on cv.id = c.gender_cv_id ");
             builder.append("left join m_code_value cvclienttype on cvclienttype.id = c.client_type_cv_id ");
             builder.append("left join m_code_value cvclassification on cvclassification.id = c.client_classification_cv_id ");

@@ -219,7 +219,7 @@ public class AppSelfServiceUserReadPlatformServiceImpl
 
     public String schema() {
       return " u.id as id, u.username as username, u.firstname as firstname, u.lastname as lastname, u.email as email, u.password_never_expires as passwordNeverExpires, "
-          + " u.office_id as officeId, o.name as officeName, u.staff_id as staffId, u.is_self_service_user as isSelfServiceUser from m_appuser u "
+          + " u.office_id as officeId, o.name as officeName, u.staff_id as staffId, u.is_self_service_user as isSelfServiceUser from m_appselfservice_user u "
           + " join m_office o on o.id = u.office_id where o.hierarchy like ? and u.is_deleted=false order by u.username";
     }
   }
@@ -238,14 +238,14 @@ public class AppSelfServiceUserReadPlatformServiceImpl
     }
 
     public String schema() {
-      return " u.id as id, u.username as username from m_appuser u "
+      return " u.id as id, u.username as username from m_appselfservice_user u "
           + " join m_office o on o.id = u.office_id where o.hierarchy like ? and u.is_deleted=false order by u.username";
     }
   }
 
   @Override
   public boolean isUsernameExist(String username) {
-    String sql = "select count(*) from m_appuser where username = ?";
+    String sql = "select count(*) from m_appselfservice_user where username = ?";
     Object[] params = new Object[] {username};
     int count = this.jdbcTemplate.queryForObject(sql, Integer.class, params);
     return count != 0;

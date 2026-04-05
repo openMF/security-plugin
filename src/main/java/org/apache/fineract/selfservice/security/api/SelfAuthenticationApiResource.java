@@ -100,7 +100,7 @@ public class SelfAuthenticationApiResource {
                     + apiRequestBodyAsJson + "; username=" + request.username + ", password=" + request.password);
         }
 
-        final Authentication authentication = new UsernamePasswordAuthenticationToken(request.username, request.password);
+        final Authentication authentication = new UsernamePasswordAuthenticationToken(request.username, request.password);        
         final Authentication authenticationCheck = this.customAuthenticationProvider.authenticate(authentication);
 
         final Collection<String> permissions = new ArrayList<>();
