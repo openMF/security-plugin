@@ -227,7 +227,7 @@
         </sql>
     </changeSet>
     <!-- Migrate the existing Self Service Users-->
-    <changeSet author="fineract" id="ss-0001-11">
+    <changeSet author="fineract" id="ss-0001-12">
         <preConditions onFail="MARK_RAN">            
             <tableExists tableName="m_appuser"/>
             <tableExists tableName="m_appselfservice_user"/>
