@@ -49,9 +49,7 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
-import org.apache.fineract.command.core.CommandDispatcher;
 import org.apache.fineract.infrastructure.contentstore.detector.ContentDetectorContext;
 import org.apache.fineract.infrastructure.contentstore.detector.ContentDetectorManager;
 import org.apache.fineract.infrastructure.contentstore.processor.Base64DecoderContentProcessor;
@@ -68,13 +66,12 @@ import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSer
 import org.apache.fineract.infrastructure.core.serialization.ToApiJsonSerializer;
 import org.apache.fineract.infrastructure.core.service.Page;
 import org.apache.fineract.infrastructure.core.service.SearchParameters;
-import org.apache.fineract.infrastructure.documentmanagement.command.ImageCreateCommand;
-import org.apache.fineract.infrastructure.documentmanagement.command.ImageDeleteCommand;
 import org.apache.fineract.infrastructure.documentmanagement.data.ImageCreateRequest;
 import org.apache.fineract.infrastructure.documentmanagement.data.ImageCreateResponse;
 import org.apache.fineract.infrastructure.documentmanagement.data.ImageDeleteRequest;
 import org.apache.fineract.infrastructure.documentmanagement.data.ImageDeleteResponse;
 import org.apache.fineract.infrastructure.documentmanagement.service.ImageReadPlatformService;
+import org.apache.fineract.infrastructure.documentmanagement.service.ImageWritePlatformService;
 import org.apache.fineract.portfolio.accountdetails.data.AccountSummaryCollectionData;
 import org.apache.fineract.portfolio.accountdetails.service.AccountDetailsReadPlatformService;
 import org.apache.fineract.portfolio.client.api.ClientApiConstants;
@@ -122,7 +119,7 @@ public class SelfClientsApiResource {
   private final AppSelfServiceUserClientMapperReadService appUserClientMapperReadService;
   private final SelfClientDataValidator dataValidator;
   private final ImageReadPlatformService imageReadPlatformService;
-  private final CommandDispatcher commandPipeline;
+  private final ImageWritePlatformService imageWritePlatformService;
   private final ImageResizeContentProcessor imageResizeContentProcessor;
   private final Base64EncoderContentProcessor base64EncoderContentProcessor;
   private final Base64DecoderContentProcessor base64DecoderContentProcessor;
@@ -173,6 +170,7 @@ public class SelfClientsApiResource {
         .status(status).legalForm(legalForm)
         .offset(offset).limit(limit).orderBy(orderBy).sortOrder(sortOrder)
         .build();
+    this.context.validateHasReadPermission(ClientApiConstants.CLIENT_RESOURCE_NAME);
     final Page<ClientData> clientData = selfServiceClientReadPlatformService.retrieveAll(searchParameters);
     final ApiRequestJsonSerializationSettings settings =
         apiRequestParameterHelper.process(uriInfo.getQueryParameters());
@@ -207,6 +205,7 @@ public class SelfClientsApiResource {
 
     this.dataValidator.validateRetrieveOne(uriInfo);
     validateAppuserClientsMapping(clientId);
+    this.context.validateHasReadPermission(ClientApiConstants.CLIENT_RESOURCE_NAME);
 
     final ClientData clientData = selfServiceClientReadPlatformService.retrieveOne(clientId);
     final ApiRequestJsonSerializationSettings settings =
@@ -245,6 +244,7 @@ public class SelfClientsApiResource {
       @Context final UriInfo uriInfo) {
 
     validateAppuserClientsMapping(clientId);
+    this.context.validateHasReadPermission(ClientApiConstants.CLIENT_RESOURCE_NAME);
 
     final AccountSummaryCollectionData accounts =
         accountDetailsReadPlatformService.retrieveClientAccountDetails(clientId);
@@ -273,6 +273,7 @@ public class SelfClientsApiResource {
       @QueryParam("output") @Parameter(example = "output") final String output) {
 
     validateAppuserClientsMapping(clientId);
+    this.context.validateHasReadPermission("CLIENTIMAGE");
 
     final var content =
         imageReadPlatformService.retrieveImage(ClientApiConstants.clientEntityName, clientId);
@@ -344,6 +345,7 @@ public class SelfClientsApiResource {
       @QueryParam("offset") @Parameter(description = "offset") final Integer offset) {
 
     validateAppuserClientsMapping(clientId);
+    this.context.validateHasReadPermission(ClientApiConstants.CLIENT_CHARGES_RESOURCE_NAME);
 
     final SearchParameters searchParameters =
         SearchParameters.builder().limit(limit).offset(offset).build();
@@ -385,6 +387,7 @@ public class SelfClientsApiResource {
 
     this.dataValidator.validateClientCharges(uriInfo);
     validateAppuserClientsMapping(clientId);
+    this.context.validateHasReadPermission(ClientApiConstants.CLIENT_CHARGES_RESOURCE_NAME);
 
     final ClientChargeData charge =
         clientChargeReadPlatformService.retrieveClientCharge(clientId, chargeId);
@@ -422,6 +425,7 @@ public class SelfClientsApiResource {
       @QueryParam("limit") @Parameter(description = "limit") final Integer limit) {
 
     validateAppuserClientsMapping(clientId);
+    this.context.validateHasReadPermission(ClientApiConstants.CLIENT_CHARGES_RESOURCE_NAME);
 
     final SearchParameters searchParameters =
         SearchParameters.builder().limit(limit).offset(offset).build();
@@ -463,6 +467,7 @@ public class SelfClientsApiResource {
       @Context final UriInfo uriInfo) {
 
     validateAppuserClientsMapping(clientId);
+    this.context.validateHasReadPermission(ClientApiConstants.CLIENT_CHARGES_RESOURCE_NAME);
 
     final ClientTransactionData clientTransaction =
         clientTransactionReadPlatformService.retrieveTransaction(clientId, transactionId);
@@ -504,10 +509,9 @@ public class SelfClientsApiResource {
     requireNonNull(filePart, "");
     requireNonNull(is, "");
 
-    final var command = new ImageCreateCommand();
+    this.context.validateHasCreatePermission("CLIENTIMAGE");
 
-    command.setPayload(
-        ImageCreateRequest.builder()
+    return this.imageWritePlatformService.createImage(ImageCreateRequest.builder()
             .entityId(clientId)
             .entityType(ClientApiConstants.clientEntityName)
             .fileName(fileDetails.getFileName())
@@ -515,10 +519,6 @@ public class SelfClientsApiResource {
             .type(filePart.getMediaType().toString())
             .stream(is)
             .build());
-
-    final Supplier<ImageCreateResponse> response = commandPipeline.dispatch(command);
-
-    return response.get();
   }
 
   @POST
@@ -538,21 +538,16 @@ public class SelfClientsApiResource {
     final String contentType = ctx.getResult(DATA_URL_DECODE_RESULT_CONTENT_TYPE);
     Long size = ctx.getResult(SIZE_RESULT_VALUE);
 
-    final var command = new ImageCreateCommand();
+    this.context.validateHasCreatePermission("CLIENTIMAGE");
 
-    command.setPayload(
-        ImageCreateRequest.builder()
+    return this.imageWritePlatformService.createImage(ImageCreateRequest.builder()
             .entityId(clientId)
             .entityType(ClientApiConstants.clientEntityName)
-            .fileName(UUID.randomUUID().toString())
+            .fileName(UUID.randomUUID().toString() + ".jpg")
             .size(size)
             .type(contentType)
             .stream(ctx.getInputStream())
             .build());
-
-    final Supplier<ImageCreateResponse> response = commandPipeline.dispatch(command);
-
-    return response.get();
   }
 
   @DELETE
@@ -562,17 +557,12 @@ public class SelfClientsApiResource {
   public ImageDeleteResponse deleteClientImage(@PathParam("clientId") final Long clientId) {
     validateAppuserClientsMapping(clientId);
 
-    final var command = new ImageDeleteCommand();
+    this.context.validateHasDeletePermission("CLIENTIMAGE");
 
-    command.setPayload(
-        ImageDeleteRequest.builder()
+    return this.imageWritePlatformService.deleteImage(ImageDeleteRequest.builder()
             .entityId(clientId)
             .entityType(ClientApiConstants.clientEntityName)
             .build());
-
-    final Supplier<ImageDeleteResponse> response = commandPipeline.dispatch(command);
-
-    return response.get();
   }
 
   @GET
@@ -583,6 +573,7 @@ public class SelfClientsApiResource {
       @PathParam("clientId") final Long clientId, @Context final UriInfo uriInfo) {
 
     validateAppuserClientsMapping(clientId);
+    this.context.validateHasReadPermission(ClientApiConstants.CLIENT_RESOURCE_NAME);
 
     final List<ObligeeData> obligeeList =
         guarantorReadPlatformService.retrieveObligeeDetails(clientId);

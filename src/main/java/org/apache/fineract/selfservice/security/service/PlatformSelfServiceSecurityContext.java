@@ -17,6 +17,7 @@ package org.apache.fineract.selfservice.security.service;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.infrastructure.security.service.PlatformUserRightsContext;
 import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
+import org.apache.fineract.useradministration.domain.AppUser;
 
 public interface PlatformSelfServiceSecurityContext extends PlatformUserRightsContext {
 
@@ -50,4 +51,16 @@ public interface PlatformSelfServiceSecurityContext extends PlatformUserRightsCo
      *     user lacks the permission
      */
     void validateHasReadPermission(String resourceType);
+
+    /**
+     * Validates that the authenticated self-service user has create permission for the given resource
+     * type, using core Fineract's permission model via {@link AppUser#validateHasCreatePermission}.
+     */
+    void validateHasCreatePermission(String resourceType);
+
+    /**
+     * Validates that the authenticated self-service user has delete permission for the given resource
+     * type, using core Fineract's permission model via {@link AppUser#validateHasDeletePermission}.
+     */
+    void validateHasDeletePermission(String resourceType);
 }

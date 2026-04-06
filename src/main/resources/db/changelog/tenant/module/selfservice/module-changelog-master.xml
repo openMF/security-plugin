@@ -23,5 +23,6 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.1.xsd">
   <include relativeToChangelogFile="true" file="parts/001-create-selfserviceuser-initial-schema.xml"/>
-  <include relativeToChangelogFile="true" file="parts/002-grant-selfservice-product-read-permissions.xml"/>
+  <include file="parts/002-grant-selfservice-product-read-permissions.xml" relativeToChangelogFile="true"/>
+  <include file="parts/003-grant-selfservice-client-read-permissions.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>
