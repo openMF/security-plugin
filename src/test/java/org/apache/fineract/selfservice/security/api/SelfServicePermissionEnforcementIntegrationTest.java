@@ -137,5 +137,22 @@ public class SelfServicePermissionEnforcementIntegrationTest extends SelfService
         .get(SelfServiceTestUtils.CONTEXT_PATH + "/api/v1/self/savingsproducts")
         .then()
         .statusCode(200);
+
+    // 7. Revoke READ_SAVINGSPRODUCT to verify the cache does not retain it
+    permissions.put("READ_SAVINGSPRODUCT", false);
+    permissionBody.put("permissions", permissions);
+
+    given(SelfServiceTestUtils.requestSpecWithAuth(getFineractPort(), "mifos", "password"))
+        .body(permissionBody)
+        .put(SelfServiceTestUtils.CONTEXT_PATH + "/api/v1/roles/" + roleId + "/permissions")
+        .then()
+        .statusCode(200);
+
+    // 8. Test the API without the permission: Expect 403 immediately
+    given(SelfServiceTestUtils.requestSpecWithAuth(getFineractPort(), "tomas", "password"))
+        .when()
+        .get(SelfServiceTestUtils.CONTEXT_PATH + "/api/v1/self/savingsproducts")
+        .then()
+        .statusCode(403);
   }
 }
