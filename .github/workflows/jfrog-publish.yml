@@ -20,7 +20,7 @@ jobs:
           server-username: ARTIFACTORY_USERNAME
           server-password: ARTIFACTORY_PASSWORD
       - name: Publish to the Mifos Artifactory
-        run: mvn -Dmaven.test.skip=true --batch-mode deploy
+        run: mvn -DskipITs --batch-mode deploy
         env:
           ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
           ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
