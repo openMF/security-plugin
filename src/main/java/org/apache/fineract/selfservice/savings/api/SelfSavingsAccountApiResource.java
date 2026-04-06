@@ -54,7 +54,7 @@ import org.apache.fineract.selfservice.client.service.AppSelfServiceUserClientMa
 @Component
 @Tag(name = "Self Savings Account", description = "")
 @RequiredArgsConstructor
-public class SelfSavingsApiResource {
+public class SelfSavingsAccountApiResource {
 
     private final PlatformSelfServiceSecurityContext context;
     private final SavingsAccountsApiResource savingsAccountsApiResource;
@@ -73,7 +73,7 @@ public class SelfSavingsApiResource {
                             + "Example Requests :\n\n"
                             + "self/savingsaccounts/1\n\n"
                             + "self/savingsaccounts/1?associations=transactions")
-    @ApiResponses({@ApiResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = SelfSavingsApiResourceSwagger.GetSelfSavingsAccountsResponse.class)))})
+    @ApiResponses({@ApiResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = SelfSavingsAccountApiResourceSwagger.GetSelfSavingsAccountsResponse.class)))})
     public SavingsAccountData retrieveSavings(@PathParam("accountId") @Parameter(description = "accountId") final Long accountId,
                                             @DefaultValue("all") @QueryParam("chargeStatus") @Parameter(description = "chargeStatus") final String chargeStatus, 
                                             @Context final UriInfo uriInfo) {
@@ -91,7 +91,7 @@ public class SelfSavingsApiResource {
             description = "Retrieves Savings Account Transaction\n\n"
                         + "Example Requests:\n\n"
                         + "self/savingsaccounts/1/transactions/1")
-    @ApiResponses({@ApiResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = SelfSavingsApiResourceSwagger.GetSelfSavingsAccountsAccountIdTransactionsTransactionIdResponse.class)))})
+    @ApiResponses({@ApiResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = SelfSavingsAccountApiResourceSwagger.GetSelfSavingsAccountsAccountIdTransactionsTransactionIdResponse.class)))})
     public String retrieveSavingsTransaction(@PathParam("accountId") @Parameter(description = "accountId") final Long accountId,
                                             @PathParam("transactionId") @Parameter(description = "transactionId") final Long transactionId, 
                                             @Context final UriInfo uriInfo) {
@@ -110,7 +110,7 @@ public class SelfSavingsApiResource {
                             + "self/savingsaccounts/1/charges\n\n"
                             + "self/savingsaccounts/1/charges?chargeStatus=inactive\n\n"
                             + "self/savingsaccounts/1/charges?fields=name,amountOrPercentage")
-    @ApiResponses({@ApiResponse(responseCode = "200", description = "OK", content = @Content(array = @ArraySchema(schema = @Schema(implementation =SelfSavingsApiResourceSwagger.GetSelfSavingsAccountsAccountIdChargesResponse.class))))})
+    @ApiResponses({@ApiResponse(responseCode = "200", description = "OK", content = @Content(array = @ArraySchema(schema = @Schema(implementation =SelfSavingsAccountApiResourceSwagger.GetSelfSavingsAccountsAccountIdChargesResponse.class))))})
     public String retrieveAllSavingsAccountCharges(@PathParam("accountId") @Parameter(description = "accountId") final Long accountId,
                                                 @DefaultValue("all") @QueryParam("chargeStatus") @Parameter(description = "chargeStatus") final String chargeStatus, 
                                                 @Context final UriInfo uriInfo) {
@@ -128,7 +128,7 @@ public class SelfSavingsApiResource {
                     + "Example Requests:\n\n"
                     + "self/savingsaccounts/1/charges/5\n\n"
                     + "self/savingsaccounts/1/charges/5?fields=name,amountOrPercentage")
-    @ApiResponses({@ApiResponse(responseCode = "200", description = "OK", content = @Content( schema = @Schema(implementation = SelfSavingsApiResourceSwagger.GetSelfSavingsAccountsAccountIdChargesSavingsAccountChargeIdResponse.class)))})
+    @ApiResponses({@ApiResponse(responseCode = "200", description = "OK", content = @Content( schema = @Schema(implementation = SelfSavingsAccountApiResourceSwagger.GetSelfSavingsAccountsAccountIdChargesSavingsAccountChargeIdResponse.class)))})
     public String retrieveSavingsAccountCharge(@PathParam("accountId") @Parameter(description = "accountId") final Long accountId,
                                             @PathParam("savingsAccountChargeId") @Parameter(description = "savingsAccountChargeId") final Long savingsAccountChargeId, 
                                             @Context final UriInfo uriInfo) {        

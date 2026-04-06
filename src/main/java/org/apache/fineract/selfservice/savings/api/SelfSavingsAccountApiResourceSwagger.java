@@ -18,9 +18,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
 
 /** Created by Chirag Gupta on 12/25/17. */
-final class SelfSavingsApiResourceSwagger {
+final class SelfSavingsAccountApiResourceSwagger {
 
-  private SelfSavingsApiResourceSwagger() {}
+  private SelfSavingsAccountApiResourceSwagger() {}
 
   @Schema(description = "GetSelfSavingsAccountsResponse")
   public static final class GetSelfSavingsAccountsResponse {

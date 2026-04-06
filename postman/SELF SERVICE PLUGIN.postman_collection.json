@@ -11,10 +11,63 @@
       "name": "SELF SERVICE (MOBILE OR WEB BANKING) - LOCALHOST Copy 2",
       "item": [
         {
-          "name": "USER",
+          "name": "ENVIRONMENT SETUP",
           "item": [
             {
-              "name": "00. CREATE PERSON",
+              "name": "00. ADD SMTP SERVER",
+              "request": {
+                "auth": {
+                  "type": "basic",
+                  "basic": [
+                    {
+                      "key": "password",
+                      "value": "password",
+                      "type": "string"
+                    },
+                    {
+                      "key": "username",
+                      "value": "mifos",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "fineract-platform-tenantid",
+                    "value": "default",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"username\": \"\",\n    \"password\": \"\",\n    \"host\": \"smtp.mailgun.org\",\n    \"port\": 587,\n    \"useTLS\": \"true\",\n    \"fromEmail\": \"\",\n    \"fromName\": \"\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/externalservice/SMTP",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "externalservice",
+                    "SMTP"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "01. CREATE PERSON",
               "request": {
                 "auth": {
                   "type": "basic",
@@ -41,7 +94,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"officeId\": 1,\n    \"legalFormId\": 1,\n    \"isStaff\": false,\n    \"active\": true,\n    \"submittedOnDate\": \"17 febrero 2026\",\n    \"firstname\": \"PEDRO\",\n    \"middlename\": \"MARMOL\",\n    \"lastname\": \"PEREZ\",\n    \"activationDate\": \"17 febrero 2026\",\n    \"familyMembers\": [],\n    \"dateFormat\": \"dd MMMM yyyy\",\n    \"locale\": \"es\",\n    \"datatables\": [\n        {\n            \"registeredTableName\": \"PERFIL_TRANSACCIONAL\",\n            \"data\": {\n                \"locale\": \"es\",\n                \"NUMERO_DE_REMESAS\": \"\",\n                \"MONTO_TRANSACCIONAL\": 0,\n                \"NUMERO_REMITENTES\": 0\n            }\n        },\n        {\n            \"registeredTableName\": \"DATOS_SOCIO_ECONOMICOS\",\n            \"data\": {\n                \"locale\": \"es\",\n                \"OCUPACION\": \"\",\n                \"ACTIVIDAD_ECONOMICA\": \"\"\n            }\n        }\n    ]\n}",
+                  "raw": "{\n    \"officeId\": 1,\n    \"legalFormId\": 1,\n    \"isStaff\": false,\n    \"active\": true,\n    \"submittedOnDate\": \"17 febrero 2026\",\n    \"firstname\": \"PEDRO\",\n    \"middlename\": \"MARMOL\",\n    \"lastname\": \"PEREZ\",\n    \"activationDate\": \"17 febrero 2026\",\n    \"familyMembers\": [],\n    \"dateFormat\": \"dd MMMM yyyy\",\n    \"locale\": \"es\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -66,6 +119,293 @@
               "response": []
             },
             {
+              "name": "02. CREATE SAVINGS PRODUCT",
+              "request": {
+                "auth": {
+                  "type": "basic",
+                  "basic": [
+                    {
+                      "key": "password",
+                      "value": "password",
+                      "type": "string"
+                    },
+                    {
+                      "key": "username",
+                      "value": "mifos",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "fineract-platform-tenantid",
+                    "value": "default",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"name\": \"WALLET\",\n    \"shortName\": \"WA01\",\n    \"description\": \"\",\n    \"currencyCode\": \"USD\",\n    \"digitsAfterDecimal\": 2,\n    \"nominalAnnualInterestRate\": 0,\n    \"interestCompoundingPeriodType\": 1,\n    \"interestPostingPeriodType\": 4,\n    \"interestCalculationType\": 1,\n    \"interestCalculationDaysInYearType\": 365,\n    \"withdrawalFeeForTransfers\": false,\n    \"enforceMinRequiredBalance\": false,\n    \"allowOverdraft\": false,\n    \"withHoldTax\": false,\n    \"isDormancyTrackingActive\": false,\n    \"charges\": [],\n    \"accountingRule\": 1,\n    \"locale\": \"en\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/savingsproducts",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "savingsproducts"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "03. CREATE SAVINGS ACCOUNT",
+              "request": {
+                "auth": {
+                  "type": "basic",
+                  "basic": [
+                    {
+                      "key": "password",
+                      "value": "password",
+                      "type": "string"
+                    },
+                    {
+                      "key": "username",
+                      "value": "mifos",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "fineract-platform-tenantid",
+                    "value": "default",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"productId\": 1,\n    \"submittedOnDate\": \"05 April 2026\",\n    \"fieldOfficerId\": \"\",\n    \"externalId\": \"\",\n    \"nominalAnnualInterestRate\": 0,\n    \"interestCompoundingPeriodType\": 1,\n    \"interestPostingPeriodType\": 4,\n    \"interestCalculationType\": 1,\n    \"interestCalculationDaysInYearType\": 365,\n    \"withdrawalFeeForTransfers\": false,\n    \"lockinPeriodFrequency\": \"\",\n    \"lockinPeriodFrequencyType\": \"\",\n    \"allowOverdraft\": false,\n    \"enforceMinRequiredBalance\": false,\n    \"charges\": [],\n    \"dateFormat\": \"dd MMMM yyyy\",\n    \"monthDayFormat\": \"dd MMMM\",\n    \"locale\": \"en\",\n    \"clientId\": 1\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/savingsaccounts",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "savingsaccounts"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "04. APPROVE SAVINGS ACCOUNT",
+              "request": {
+                "auth": {
+                  "type": "basic",
+                  "basic": [
+                    {
+                      "key": "password",
+                      "value": "password",
+                      "type": "string"
+                    },
+                    {
+                      "key": "username",
+                      "value": "mifos",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "fineract-platform-tenantid",
+                    "value": "default",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"approvedOnDate\": \"05 April 2026\",\n    \"note\": \"\",\n    \"dateFormat\": \"dd MMMM yyyy\",\n    \"locale\": \"en\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/savingsaccounts/1?command=approve",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "savingsaccounts",
+                    "1"
+                  ],
+                  "query": [
+                    {
+                      "key": "command",
+                      "value": "approve"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "05. ACTIVATE SAVINGS ACCOUNT",
+              "request": {
+                "auth": {
+                  "type": "basic",
+                  "basic": [
+                    {
+                      "key": "password",
+                      "value": "password",
+                      "type": "string"
+                    },
+                    {
+                      "key": "username",
+                      "value": "mifos",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "fineract-platform-tenantid",
+                    "value": "default",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"activatedOnDate\": \"05 April 2026\",\n    \"dateFormat\": \"dd MMMM yyyy\",\n    \"locale\": \"en\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/savingsaccounts/1?command=activate",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "savingsaccounts",
+                    "1"
+                  ],
+                  "query": [
+                    {
+                      "key": "command",
+                      "value": "activate"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "06. DEPOSIT TO SAVINGS ACCOUNT",
+              "request": {
+                "auth": {
+                  "type": "basic",
+                  "basic": [
+                    {
+                      "key": "password",
+                      "value": "password",
+                      "type": "string"
+                    },
+                    {
+                      "key": "username",
+                      "value": "mifos",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "fineract-platform-tenantid",
+                    "value": "default",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"transactionDate\": \"05 April 2026\",\n    \"transactionAmount\": 1000,\n    \"paymentTypeId\": 1,\n    \"note\": \"\",\n    \"dateFormat\": \"dd MMMM yyyy\",\n    \"locale\": \"en\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/savingsaccounts/1/transactions?command=deposit",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "savingsaccounts",
+                    "1",
+                    "transactions"
+                  ],
+                  "query": [
+                    {
+                      "key": "command",
+                      "value": "deposit"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "USER",
+          "item": [
+            {
               "name": "01. REGISTER SELF SERVICE FOR EXISTING CLIENT",
               "request": {
                 "auth": {
@@ -81,7 +421,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"username\": \"pedro.marmol\",\n    \"accountNumber\": \"000000036\",\n    \"password\": \"MifosInitiative2026#\",\n    \"firstName\": \"PEDRO\",\n    \"middleName\": \"MARMOL\",\n    \"lastName\": \"PEREZ\",\n    \"mobileNumber\": \"5522649498\",    \n    \"email\": \"vic_romero@hotmail.com\",\n    \"authenticationMode\": \"email\"\n}",
+                  "raw": "{\n    \"username\": \"pedro.marmol\",\n    \"accountNumber\": \"000000001\",\n    \"password\": \"MifosInitiative2026#\",\n    \"firstName\": \"PEDRO\",\n    \"middleName\": \"MARMOL\",\n    \"lastName\": \"PEREZ\",\n    \"mobileNumber\": \"5522649498\",    \n    \"email\": \"victor.romero@fintecheando.mx\",\n    \"authenticationMode\": \"email\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -95,6 +435,48 @@
                     "localhost"
                   ],
                   "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "registration"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "01. REGISTER SELF SERVICE FOR EXISTING CLIENT - MIFOS BANK 1",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "mifos-bank-1",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"username\": \"tomas\",\n    \"accountNumber\": \"000000001\",\n    \"password\": \"MifosInitiative2026#\",\n    \"firstName\": \"TOMAS\",\n    \"middleName\": \"ASCENCIO\",\n    \"lastName\": \"HERNANDEZ\",\n    \"mobileNumber\": \"5522649498\",    \n    \"email\": \"victor.romero@fintecheando.mx\",\n    \"authenticationMode\": \"email\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "https://mifos-bank-1.mifos.community/fineract-provider/api/v1/self/registration",
+                  "protocol": "https",
+                  "host": [
+                    "mifos-bank-1",
+                    "mifos",
+                    "community"
+                  ],
                   "path": [
                     "fineract-provider",
                     "api",
@@ -122,7 +504,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"requestId\": 2,\n    \"authenticationToken\": \"9076\"\n}",
+                  "raw": "{\n    \"requestId\": 1,\n    \"authenticationToken\": \"7331\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -149,6 +531,49 @@
               "response": []
             },
             {
+              "name": "02. CONFIRM SELF SERVICE USER REGISTRATION - MIFOS BANK 1",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "mifos-bank-1",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"requestId\": 4,\n    \"authenticationToken\": \"5920\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "https://mifos-bank-1.mifos.community/fineract-provider/api/v1/self/registration/user",
+                  "protocol": "https",
+                  "host": [
+                    "mifos-bank-1",
+                    "mifos",
+                    "community"
+                  ],
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "registration",
+                    "user"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
               "name": "03 LOGIN",
               "request": {
                 "method": "POST",
@@ -161,7 +586,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"password\": \"ApoloCapital2026#\",\n    \"username\": \"roberto@gmail.com\"\n}",
+                  "raw": "{\n    \"username\": \"pedro.marmol\",\n    \"password\": \"MifosInitiative2026#\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -175,6 +600,45 @@
                     "localhost"
                   ],
                   "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "authentication"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "03 LOGIN - MIFOS BANK 1",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "mifos-bank-1",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"password\": \"password\",\n    \"username\": \"tomas\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "https://mifos-bank-1.mifos.community/fineract-provider/api/v1/self/authentication",
+                  "protocol": "https",
+                  "host": [
+                    "mifos-bank-1",
+                    "mifos",
+                    "community"
+                  ],
                   "path": [
                     "fineract-provider",
                     "api",
@@ -889,12 +1353,12 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "value": "Basic cGVkcm8ubWFybW9sOk1pZm9zSW5pdGlhdGl2ZTIwMjYj",
                     "type": "text"
                   }
                 ],
                 "url": {
-                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/savingsproducts?clientId=104",
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/savingsproducts?clientId=1",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -910,7 +1374,48 @@
                   "query": [
                     {
                       "key": "clientId",
-                      "value": "104"
+                      "value": "1"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "01. GET LIST OF SAVINGS PRODUCTS - MIFOS BANK 1",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "mifos-bank-1",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Basic dG9tYXM6cGFzc3dvcmQ=",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "https://mifos-bank-1.mifos.community/fineract-provider/api/v1/self/savingsproducts?clientId=1",
+                  "protocol": "https",
+                  "host": [
+                    "mifos-bank-1",
+                    "mifos",
+                    "community"
+                  ],
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "savingsproducts"
+                  ],
+                  "query": [
+                    {
+                      "key": "clientId",
+                      "value": "1"
                     }
                   ]
                 }
@@ -929,17 +1434,62 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "value": "Basic cGVkcm8ubWFybW9sOk1pZm9zSW5pdGlhdGl2ZTIwMjYj",
                     "type": "text"
                   }
                 ],
                 "url": {
-                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/savingsproducts?clientId=104&productId=1",
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/savingsproducts?clientId=1&productId=1",
                   "protocol": "http",
                   "host": [
                     "localhost"
                   ],
                   "port": "8080",
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "savingsproducts"
+                  ],
+                  "query": [
+                    {
+                      "key": "clientId",
+                      "value": "1"
+                    },
+                    {
+                      "key": "productId",
+                      "value": "1"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "02. GET DETAIL OF SAVINGS PRODUCTS - MIFOS BANK 1",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "mifos-bank-1",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Basic dG9tYXM6cGFzc3dvcmQ=",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "https://mifos-bank-1.mifos.community/fineract-provider/api/v1/self/savingsproducts?clientId=104&productId=1",
+                  "protocol": "https",
+                  "host": [
+                    "mifos-bank-1",
+                    "mifos",
+                    "community"
+                  ],
                   "path": [
                     "fineract-provider",
                     "api",
@@ -973,12 +1523,12 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "value": "Basic cGVkcm8ubWFybW9sOk1pZm9zSW5pdGlhdGl2ZTIwMjYj",
                     "type": "text"
                   }
                 ],
                 "url": {
-                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/savingsaccounts/58",
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/savingsaccounts/1",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -990,7 +1540,43 @@
                     "v1",
                     "self",
                     "savingsaccounts",
-                    "58"
+                    "1"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "03. GET DETAIL OF SAVINGS ACCOUNT - MIFOS BANK 1",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Fineract-Platform-TenantId",
+                    "value": "mifos-bank-1",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Basic dG9tYXM6cGFzc3dvcmQ=",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "https://mifos-bank-1.mifos.community/fineract-provider/api/v1/self/savingsaccounts/1",
+                  "protocol": "https",
+                  "host": [
+                    "mifos-bank-1",
+                    "mifos",
+                    "community"
+                  ],
+                  "path": [
+                    "fineract-provider",
+                    "api",
+                    "v1",
+                    "self",
+                    "savingsaccounts",
+                    "1"
                   ]
                 }
               },
@@ -1008,12 +1594,12 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "value": "Basic cGVkcm8ubWFybW9sOk1pZm9zSW5pdGlhdGl2ZTIwMjYj",
                     "type": "text"
                   }
                 ],
                 "url": {
-                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/savingsaccounts/58?associations=transactions",
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/savingsaccounts/1?associations=transactions",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -1025,7 +1611,7 @@
                     "v1",
                     "self",
                     "savingsaccounts",
-                    "58"
+                    "1"
                   ],
                   "query": [
                     {
@@ -1049,12 +1635,12 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "value": "Basic cGVkcm8ubWFybW9sOk1pZm9zSW5pdGlhdGl2ZTIwMjYj",
                     "type": "text"
                   }
                 ],
                 "url": {
-                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/savingsaccounts/58/transactions/550",
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/savingsaccounts/1/transactions/1",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -1066,9 +1652,9 @@
                     "v1",
                     "self",
                     "savingsaccounts",
-                    "58",
+                    "1",
                     "transactions",
-                    "550"
+                    "1"
                   ]
                 }
               },
@@ -1086,12 +1672,12 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "value": "Basic cGVkcm8ubWFybW9sOk1pZm9zSW5pdGlhdGl2ZTIwMjYj",
                     "type": "text"
                   }
                 ],
                 "url": {
-                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/savingsaccounts/58/charges",
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/savingsaccounts/template?clientId=1&productId=1",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -1103,8 +1689,17 @@
                     "v1",
                     "self",
                     "savingsaccounts",
-                    "58",
-                    "charges"
+                    "template"
+                  ],
+                  "query": [
+                    {
+                      "key": "clientId",
+                      "value": "1"
+                    },
+                    {
+                      "key": "productId",
+                      "value": "1"
+                    }
                   ]
                 }
               },
@@ -1122,12 +1717,12 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "value": "Basic cGVkcm8ubWFybW9sOk1pZm9zSW5pdGlhdGl2ZTIwMjYj",
                     "type": "text"
                   }
                 ],
                 "url": {
-                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/savingsaccounts/template?clientId=104&productId=1",
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/savingsaccounts/template?clientId=1&productId=1",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -1144,7 +1739,7 @@
                   "query": [
                     {
                       "key": "clientId",
-                      "value": "104"
+                      "value": "1"
                     },
                     {
                       "key": "productId",
@@ -1167,13 +1762,13 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "value": "Basic cGVkcm8ubWFybW9sOk1pZm9zSW5pdGlhdGl2ZTIwMjYj",
                     "type": "text"
                   }
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"productId\": 5,\n    \"submittedOnDate\": \"30 August 2025\",\n    \"fieldOfficerId\": \"\",\n    \"externalId\": \"\",\n    \"nominalAnnualInterestRate\": 0,\n    \"interestCompoundingPeriodType\": 1,\n    \"interestPostingPeriodType\": 4,\n    \"interestCalculationType\": 1,\n    \"interestCalculationDaysInYearType\": 365,\n    \"withdrawalFeeForTransfers\": false,\n    \"lockinPeriodFrequency\": \"\",\n    \"lockinPeriodFrequencyType\": \"\",\n    \"allowOverdraft\": false,\n    \"enforceMinRequiredBalance\": false,\n    \"charges\": [],\n    \"dateFormat\": \"dd MMMM yyyy\",\n    \"monthDayFormat\": \"dd MMMM\",\n    \"locale\": \"en\",\n    \"clientId\": 104\n}",
+                  "raw": "{\n    \"productId\": 1,\n    \"submittedOnDate\": \"30 August 2025\",\n    \"fieldOfficerId\": \"\",\n    \"externalId\": \"\",\n    \"nominalAnnualInterestRate\": 0,\n    \"interestCompoundingPeriodType\": 1,\n    \"interestPostingPeriodType\": 4,\n    \"interestCalculationType\": 1,\n    \"interestCalculationDaysInYearType\": 365,\n    \"withdrawalFeeForTransfers\": false,\n    \"lockinPeriodFrequency\": \"\",\n    \"lockinPeriodFrequencyType\": \"\",\n    \"allowOverdraft\": false,\n    \"enforceMinRequiredBalance\": false,\n    \"charges\": [],\n    \"dateFormat\": \"dd MMMM yyyy\",\n    \"monthDayFormat\": \"dd MMMM\",\n    \"locale\": \"en\",\n    \"clientId\": 1\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -1216,7 +1811,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"productId\": 5,\n    \"submittedOnDate\": \"30 August 2025\",\n    \"fieldOfficerId\": \"\",\n    \"externalId\": \"\",\n    \"nominalAnnualInterestRate\": 0,\n    \"interestCompoundingPeriodType\": 1,\n    \"interestPostingPeriodType\": 4,\n    \"interestCalculationType\": 1,\n    \"interestCalculationDaysInYearType\": 365,\n    \"withdrawalFeeForTransfers\": false,\n    \"lockinPeriodFrequency\": \"\",\n    \"lockinPeriodFrequencyType\": \"\",\n    \"allowOverdraft\": false,\n    \"enforceMinRequiredBalance\": false,\n    \"charges\": [],\n    \"dateFormat\": \"dd MMMM yyyy\",\n    \"monthDayFormat\": \"dd MMMM\",\n    \"locale\": \"en\",\n    \"clientId\": 104\n}",
+                  "raw": "{\n    \"productId\": 1,\n    \"submittedOnDate\": \"30 August 2025\",\n    \"fieldOfficerId\": \"\",\n    \"externalId\": \"\",\n    \"nominalAnnualInterestRate\": 0,\n    \"interestCompoundingPeriodType\": 1,\n    \"interestPostingPeriodType\": 4,\n    \"interestCalculationType\": 1,\n    \"interestCalculationDaysInYearType\": 365,\n    \"withdrawalFeeForTransfers\": false,\n    \"lockinPeriodFrequency\": \"\",\n    \"lockinPeriodFrequencyType\": \"\",\n    \"allowOverdraft\": false,\n    \"enforceMinRequiredBalance\": false,\n    \"charges\": [],\n    \"dateFormat\": \"dd MMMM yyyy\",\n    \"monthDayFormat\": \"dd MMMM\",\n    \"locale\": \"en\",\n    \"clientId\": 1\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -1224,7 +1819,7 @@
                   }
                 },
                 "url": {
-                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/savingsaccounts/62",
+                  "raw": "http://localhost:8080/fineract-provider/api/v1/self/savingsaccounts/1",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -1236,7 +1831,7 @@
                     "v1",
                     "self",
                     "savingsaccounts",
-                    "62"
+                    "1"
                   ]
                 }
               },
