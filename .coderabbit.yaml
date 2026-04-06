@@ -4,42 +4,39 @@ early_access: false
 
 chat:
   auto_reply: true
-
+  
 reviews:
   poem: false
-  profile: 'chill' # not too strict
+  profile: 'assertive' # Options: assertive, chill, or thorough
   high_level_summary: true
   review_status: true
   commit_status: true
   collapse_walkthrough: false
 
-  # Scope: review code, skip docs/config/assets
-  path_filters:
-    - '**/*'
-    - '!.github/**'
-    - '!**/*.svg'
-
   # Repo-specific guidance
+  # Custom instructions to guide the AI on Spring Boot specifics
   instructions: |
-    Focus on correctness, readability, secude core, and maintainability over cosmetic nitpicks.
-    - Avoid reviewing README, config, or asset files.
-    - Prioritize identifying bugs, performance issues, and architectural concerns.
-    - For Angular, check for OnPush strategy, unsubscribe patterns, proper RxJS usage,
-      and template accessibility (labels, roles, tab order).
-    - For TypeScript, enforce strong typing and minimal use of `any`.
-    - Point out missing tests only when changes are medium/high risk.
+    Review the Java code focusing on Spring Boot best practices:
+    - Ensure proper use of @Service, @Repository, and @RestController annotations.
+    - Check for constructor-based dependency injection over @Autowired field injection.
+    - Verify that sensitive data is not logged and proper exception handling is in place.
+    - Monitor for efficient JPA/Hibernate usage to avoid N+1 query problems.
+    - Ensure Spring Boot configuration (application.properties/yaml) follows security standards.
+    - Look for proper use of @Transactional and thread-safety in shared services.
+
+  tone_instructions: "You are a senior Java architect. Provide constructive, technical, and concise feedback."
 
   # Use path + instructions
-  path_instructions:
-    - path: 'src/app/**'
-      instructions: |
-        For Angular code: verify component separation, trackBy on *ngFor,
-        strict type safety, and clean observable patterns.
-    - path: '**/*.spec.ts'
-      instructions: |
-        For tests: encourage clear Arrange-Act-Assert structure,
-        stable selectors, and minimal brittle timing dependencies.
-
+  # Configure which files CodeRabbit should analyze or ignore
+  path_filters:
+    include:
+      - "src/main/java/**"
+      - "src/main/resources/*.yml"
+      - "src/main/resources/*.properties"
+    exclude:
+      - "**/generated/**"
+      - "src/test/**" # Optional: exclude tests if you only want logic reviews
+   
   auto_review:
     enabled: true
     auto_incremental_review: true
