@@ -144,8 +144,7 @@
     <!-- Test: REST Assured for HTTP-level integration testing -->
     <dependency>
       <groupId>io.rest-assured</groupId>
-      <artifactId>rest-assured</artifactId>
-      <version>6.0.0</version>
+      <artifactId>rest-assured</artifactId>      
       <scope>test</scope>
       <exclusions>
         <exclusion>
