@@ -56,232 +56,136 @@ import org.apache.fineract.selfservice.client.service.AppSelfServiceUserClientMa
 @RequiredArgsConstructor
 public class SelfSavingsApiResource {
 
-  private final PlatformSelfServiceSecurityContext context;
-  private final SavingsAccountsApiResource savingsAccountsApiResource;
-  private final SavingsAccountChargesApiResource savingsAccountChargesApiResource;
-  private final SavingsAccountTransactionsApiResource savingsAccountTransactionsApiResource;
-  private final AppuserSavingsMapperReadService appuserSavingsMapperReadService;
-  private final SelfSavingsDataValidator dataValidator;
-  private final AppSelfServiceUserClientMapperReadService appUserClientMapperReadService;
+    private final PlatformSelfServiceSecurityContext context;
+    private final SavingsAccountsApiResource savingsAccountsApiResource;
+    private final SavingsAccountChargesApiResource savingsAccountChargesApiResource;
+    private final SavingsAccountTransactionsApiResource savingsAccountTransactionsApiResource;
+    private final AppuserSavingsMapperReadService appuserSavingsMapperReadService;
+    private final SelfSavingsDataValidator dataValidator;
+    private final AppSelfServiceUserClientMapperReadService appUserClientMapperReadService;
 
-  @GET
-  @Path("{accountId}")
-  @Consumes({MediaType.APPLICATION_JSON})
-  @Produces({MediaType.APPLICATION_JSON})
-  @Operation(
-      summary = "Retrieve a savings account",
-      description =
-          "Retrieves a savings account\n\n"
-              + "Example Requests :\n"
-              + "\n"
-              + "self/savingsaccounts/1\n"
-              + "\n"
-              + "\n"
-              + "self/savingsaccounts/1?associations=transactions")
-  @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "OK",
-        content =
-            @Content(
-                schema =
-                    @Schema(
-                        implementation =
-                            SelfSavingsApiResourceSwagger.GetSelfSavingsAccountsResponse.class)))
-  })
-  public SavingsAccountData retrieveSavings(
-      @PathParam("accountId") @Parameter(description = "accountId") final Long accountId,
-      @DefaultValue("all") @QueryParam("chargeStatus") @Parameter(description = "chargeStatus")
-          final String chargeStatus,
-      @Context final UriInfo uriInfo) {
-
-    this.dataValidator.validateRetrieveSavings(uriInfo);
-
-    validateAppSelfServiceUserSavingsAccountMapping(accountId);
-
-    final boolean staffInSelectedOfficeOnly = false;
-    return this.savingsAccountsApiResource.retrieveOne(
-        accountId, staffInSelectedOfficeOnly, chargeStatus, "", uriInfo);
-  }
-
-  @GET
-  @Path("{accountId}/transactions/{transactionId}")
-  @Consumes({MediaType.APPLICATION_JSON})
-  @Produces({MediaType.APPLICATION_JSON})
-  @Operation(
-      summary = "Retrieve Savings Account Transaction",
-      description =
-          "Retrieves Savings Account Transaction\n\n"
-              + "Example Requests:\n"
-              + "\n"
-              + "self/savingsaccounts/1/transactions/1")
-  @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "OK",
-        content =
-            @Content(
-                schema =
-                    @Schema(
-                        implementation =
-                            SelfSavingsApiResourceSwagger
-                                .GetSelfSavingsAccountsAccountIdTransactionsTransactionIdResponse
-                                .class)))
-  })
-  public String retrieveSavingsTransaction(
-      @PathParam("accountId") @Parameter(description = "accountId") final Long accountId,
-      @PathParam("transactionId") @Parameter(description = "transactionId")
-          final Long transactionId,
-      @Context final UriInfo uriInfo) {
-
-    this.dataValidator.validateRetrieveSavingsTransaction(uriInfo);
-
-    validateAppSelfServiceUserSavingsAccountMapping(accountId);
-
-    return this.savingsAccountTransactionsApiResource.retrieveOne(
-        accountId, transactionId, uriInfo);
-  }
-
-  @GET
-  @Path("{accountId}/charges")
-  @Consumes({MediaType.APPLICATION_JSON})
-  @Produces({MediaType.APPLICATION_JSON})
-  @Operation(
-      summary = "List Savings Charges",
-      description =
-          "Lists Savings Charges\n\n"
-              + "Example Requests:\n"
-              + "\n"
-              + "self/savingsaccounts/1/charges\n"
-              + "\n"
-              + "self/savingsaccounts/1/charges?chargeStatus=inactive\n"
-              + "\n"
-              + "self/savingsaccounts/1/charges?fields=name,amountOrPercentage")
-  @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "OK",
-        content =
-            @Content(
-                array =
-                    @ArraySchema(
-                        schema =
-                            @Schema(
-                                implementation =
-                                    SelfSavingsApiResourceSwagger
-                                        .GetSelfSavingsAccountsAccountIdChargesResponse.class))))
-  })
-  public String retrieveAllSavingsAccountCharges(
-      @PathParam("accountId") @Parameter(description = "accountId") final Long accountId,
-      @DefaultValue("all") @QueryParam("chargeStatus") @Parameter(description = "chargeStatus")
-          final String chargeStatus,
-      @Context final UriInfo uriInfo) {
-
-    validateAppSelfServiceUserSavingsAccountMapping(accountId);
-
-    return this.savingsAccountChargesApiResource.retrieveAllSavingsAccountCharges(
-        accountId, chargeStatus, uriInfo);
-  }
-
-  @GET
-  @Path("{accountId}/charges/{savingsAccountChargeId}")
-  @Consumes({MediaType.APPLICATION_JSON})
-  @Produces({MediaType.APPLICATION_JSON})
-  @Operation(
-      summary = "Retrieve a Savings account Charge",
-      description =
-          "Retrieves a Savings account Charge\n\n"
-              + "Example Requests:\n"
-              + "\n"
-              + "self/savingsaccounts/1/charges/5\n"
-              + "\n"
-              + "\n"
-              + "self/savingsaccounts/1/charges/5?fields=name,amountOrPercentage")
-  @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "OK",
-        content =
-            @Content(
-                schema =
-                    @Schema(
-                        implementation =
-                            SelfSavingsApiResourceSwagger
-                                .GetSelfSavingsAccountsAccountIdChargesSavingsAccountChargeIdResponse
-                                .class)))
-  })
-  public String retrieveSavingsAccountCharge(
-      @PathParam("accountId") @Parameter(description = "accountId") final Long accountId,
-      @PathParam("savingsAccountChargeId") @Parameter(description = "savingsAccountChargeId")
-          final Long savingsAccountChargeId,
-      @Context final UriInfo uriInfo) {
-
-    validateAppSelfServiceUserSavingsAccountMapping(accountId);
-
-    return this.savingsAccountChargesApiResource.retrieveSavingsAccountCharge(
-        accountId, savingsAccountChargeId, uriInfo);
-  }
-
-  private void validateAppSelfServiceUserSavingsAccountMapping(final Long accountId) {
-    AppSelfServiceUser user = this.context.authenticatedSelfServiceUser();
-    final boolean isMappedSavings =
-        this.appuserSavingsMapperReadService.isSavingsMappedToUser(accountId, user.getId());
-    if (!isMappedSavings) {
-      throw new SavingsAccountNotFoundException(accountId);
+    @GET
+    @Path("{accountId}")
+    @Consumes({MediaType.APPLICATION_JSON})
+    @Produces({MediaType.APPLICATION_JSON})
+    @Operation(summary = "Retrieve a savings account", 
+                description = "Retrieves a savings account\n\n"
+                            + "Example Requests :\n\n"
+                            + "self/savingsaccounts/1\n\n"
+                            + "self/savingsaccounts/1?associations=transactions")
+    @ApiResponses({@ApiResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = SelfSavingsApiResourceSwagger.GetSelfSavingsAccountsResponse.class)))})
+    public SavingsAccountData retrieveSavings(@PathParam("accountId") @Parameter(description = "accountId") final Long accountId,
+                                            @DefaultValue("all") @QueryParam("chargeStatus") @Parameter(description = "chargeStatus") final String chargeStatus, 
+                                            @Context final UriInfo uriInfo) {
+        this.dataValidator.validateRetrieveSavings(uriInfo);
+        validateAppSelfServiceUserSavingsAccountMapping(accountId);
+        final boolean staffInSelectedOfficeOnly = false;
+        return this.savingsAccountsApiResource.retrieveOne(accountId, staffInSelectedOfficeOnly, chargeStatus, "", uriInfo);
     }
-  }
 
-  @GET
-  @Path("template")
-  @Produces({MediaType.APPLICATION_JSON})
-  public String template(
-      @QueryParam("clientId") final Long clientId,
-      @QueryParam("productId") final Long productId,
-      @Context final UriInfo uriInfo) {
+    @GET
+    @Path("{accountId}/transactions/{transactionId}")
+    @Consumes({MediaType.APPLICATION_JSON})
+    @Produces({MediaType.APPLICATION_JSON})
+    @Operation(summary = "Retrieve Savings Account Transaction",        
+            description = "Retrieves Savings Account Transaction\n\n"
+                        + "Example Requests:\n\n"
+                        + "self/savingsaccounts/1/transactions/1")
+    @ApiResponses({@ApiResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = SelfSavingsApiResourceSwagger.GetSelfSavingsAccountsAccountIdTransactionsTransactionIdResponse.class)))})
+    public String retrieveSavingsTransaction(@PathParam("accountId") @Parameter(description = "accountId") final Long accountId,
+                                            @PathParam("transactionId") @Parameter(description = "transactionId") final Long transactionId, 
+                                            @Context final UriInfo uriInfo) {
+        this.dataValidator.validateRetrieveSavingsTransaction(uriInfo);
+        validateAppSelfServiceUserSavingsAccountMapping(accountId);
+        return this.savingsAccountTransactionsApiResource.retrieveOne(accountId, transactionId, uriInfo);
+    }
 
-    validateAppSelfServiceUserClientsMapping(clientId);
-    Long groupId = null;
-    boolean staffInSelectedOfficeOnly = false;
-    return this.savingsAccountsApiResource.template(
-        clientId, groupId, productId, staffInSelectedOfficeOnly, uriInfo);
-  }
+    @GET
+    @Path("{accountId}/charges")
+    @Consumes({MediaType.APPLICATION_JSON})
+    @Produces({MediaType.APPLICATION_JSON})
+    @Operation(summary = "List Savings Charges",
+                description = "Lists Savings Charges\n\n"
+                            + "Example Requests:\n\n"
+                            + "self/savingsaccounts/1/charges\n\n"
+                            + "self/savingsaccounts/1/charges?chargeStatus=inactive\n\n"
+                            + "self/savingsaccounts/1/charges?fields=name,amountOrPercentage")
+    @ApiResponses({@ApiResponse(responseCode = "200", description = "OK", content = @Content(array = @ArraySchema(schema = @Schema(implementation =SelfSavingsApiResourceSwagger.GetSelfSavingsAccountsAccountIdChargesResponse.class))))})
+    public String retrieveAllSavingsAccountCharges(@PathParam("accountId") @Parameter(description = "accountId") final Long accountId,
+                                                @DefaultValue("all") @QueryParam("chargeStatus") @Parameter(description = "chargeStatus") final String chargeStatus, 
+                                                @Context final UriInfo uriInfo) {
+        validateAppSelfServiceUserSavingsAccountMapping(accountId);
+        return this.savingsAccountChargesApiResource.retrieveAllSavingsAccountCharges(accountId, chargeStatus, uriInfo);
+    }
 
-  @POST
-  @Consumes({MediaType.APPLICATION_JSON})
-  @Produces({MediaType.APPLICATION_JSON})
-  public String submitSavingsAccountApplication(
-      @QueryParam("command") final String commandParam,
-      @Context final UriInfo uriInfo,
-      final String apiRequestBodyAsJson) {
+    @GET
+    @Path("{accountId}/charges/{savingsAccountChargeId}")
+    @Consumes({MediaType.APPLICATION_JSON})
+    @Produces({MediaType.APPLICATION_JSON})
+    @Operation(
+        summary = "Retrieve a Savings account Charge",
+        description = "Retrieves a Savings account Charge\n\n"
+                    + "Example Requests:\n\n"
+                    + "self/savingsaccounts/1/charges/5\n\n"
+                    + "self/savingsaccounts/1/charges/5?fields=name,amountOrPercentage")
+    @ApiResponses({@ApiResponse(responseCode = "200", description = "OK", content = @Content( schema = @Schema(implementation = SelfSavingsApiResourceSwagger.GetSelfSavingsAccountsAccountIdChargesSavingsAccountChargeIdResponse.class)))})
+    public String retrieveSavingsAccountCharge(@PathParam("accountId") @Parameter(description = "accountId") final Long accountId,
+                                            @PathParam("savingsAccountChargeId") @Parameter(description = "savingsAccountChargeId") final Long savingsAccountChargeId, 
+                                            @Context final UriInfo uriInfo) {        
+        validateAppSelfServiceUserSavingsAccountMapping(accountId);
+        return this.savingsAccountChargesApiResource.retrieveSavingsAccountCharge(accountId, savingsAccountChargeId, uriInfo);
+    }
 
-    HashMap<String, Object> parameterMap =
+    private void validateAppSelfServiceUserSavingsAccountMapping(final Long accountId) {
+        AppSelfServiceUser user = this.context.authenticatedSelfServiceUser();
+        final boolean isMappedSavings = this.appuserSavingsMapperReadService.isSavingsMappedToUser(accountId, user.getId());
+        if (!isMappedSavings) {
+            throw new SavingsAccountNotFoundException(accountId);
+        }
+    }
+
+    @GET
+    @Path("template")
+    @Produces({MediaType.APPLICATION_JSON})
+    public String template(@QueryParam("clientId") final Long clientId,
+                        @QueryParam("productId") final Long productId,
+                        @Context final UriInfo uriInfo) {
+        validateAppSelfServiceUserClientsMapping(clientId);
+        Long groupId = null;
+        boolean staffInSelectedOfficeOnly = false;
+        return this.savingsAccountsApiResource.template(clientId, groupId, productId, staffInSelectedOfficeOnly, uriInfo);
+    }
+
+    @POST
+    @Consumes({MediaType.APPLICATION_JSON})
+    @Produces({MediaType.APPLICATION_JSON})
+    public String submitSavingsAccountApplication(@QueryParam("command") 
+                                                final String commandParam,
+                                                @Context final UriInfo uriInfo, 
+                                                final String apiRequestBodyAsJson) {        
+        HashMap<String, Object> parameterMap = this.dataValidator.validateSavingsApplication(apiRequestBodyAsJson);
+        final Long clientId = (Long) parameterMap.get(SelfSavingsAccountConstants.clientIdParameterName);
+        validateAppSelfServiceUserClientsMapping(clientId);
+        return this.savingsAccountsApiResource.submitApplication(apiRequestBodyAsJson);
+    }
+
+    @PUT
+    @Path("{accountId}")
+    @Consumes({MediaType.APPLICATION_JSON})
+    @Produces({MediaType.APPLICATION_JSON})
+    public String modifySavingsAccountApplication(@PathParam("accountId") final Long accountId,
+                                                @QueryParam("command") final String commandParam,
+                                                final String apiRequestBodyAsJson) {
+        validateAppSelfServiceUserSavingsAccountMapping(accountId);
         this.dataValidator.validateSavingsApplication(apiRequestBodyAsJson);
-    final Long clientId =
-        (Long) parameterMap.get(SelfSavingsAccountConstants.clientIdParameterName);
-    validateAppSelfServiceUserClientsMapping(clientId);
-    return this.savingsAccountsApiResource.submitApplication(apiRequestBodyAsJson);
-  }
-
-  @PUT
-  @Path("{accountId}")
-  @Consumes({MediaType.APPLICATION_JSON})
-  @Produces({MediaType.APPLICATION_JSON})
-  public String modifySavingsAccountApplication(
-      @PathParam("accountId") final Long accountId,
-      @QueryParam("command") final String commandParam,
-      final String apiRequestBodyAsJson) {
-
-    validateAppSelfServiceUserSavingsAccountMapping(accountId);
-    this.dataValidator.validateSavingsApplication(apiRequestBodyAsJson);
-    return this.savingsAccountsApiResource.update(accountId, apiRequestBodyAsJson, commandParam);
-  }
-
-  private void validateAppSelfServiceUserClientsMapping(final Long clientId) {
-    AppSelfServiceUser user = this.context.authenticatedSelfServiceUser();
-    final boolean mappedClientId =
-        this.appUserClientMapperReadService.isClientMappedToSelfServiceUser(clientId, user.getId());
-    if (!mappedClientId) {
-      throw new ClientNotFoundException(clientId);
+        return this.savingsAccountsApiResource.update(accountId, apiRequestBodyAsJson, commandParam);
     }
-  }
+
+    private void validateAppSelfServiceUserClientsMapping(final Long clientId) {
+        AppSelfServiceUser user = this.context.authenticatedSelfServiceUser();
+        final boolean mappedClientId = this.appUserClientMapperReadService.isClientMappedToSelfServiceUser(clientId, user.getId());
+        if (!mappedClientId) {
+            throw new ClientNotFoundException(clientId);
+        }
+    }
 }

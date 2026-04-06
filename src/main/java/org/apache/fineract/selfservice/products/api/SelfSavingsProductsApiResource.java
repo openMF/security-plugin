@@ -41,40 +41,34 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class SelfSavingsProductsApiResource {
 
-  private final SavingsProductReadPlatformService savingsProductReadPlatformService;
-  private final DefaultToApiJsonSerializer<SavingsProductData> toApiJsonSerializer;
-  private final ApiRequestParameterHelper apiRequestParameterHelper;
-  private final AppSelfServiceUserClientMapperReadService appUserClientMapperReadService;
+    private final SavingsProductReadPlatformService savingsProductReadPlatformService;
+    private final DefaultToApiJsonSerializer<SavingsProductData> toApiJsonSerializer;
+    private final ApiRequestParameterHelper apiRequestParameterHelper;
+    private final AppSelfServiceUserClientMapperReadService appUserClientMapperReadService;
 
-  @GET
-  @Consumes({MediaType.APPLICATION_JSON})
-  @Produces({MediaType.APPLICATION_JSON})
-  public String retrieveAll(
-      @QueryParam(SavingsApiConstants.clientIdParamName) final Long clientId,
-      @Context final UriInfo uriInfo) {
+    @GET
+    @Consumes({MediaType.APPLICATION_JSON})
+    @Produces({MediaType.APPLICATION_JSON})
+    public String retrieveAll(@QueryParam(SavingsApiConstants.clientIdParamName) final Long clientId, 
+                              @Context final UriInfo uriInfo) {
 
-    this.appUserClientMapperReadService.validateAppSelfServiceUserClientsMapping(clientId);
-    final ApiRequestJsonSerializationSettings settings =
-        this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-    final Collection<SavingsProductData> products =
-        this.savingsProductReadPlatformService.retrieveAll();
-    return this.toApiJsonSerializer.serialize(settings, products);
-  }
+        this.appUserClientMapperReadService.validateAppSelfServiceUserClientsMapping(clientId);
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+        final Collection<SavingsProductData> products = this.savingsProductReadPlatformService.retrieveAll();
+        return this.toApiJsonSerializer.serialize(settings, products);
+    }
 
-  @GET
-  @Path("{productId}")
-  @Consumes({MediaType.APPLICATION_JSON})
-  @Produces({MediaType.APPLICATION_JSON})
-  public String retrieveOne(
-      @PathParam(SavingsApiConstants.productIdParamName) final Long productId,
-      @QueryParam(SavingsApiConstants.clientIdParamName) final Long clientId,
-      @Context final UriInfo uriInfo) {
+    @GET
+    @Path("{productId}")
+    @Consumes({MediaType.APPLICATION_JSON})
+    @Produces({MediaType.APPLICATION_JSON})
+    public String retrieveOne(@PathParam(SavingsApiConstants.productIdParamName) final Long productId,
+                              @QueryParam(SavingsApiConstants.clientIdParamName) final Long clientId,
+                              @Context final UriInfo uriInfo) {
 
-    this.appUserClientMapperReadService.validateAppSelfServiceUserClientsMapping(clientId);
-    final ApiRequestJsonSerializationSettings settings =
-        this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-    final SavingsProductData savingsProduct =
-        this.savingsProductReadPlatformService.retrieveOne(productId);
-    return this.toApiJsonSerializer.serialize(settings, savingsProduct);
-  }
+        this.appUserClientMapperReadService.validateAppSelfServiceUserClientsMapping(clientId);
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+        final SavingsProductData savingsProduct = this.savingsProductReadPlatformService.retrieveOne(productId);
+        return this.toApiJsonSerializer.serialize(settings, savingsProduct);
+    }
 }
