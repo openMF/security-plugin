@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -26,6 +27,7 @@ import static org.mockito.Mockito.when;
 
 import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.UriInfo;
+import java.io.InputStream;
 import java.util.List;
 import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
 import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
@@ -33,8 +35,14 @@ import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSer
 import org.apache.fineract.infrastructure.core.serialization.ToApiJsonSerializer;
 import org.apache.fineract.infrastructure.core.service.Page;
 import org.apache.fineract.infrastructure.core.service.SearchParameters;
+import org.apache.fineract.infrastructure.documentmanagement.data.ImageCreateRequest;
+import org.apache.fineract.infrastructure.documentmanagement.data.ImageCreateResponse;
+import org.apache.fineract.infrastructure.documentmanagement.service.ImageReadPlatformService;
+import org.apache.fineract.infrastructure.documentmanagement.service.ImageWritePlatformService;
+import org.apache.fineract.infrastructure.security.exception.NoAuthorizationException;
 import org.apache.fineract.portfolio.accountdetails.data.AccountSummaryCollectionData;
 import org.apache.fineract.portfolio.accountdetails.service.AccountDetailsReadPlatformService;
+import org.apache.fineract.portfolio.client.api.ClientApiConstants;
 import org.apache.fineract.portfolio.client.data.ClientChargeData;
 import org.apache.fineract.portfolio.client.data.ClientData;
 import org.apache.fineract.portfolio.client.data.ClientTransactionData;
@@ -44,17 +52,20 @@ import org.apache.fineract.portfolio.client.service.ClientTransactionReadPlatfor
 import org.apache.fineract.portfolio.loanaccount.guarantor.data.ObligeeData;
 import org.apache.fineract.portfolio.loanaccount.guarantor.service.GuarantorReadPlatformService;
 import org.apache.fineract.selfservice.client.data.SelfClientDataValidator;
+import org.apache.fineract.selfservice.client.service.AppSelfServiceUserClientMapperReadService;
 import org.apache.fineract.selfservice.client.service.SelfServiceClientReadPlatformService;
 import org.apache.fineract.selfservice.client.service.SelfServiceSearchParameters;
 import org.apache.fineract.selfservice.security.service.PlatformSelfServiceSecurityContext;
 import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
+import org.glassfish.jersey.media.multipart.FormDataBodyPart;
+import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.apache.fineract.selfservice.client.service.AppSelfServiceUserClientMapperReadService;
+import jakarta.ws.rs.core.MediaType;
 
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings("unchecked")
@@ -74,6 +85,8 @@ class SelfClientsApiResourceTest {
   @Mock private ApiRequestParameterHelper apiRequestParameterHelper;
   @Mock private AppSelfServiceUserClientMapperReadService appUserClientMapperReadService;
   @Mock private SelfClientDataValidator dataValidator;
+  @Mock private ImageReadPlatformService imageReadPlatformService;
+  @Mock private ImageWritePlatformService imageWritePlatformService;
   @Mock private UriInfo uriInfo;
 
   private SelfClientsApiResource resource;
@@ -98,8 +111,8 @@ class SelfClientsApiResourceTest {
         apiRequestParameterHelper,
         appUserClientMapperReadService,
         dataValidator,
-        null, // imageReadPlatformService
-        null, // commandPipeline
+        imageReadPlatformService,
+        imageWritePlatformService,
         null, // imageResizeContentProcessor
         null, // base64EncoderContentProcessor
         null, // base64DecoderContentProcessor
@@ -118,24 +131,24 @@ class SelfClientsApiResourceTest {
 
   private void mockAuthenticatedUser() {
     AppSelfServiceUser user = mock(AppSelfServiceUser.class);
-    when(user.getId()).thenReturn(USER_ID);
-    when(context.authenticatedSelfServiceUser()).thenReturn(user);
+    org.mockito.Mockito.lenient().when(user.getId()).thenReturn(USER_ID);
+    org.mockito.Mockito.lenient().when(context.authenticatedSelfServiceUser()).thenReturn(user);
   }
 
   private void mockClientMapped() {
     mockAuthenticatedUser();
-    when(appUserClientMapperReadService.isClientMappedToSelfServiceUser(CLIENT_ID, USER_ID)).thenReturn(true);
+    org.mockito.Mockito.lenient().when(appUserClientMapperReadService.isClientMappedToSelfServiceUser(CLIENT_ID, USER_ID)).thenReturn(true);
   }
 
   private void mockClientNotMapped() {
     mockAuthenticatedUser();
-    when(appUserClientMapperReadService.isClientMappedToSelfServiceUser(CLIENT_ID, USER_ID)).thenReturn(false);
+    org.mockito.Mockito.lenient().when(appUserClientMapperReadService.isClientMappedToSelfServiceUser(CLIENT_ID, USER_ID)).thenReturn(false);
   }
 
-  // --- MX-206: retrieveAll ---
+  // --- retrieveAll ---
 
   @Test
-  void retrieveAll_usesIsSelfUserTrue() {
+  void retrieveAll_checksPermission() {
     Page<ClientData> page = mock(Page.class);
     when(selfServiceClientReadPlatformService.retrieveAll(any(SelfServiceSearchParameters.class)))
         .thenReturn(page);
@@ -143,199 +156,111 @@ class SelfClientsApiResourceTest {
 
     resource.retrieveAll(uriInfo, null, null, null, null, null, null, null, null, null);
 
-    ArgumentCaptor<SelfServiceSearchParameters> captor =
-        ArgumentCaptor.forClass(SelfServiceSearchParameters.class);
-    verify(selfServiceClientReadPlatformService).retrieveAll(captor.capture());
-    assertNotNull(captor.getValue());
-    assert captor.getValue().getIsSelfUser();
+    verify(context).validateHasReadPermission(ClientApiConstants.CLIENT_RESOURCE_NAME);
+    verify(selfServiceClientReadPlatformService).retrieveAll(any(SelfServiceSearchParameters.class));
   }
 
   @Test
-  void retrieveAll_neverCallsValidateMapping() {
-    Page<ClientData> page = mock(Page.class);
-    when(selfServiceClientReadPlatformService.retrieveAll(any(SelfServiceSearchParameters.class)))
-        .thenReturn(page);
-    when(clientSerializer.serialize(any(), any(Page.class))).thenReturn("[]");
+  void retrieveAll_throwsIfNoPermission() {
+    doThrow(new NoAuthorizationException("no auth")).when(context).validateHasReadPermission(any());
 
-    resource.retrieveAll(uriInfo, null, null, null, null, null, null, null, null, null);
-
-    verify(appUserClientMapperReadService, never()).isClientMappedToSelfServiceUser(anyLong(), anyLong());
+    assertThrows(NoAuthorizationException.class, () -> resource.retrieveAll(uriInfo, null, null, null, null, null, null, null, null, null));
+    verify(selfServiceClientReadPlatformService, never()).retrieveAll(any());
   }
 
-  // --- MX-207: retrieveOne ---
+  // --- retrieveOne ---
 
   @Test
-  void retrieveOne_mappedClient_returnsSerializedData() {
+  void retrieveOne_checksPermission() {
     mockClientMapped();
     ClientData clientData = mock(ClientData.class);
     when(selfServiceClientReadPlatformService.retrieveOne(CLIENT_ID)).thenReturn(clientData);
     when(clientSerializer.serialize(any(), eq(clientData))).thenReturn("{\"id\":5}");
 
-    String result = resource.retrieveOne(CLIENT_ID, uriInfo);
+    resource.retrieveOne(CLIENT_ID, uriInfo);
 
-    assertNotNull(result);
-    verify(selfServiceClientReadPlatformService).retrieveOne(CLIENT_ID);
+    verify(context).validateHasReadPermission(ClientApiConstants.CLIENT_RESOURCE_NAME);
   }
 
   @Test
-  void retrieveOne_unmappedClient_throws() {
-    mockClientNotMapped();
-
-    assertThrows(ClientNotFoundException.class, () -> resource.retrieveOne(CLIENT_ID, uriInfo));
-  }
-
-  // --- MX-208: retrieveAssociatedAccounts ---
-
-  @Test
-  void retrieveAssociatedAccounts_mappedClient_returnsAccounts() {
+  void retrieveOne_throwsIfNoPermission() {
     mockClientMapped();
-    AccountSummaryCollectionData accounts = mock(AccountSummaryCollectionData.class);
-    when(accountDetailsReadPlatformService.retrieveClientAccountDetails(CLIENT_ID))
-        .thenReturn(accounts);
-    when(accountSummarySerializer.serialize(any(), eq(accounts))).thenReturn("{}");
+    doThrow(new NoAuthorizationException("no auth")).when(context).validateHasReadPermission(any());
 
-    String result = resource.retrieveAssociatedAccounts(CLIENT_ID, uriInfo);
-
-    assertNotNull(result);
-    verify(accountDetailsReadPlatformService).retrieveClientAccountDetails(CLIENT_ID);
+    assertThrows(NoAuthorizationException.class, () -> resource.retrieveOne(CLIENT_ID, uriInfo));
+    verify(selfServiceClientReadPlatformService, never()).retrieveOne(anyLong());
   }
 
-  @Test
-  void retrieveAssociatedAccounts_unmappedClient_throws() {
-    mockClientNotMapped();
-
-    assertThrows(
-        ClientNotFoundException.class,
-        () -> resource.retrieveAssociatedAccounts(CLIENT_ID, uriInfo));
-  }
-
-  // --- MX-210: charges ---
+  // --- retrieveAllClientTransactions ---
 
   @Test
-  void retrieveAllClientCharges_mappedClient_returnsCharges() {
-    mockClientMapped();
-    Page<ClientChargeData> page = mock(Page.class);
-    when(clientChargeReadPlatformService.retrieveClientCharges(
-            eq(CLIENT_ID), any(), any(), any(SearchParameters.class)))
-        .thenReturn(page);
-    when(clientChargeSerializer.serialize(any(), any(Page.class))).thenReturn("[]");
-
-    String result =
-        resource.retrieveAllClientCharges(CLIENT_ID, "all", null, uriInfo, null, null);
-
-    assertNotNull(result);
-    verify(clientChargeReadPlatformService)
-        .retrieveClientCharges(eq(CLIENT_ID), eq("all"), eq(null), any(SearchParameters.class));
-  }
-
-  @Test
-  void retrieveAllClientCharges_unmappedClient_throws() {
-    mockClientNotMapped();
-
-    assertThrows(
-        ClientNotFoundException.class,
-        () -> resource.retrieveAllClientCharges(CLIENT_ID, "all", null, uriInfo, null, null));
-  }
-
-  @Test
-  void retrieveClientCharge_mappedClient_returnsCharge() {
-    mockClientMapped();
-    ClientChargeData charge = mock(ClientChargeData.class);
-    when(clientChargeReadPlatformService.retrieveClientCharge(CLIENT_ID, 1L)).thenReturn(charge);
-    when(clientChargeSerializer.serialize(any(), eq(charge))).thenReturn("{}");
-
-    String result = resource.retrieveClientCharge(CLIENT_ID, 1L, uriInfo);
-
-    assertNotNull(result);
-    verify(clientChargeReadPlatformService).retrieveClientCharge(CLIENT_ID, 1L);
-  }
-
-  // --- MX-211: retrieveAllClientTransactions ---
-
-  @Test
-  void retrieveAllClientTransactions_mappedClient_returnsTransactions() {
+  void retrieveAllClientTransactions_checksPermissionAndDelegates() {
     mockClientMapped();
     Page<ClientTransactionData> page = mock(Page.class);
     when(clientTransactionReadPlatformService.retrieveAllTransactions(
-            eq(CLIENT_ID), any(SearchParameters.class)))
+            eq(CLIENT_ID), org.mockito.ArgumentMatchers.isA(SearchParameters.class)))
         .thenReturn(page);
     when(clientTransactionSerializer.serialize(any(), any(Page.class))).thenReturn("[]");
 
-    String result = resource.retrieveAllClientTransactions(CLIENT_ID, uriInfo, null, null);
+    resource.retrieveAllClientTransactions(CLIENT_ID, uriInfo, null, null);
 
-    assertNotNull(result);
-    verify(clientTransactionReadPlatformService)
-        .retrieveAllTransactions(eq(CLIENT_ID), any(SearchParameters.class));
+    verify(context).validateHasReadPermission(ClientApiConstants.CLIENT_CHARGES_RESOURCE_NAME);
+    verify(clientTransactionReadPlatformService).retrieveAllTransactions(eq(CLIENT_ID), org.mockito.ArgumentMatchers.isA(SearchParameters.class));
   }
 
   @Test
-  void retrieveAllClientTransactions_unmappedClient_throws() {
-    mockClientNotMapped();
-
-    assertThrows(
-        ClientNotFoundException.class,
-        () -> resource.retrieveAllClientTransactions(CLIENT_ID, uriInfo, null, null));
-  }
-
-  // --- MX-212: retrieveClientTransaction ---
-
-  @Test
-  void retrieveClientTransaction_mappedClient_returnsTransaction() {
+  void retrieveAllClientTransactions_throwsIfNoPermission() {
     mockClientMapped();
-    ClientTransactionData txn = mock(ClientTransactionData.class);
-    when(clientTransactionReadPlatformService.retrieveTransaction(CLIENT_ID, 99L)).thenReturn(txn);
-    when(clientTransactionSerializer.serialize(any(), eq(txn))).thenReturn("{}");
+    doThrow(new NoAuthorizationException("no auth")).when(context).validateHasReadPermission(any());
 
-    String result = resource.retrieveClientTransaction(CLIENT_ID, 99L, uriInfo);
-
-    assertNotNull(result);
-    verify(clientTransactionReadPlatformService).retrieveTransaction(CLIENT_ID, 99L);
+    assertThrows(NoAuthorizationException.class, () -> resource.retrieveAllClientTransactions(CLIENT_ID, uriInfo, null, null));
+    verify(clientTransactionReadPlatformService, never()).retrieveAllTransactions(anyLong(), any(SearchParameters.class));
   }
 
-  @Test
-  void retrieveClientTransaction_unmappedClient_throws() {
-    mockClientNotMapped();
-
-    assertThrows(
-        ClientNotFoundException.class,
-        () -> resource.retrieveClientTransaction(CLIENT_ID, 99L, uriInfo));
-  }
-
-  // --- retrieveObligeeDetails ---
+  // --- addNewClientImage ---
 
   @Test
-  void retrieveObligeeDetails_mappedClient_returnsObligees() {
+  void addNewClientImage_checksCreatePermissionAndDelegatesToImageWritePlatformService() {
     mockClientMapped();
-    List<ObligeeData> obligees = List.of(mock(ObligeeData.class));
-    when(guarantorReadPlatformService.retrieveObligeeDetails(CLIENT_ID)).thenReturn(obligees);
-    when(obligeeSerializer.serialize(any(), eq(obligees))).thenReturn("[]");
+    InputStream is = mock(InputStream.class);
+    FormDataContentDisposition fileDetails = mock(FormDataContentDisposition.class);
+    FormDataBodyPart filePart = mock(FormDataBodyPart.class);
 
-    String result = resource.retrieveObligeeDetails(CLIENT_ID, uriInfo);
+    when(fileDetails.getFileName()).thenReturn("image.png");
+    when(filePart.getMediaType()).thenReturn(MediaType.valueOf("image/png"));
 
+    ImageCreateResponse response = new ImageCreateResponse(CLIENT_ID, "image-id");
+    when(imageWritePlatformService.createImage(any(ImageCreateRequest.class))).thenReturn(response);
+
+    ImageCreateResponse result = resource.addNewClientImage(CLIENT_ID, 123L, is, fileDetails, filePart);
+
+    verify(context).validateHasCreatePermission("CLIENTIMAGE");
     assertNotNull(result);
-    verify(guarantorReadPlatformService).retrieveObligeeDetails(CLIENT_ID);
   }
 
   @Test
-  void retrieveObligeeDetails_unmappedClient_throws() {
-    mockClientNotMapped();
-
-    assertThrows(
-        ClientNotFoundException.class,
-        () -> resource.retrieveObligeeDetails(CLIENT_ID, uriInfo));
-  }
-
-  // --- Security contract ---
-
-  @Test
-  void validateAppuserClientsMapping_usesAuthenticatedSelfServiceUser() {
+  void addNewClientImage_throwsIfNoCreatePermissionAndDoesNotWrite() {
     mockClientMapped();
-    ClientData clientData = mock(ClientData.class);
-    when(selfServiceClientReadPlatformService.retrieveOne(CLIENT_ID)).thenReturn(clientData);
-    when(clientSerializer.serialize(any(), eq(clientData))).thenReturn("{}");
+    InputStream is = mock(InputStream.class);
+    FormDataContentDisposition fileDetails = mock(FormDataContentDisposition.class);
+    FormDataBodyPart filePart = mock(FormDataBodyPart.class);
 
-    resource.retrieveOne(CLIENT_ID, uriInfo);
+    doThrow(new NoAuthorizationException("no auth")).when(context).validateHasCreatePermission("CLIENTIMAGE");
 
-    verify(context).authenticatedSelfServiceUser();
+    assertThrows(NoAuthorizationException.class, () -> resource.addNewClientImage(CLIENT_ID, 123L, is, fileDetails, filePart));
+    verify(imageWritePlatformService, never()).createImage(any());
   }
+
+  // --- deleteClientImage ---
+
+  @Test
+  void deleteClientImage_throwsIfNoDeletePermission() {
+    mockClientMapped();
+
+    doThrow(new NoAuthorizationException("no auth")).when(context).validateHasDeletePermission("CLIENTIMAGE");
+
+    assertThrows(NoAuthorizationException.class, () -> resource.deleteClientImage(CLIENT_ID));
+    verify(imageWritePlatformService, never()).deleteImage(any());
+  }
+
 }

@@ -99,7 +99,7 @@ public class SelfServiceClientReadPlatformServiceImpl implements SelfServiceClie
 
         final String userOfficeHierarchy = this.context.officeHierarchy();
         final String underHierarchySearchString = userOfficeHierarchy + "%";
-        final String appUserID = String.valueOf(context.authenticatedSelfServiceUser().getId());
+        final Long appUserId = context.authenticatedSelfServiceUser().getId();
 
         // if (searchParameters.isScopedByOfficeHierarchy()) {
         // this.context.validateAccessRights(searchParameters.getHierarchy());
@@ -112,10 +112,10 @@ public class SelfServiceClientReadPlatformServiceImpl implements SelfServiceClie
         sqlBuilder.append(" where (o.hierarchy like ? or transferToOffice.hierarchy like ?) ");
 
         if (searchParameters != null) {
-            if (searchParameters.getIsSelfUser()) {
+            if (Boolean.TRUE.equals(searchParameters.getIsSelfUser())) {
                 sqlBuilder.append(
                         " and c.id in (select umap.client_id from m_selfservice_user_client_mapping as umap where umap.appuser_id = ? ) ");
-                paramList.add(appUserID);
+                paramList.add(appUserId);
             }
 
             final String extraCriteria = buildSqlStringFromClientCriteria(this.clientToDataMapper.schema(), searchParameters, paramList);

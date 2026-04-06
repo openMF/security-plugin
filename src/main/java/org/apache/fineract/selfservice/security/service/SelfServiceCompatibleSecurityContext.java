@@ -14,6 +14,7 @@
  */
 package org.apache.fineract.selfservice.security.service;
 
+import java.lang.reflect.Field;
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.security.service.SpringSecurityPlatformSecurityContext;
 import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
@@ -22,6 +23,7 @@ import org.apache.fineract.useradministration.exception.UnAuthenticatedUserExcep
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
 
 /**
  * Extends the core {@link SpringSecurityPlatformSecurityContext} to handle both
@@ -29,8 +31,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
  *
  * Overrides {@code authenticatedUser()} and {@code getAuthenticatedUserIfPresent()} so that
  * when the principal is an {@link AppSelfServiceUser}, a minimal {@link AppUser} stub is
- * returned via {@link AppSelfServiceUserAdapter}, allowing core read services to pass their
- * guard checks.
+ * returned, allowing core read services to pass their guard checks.
  */
 public class SelfServiceCompatibleSecurityContext extends SpringSecurityPlatformSecurityContext {
 
@@ -44,7 +45,7 @@ public class SelfServiceCompatibleSecurityContext extends SpringSecurityPlatform
     final Object principal = extractPrincipal();
 
     if (principal instanceof AppSelfServiceUser selfServiceUser) {
-      return AppSelfServiceUserAdapter.fromSelfServiceUser(selfServiceUser);
+      return toAppUserStub(selfServiceUser);
     }
 
     return super.authenticatedUser();
@@ -55,7 +56,7 @@ public class SelfServiceCompatibleSecurityContext extends SpringSecurityPlatform
     final Object principal = extractPrincipal();
 
     if (principal instanceof AppSelfServiceUser selfServiceUser) {
-      return AppSelfServiceUserAdapter.fromSelfServiceUser(selfServiceUser);
+      return toAppUserStub(selfServiceUser);
     }
 
     return super.getAuthenticatedUserIfPresent();
@@ -70,5 +71,40 @@ public class SelfServiceCompatibleSecurityContext extends SpringSecurityPlatform
       }
     }
     return null;
+  }
+
+  private AppUser toAppUserStub(AppSelfServiceUser selfServiceUser) {
+    final User springUser =
+        new User(
+            selfServiceUser.getUsername(),
+            selfServiceUser.getPassword(),
+            selfServiceUser.isEnabled(),
+            selfServiceUser.isAccountNonExpired(),
+            selfServiceUser.isCredentialsNonExpired(),
+            selfServiceUser.isAccountNonLocked(),
+            selfServiceUser.getAuthorities());
+    final AppUser stub =
+        new AppUser(
+            selfServiceUser.getOffice(),
+            springUser,
+            selfServiceUser.getRoles(),
+            selfServiceUser.getEmail(),
+            selfServiceUser.getFirstname(),
+            selfServiceUser.getLastname(),
+            null,
+            true,
+            false);
+    setId(stub, selfServiceUser.getId());
+    return stub;
+  }
+
+  private void setId(AppUser stub, Long id) {
+    try {
+      Field idField = AppUser.class.getSuperclass().getDeclaredField("id");
+      idField.setAccessible(true);
+      idField.set(stub, id);
+    } catch (NoSuchFieldException | IllegalAccessException e) {
+      throw new IllegalStateException("Failed to set id on AppUser stub", e);
+    }
   }
 }

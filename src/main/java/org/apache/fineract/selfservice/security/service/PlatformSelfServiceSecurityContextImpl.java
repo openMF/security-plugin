@@ -31,7 +31,6 @@ import org.apache.fineract.selfservice.security.exception.SelfServiceNoAuthoriza
 import org.apache.fineract.selfservice.security.exception.SelfServiceResetPasswordException;
 import org.apache.fineract.selfservice.security.exception.SelfServiceUnAuthenticatedUserException;
 import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
-import org.apache.fineract.useradministration.domain.AppUser;
 import org.apache.fineract.useradministration.exception.UnAuthenticatedUserException;
 import org.springframework.context.annotation.Primary;
 import org.springframework.security.core.Authentication;
@@ -46,9 +45,8 @@ import org.springframework.stereotype.Component;
  * and {@link PlatformSecurityContext} (for core read services that call
  * {@code context.authenticatedUser()} as a guard check).
  *
- * When the principal is an {@link AppSelfServiceUser}, the core {@link PlatformSecurityContext}
- * methods return a minimal {@link AppUser} stub via {@link AppSelfServiceUserAdapter},
- * allowing core read services to pass their guard checks without modification.
+ * Uses native permission validation methods from {@link AppSelfServiceUser} so self-service
+ * authorization stays aligned with the core permission model without an adapter layer.
  */
 @Component
 @Primary
@@ -197,7 +195,18 @@ public class PlatformSelfServiceSecurityContextImpl implements PlatformSelfServi
   @Override
   public void validateHasReadPermission(String resourceType) {
     final AppSelfServiceUser ssUser = authenticatedSelfServiceUser();
-    final AppUser stub = AppSelfServiceUserAdapter.fromSelfServiceUser(ssUser);
-    stub.validateHasReadPermission(resourceType);
+    ssUser.validateHasReadPermission(resourceType);
+  }
+
+  @Override
+  public void validateHasCreatePermission(String resourceType) {
+    final AppSelfServiceUser ssUser = authenticatedSelfServiceUser();
+    ssUser.validateHasCreatePermission(resourceType);
+  }
+
+  @Override
+  public void validateHasDeletePermission(String resourceType) {
+    final AppSelfServiceUser ssUser = authenticatedSelfServiceUser();
+    ssUser.validateHasDeletePermission(resourceType);
   }
 }
