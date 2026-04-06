@@ -20,7 +20,6 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.UriInfo;
@@ -32,7 +31,7 @@ import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSer
 import org.apache.fineract.portfolio.savings.SavingsApiConstants;
 import org.apache.fineract.portfolio.savings.data.SavingsProductData;
 import org.apache.fineract.portfolio.savings.service.SavingsProductReadPlatformService;
-import org.apache.fineract.selfservice.client.service.AppSelfServiceUserClientMapperReadService;
+import org.apache.fineract.selfservice.security.service.PlatformSelfServiceSecurityContext;
 import org.springframework.stereotype.Component;
 
 @Path("/v1/self/savingsproducts")
@@ -41,34 +40,37 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class SelfSavingsProductsApiResource {
 
-    private final SavingsProductReadPlatformService savingsProductReadPlatformService;
-    private final DefaultToApiJsonSerializer<SavingsProductData> toApiJsonSerializer;
-    private final ApiRequestParameterHelper apiRequestParameterHelper;
-    private final AppSelfServiceUserClientMapperReadService appUserClientMapperReadService;
+  private final PlatformSelfServiceSecurityContext context;
+  private final SavingsProductReadPlatformService savingsProductReadPlatformService;
+  private final DefaultToApiJsonSerializer<SavingsProductData> toApiJsonSerializer;
+  private final ApiRequestParameterHelper apiRequestParameterHelper;
 
-    @GET
-    @Consumes({MediaType.APPLICATION_JSON})
-    @Produces({MediaType.APPLICATION_JSON})
-    public String retrieveAll(@QueryParam(SavingsApiConstants.clientIdParamName) final Long clientId, 
-                              @Context final UriInfo uriInfo) {
+  @GET
+  @Consumes({MediaType.APPLICATION_JSON})
+  @Produces({MediaType.APPLICATION_JSON})
+  public String retrieveAll(@Context final UriInfo uriInfo) {
 
-        this.appUserClientMapperReadService.validateAppSelfServiceUserClientsMapping(clientId);
-        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-        final Collection<SavingsProductData> products = this.savingsProductReadPlatformService.retrieveAll();
-        return this.toApiJsonSerializer.serialize(settings, products);
-    }
+    this.context.validateHasReadPermission("SAVINGSPRODUCT");
+    final ApiRequestJsonSerializationSettings settings =
+        this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+    final Collection<SavingsProductData> products =
+        this.savingsProductReadPlatformService.retrieveAll();
+    return this.toApiJsonSerializer.serialize(settings, products);
+  }
 
-    @GET
-    @Path("{productId}")
-    @Consumes({MediaType.APPLICATION_JSON})
-    @Produces({MediaType.APPLICATION_JSON})
-    public String retrieveOne(@PathParam(SavingsApiConstants.productIdParamName) final Long productId,
-                              @QueryParam(SavingsApiConstants.clientIdParamName) final Long clientId,
-                              @Context final UriInfo uriInfo) {
+  @GET
+  @Path("{productId}")
+  @Consumes({MediaType.APPLICATION_JSON})
+  @Produces({MediaType.APPLICATION_JSON})
+  public String retrieveOne(
+      @PathParam(SavingsApiConstants.productIdParamName) final Long productId,
+      @Context final UriInfo uriInfo) {
 
-        this.appUserClientMapperReadService.validateAppSelfServiceUserClientsMapping(clientId);
-        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-        final SavingsProductData savingsProduct = this.savingsProductReadPlatformService.retrieveOne(productId);
-        return this.toApiJsonSerializer.serialize(settings, savingsProduct);
-    }
+    this.context.validateHasReadPermission("SAVINGSPRODUCT");
+    final ApiRequestJsonSerializationSettings settings =
+        this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+    final SavingsProductData savingsProduct =
+        this.savingsProductReadPlatformService.retrieveOne(productId);
+    return this.toApiJsonSerializer.serialize(settings, savingsProduct);
+  }
 }

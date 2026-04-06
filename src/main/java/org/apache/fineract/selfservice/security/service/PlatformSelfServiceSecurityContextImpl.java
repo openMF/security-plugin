@@ -193,4 +193,11 @@ public class PlatformSelfServiceSecurityContextImpl implements PlatformSelfServi
     }
     return null;
   }
+
+  @Override
+  public void validateHasReadPermission(String resourceType) {
+    final AppSelfServiceUser ssUser = authenticatedSelfServiceUser();
+    final AppUser stub = AppSelfServiceUserAdapter.fromSelfServiceUser(ssUser);
+    stub.validateHasReadPermission(resourceType);
+  }
 }

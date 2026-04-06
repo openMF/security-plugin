@@ -15,11 +15,13 @@
 package org.apache.fineract.selfservice.products.api;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import jakarta.ws.rs.core.MultivaluedHashMap;
@@ -31,96 +33,103 @@ import java.util.List;
 import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
 import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
-import org.apache.fineract.portfolio.client.exception.ClientNotFoundException;
+import org.apache.fineract.infrastructure.security.exception.NoAuthorizationException;
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
 import org.apache.fineract.portfolio.loanproduct.service.LoanProductReadPlatformService;
-import org.apache.fineract.selfservice.client.service.AppSelfServiceUserClientMapperReadService;
-import org.junit.jupiter.api.Assertions;
+import org.apache.fineract.selfservice.security.service.PlatformSelfServiceSecurityContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mockito;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings("unchecked")
 class SelfLoanProductsApiResourceTest {
 
+  @Mock private PlatformSelfServiceSecurityContext securityContext;
   @Mock private LoanProductReadPlatformService loanProductReadPlatformService;
   @Mock private DefaultToApiJsonSerializer<LoanProductData> toApiJsonSerializer;
   @Mock private ApiRequestParameterHelper apiRequestParameterHelper;
-  @Mock private AppSelfServiceUserClientMapperReadService appUserClientMapperReadService;
   @Mock private UriInfo uriInfo;
 
   private SelfLoanProductsApiResource resource;
 
-  private static final Long CLIENT_ID = 5L;
   private static final Long PRODUCT_ID = 1L;
 
   @BeforeEach
   void setUp() {
-    resource = new SelfLoanProductsApiResource(
-        loanProductReadPlatformService,
-        toApiJsonSerializer,
-        apiRequestParameterHelper,
-        appUserClientMapperReadService);
+    resource =
+        new SelfLoanProductsApiResource(
+            securityContext,
+            loanProductReadPlatformService,
+            toApiJsonSerializer,
+            apiRequestParameterHelper);
 
     Mockito.lenient().when(uriInfo.getQueryParameters()).thenReturn(new MultivaluedHashMap<>());
-    Mockito.lenient().when(apiRequestParameterHelper.process(any()))
+    Mockito.lenient()
+        .when(apiRequestParameterHelper.process(any()))
         .thenReturn(mock(ApiRequestJsonSerializationSettings.class));
   }
 
   @Test
-  void retrieveAllLoanProducts_validClient_callsReadService() {
+  void retrieveAllLoanProducts_authorized_callsReadService() {
     Collection<LoanProductData> products = List.of(mock(LoanProductData.class));
     when(loanProductReadPlatformService.retrieveAllLoanProducts()).thenReturn(products);
     when(toApiJsonSerializer.serialize(any(), any(Collection.class))).thenReturn("[]");
 
-    String result = resource.retrieveAllLoanProducts(CLIENT_ID, uriInfo);
+    String result = resource.retrieveAllLoanProducts(uriInfo);
 
     assertNotNull(result);
+    verify(securityContext).validateHasReadPermission("LOANPRODUCT");
     verify(loanProductReadPlatformService).retrieveAllLoanProducts();
   }
 
   @Test
-  void retrieveAllLoanProducts_callsValidateMapping() {
-    when(loanProductReadPlatformService.retrieveAllLoanProducts()).thenReturn(List.of());
-    when(toApiJsonSerializer.serialize(any(), any(Collection.class))).thenReturn("[]");
+  void retrieveAllLoanProducts_unauthorized_throwsException() {
+    doThrow(new NoAuthorizationException("User has no authority to READ loanproducts"))
+        .when(securityContext)
+        .validateHasReadPermission("LOANPRODUCT");
 
-    resource.retrieveAllLoanProducts(CLIENT_ID, uriInfo);
-
-    verify(appUserClientMapperReadService).validateAppSelfServiceUserClientsMapping(CLIENT_ID);
+    assertThrows(
+        NoAuthorizationException.class, () -> resource.retrieveAllLoanProducts(uriInfo));
+    verifyNoInteractions(loanProductReadPlatformService);
   }
 
   @Test
-  void retrieveLoanProductDetails_validClient_callsReadService() {
+  void retrieveLoanProductDetails_authorized_callsReadService() {
     LoanProductData product = mock(LoanProductData.class);
     when(loanProductReadPlatformService.retrieveLoanProduct(PRODUCT_ID)).thenReturn(product);
     when(toApiJsonSerializer.serialize(any(), any(LoanProductData.class))).thenReturn("{}");
 
-    String result = resource.retrieveLoanProductDetails(CLIENT_ID, PRODUCT_ID, uriInfo);
+    String result = resource.retrieveLoanProductDetails(PRODUCT_ID, uriInfo);
 
     assertNotNull(result);
+    verify(securityContext).validateHasReadPermission("LOANPRODUCT");
     verify(loanProductReadPlatformService).retrieveLoanProduct(PRODUCT_ID);
   }
 
   @Test
-  void retrieveLoanProductDetails_unmappedClient_throws() {
-    doThrow(new ClientNotFoundException(CLIENT_ID))
-        .when(appUserClientMapperReadService).validateAppSelfServiceUserClientsMapping(CLIENT_ID);
+  void retrieveLoanProductDetails_unauthorized_throwsException() {
+    doThrow(new NoAuthorizationException("User has no authority to READ loanproducts"))
+        .when(securityContext)
+        .validateHasReadPermission("LOANPRODUCT");
 
-    Assertions.assertThrows(
-        ClientNotFoundException.class,
-        () -> resource.retrieveLoanProductDetails(CLIENT_ID, PRODUCT_ID, uriInfo));
+    assertThrows(
+        NoAuthorizationException.class,
+        () -> resource.retrieveLoanProductDetails(PRODUCT_ID, uriInfo));
+    verifyNoInteractions(loanProductReadPlatformService);
   }
 
   @Test
   void noCoreApiResourceInjected() {
-    boolean hasCoreApiResource = Arrays.stream(SelfLoanProductsApiResource.class.getDeclaredFields())
-        .map(Field::getType)
-        .anyMatch(t -> t.getSimpleName().equals("LoanProductsApiResource"));
-    assertTrue(!hasCoreApiResource,
+    boolean hasCoreApiResource =
+        Arrays.stream(SelfLoanProductsApiResource.class.getDeclaredFields())
+            .map(Field::getType)
+            .anyMatch(t -> t.getSimpleName().equals("LoanProductsApiResource"));
+    assertTrue(
+        !hasCoreApiResource,
         "SelfLoanProductsApiResource must not depend on core LoanProductsApiResource");
   }
 }
