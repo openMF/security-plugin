@@ -40,4 +40,14 @@ public interface PlatformSelfServiceSecurityContext extends PlatformUserRightsCo
     boolean doesPasswordHasToBeRenewed(AppSelfServiceUser currentUser);
 
     AppSelfServiceUser authenticatedUser(CommandWrapper commandWrapper);
+
+    /**
+     * Validates that the authenticated self-service user has read permission for the given resource
+     * type, using core Fineract's permission model via {@link AppUser#validateHasReadPermission}.
+     *
+     * @param resourceType the resource type (e.g. "LOANPRODUCT", "SAVINGSPRODUCT")
+     * @throws org.apache.fineract.infrastructure.security.exception.NoAuthorizationException if the
+     *     user lacks the permission
+     */
+    void validateHasReadPermission(String resourceType);
 }

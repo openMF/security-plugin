@@ -29,10 +29,9 @@ import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
 import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
 import org.apache.fineract.infrastructure.core.service.Page;
-import org.apache.fineract.portfolio.accounts.constants.ShareAccountApiConstants;
 import org.apache.fineract.portfolio.products.data.ProductData;
 import org.apache.fineract.portfolio.products.service.ShareProductReadPlatformService;
-import org.apache.fineract.selfservice.client.service.AppSelfServiceUserClientMapperReadService;
+import org.apache.fineract.selfservice.security.service.PlatformSelfServiceSecurityContext;
 import org.springframework.stereotype.Component;
 
 @Path("/v1/self/products/share")
@@ -41,21 +40,20 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class SelfShareProductsApiResource {
 
+  private final PlatformSelfServiceSecurityContext context;
   private final ShareProductReadPlatformService shareProductReadPlatformService;
   private final DefaultToApiJsonSerializer<ProductData> toApiJsonSerializer;
   private final ApiRequestParameterHelper apiRequestParameterHelper;
-  private final AppSelfServiceUserClientMapperReadService appUserClientMapperReadService;
 
   @GET
   @Path("{productId}")
   @Consumes({MediaType.APPLICATION_JSON})
   @Produces({MediaType.APPLICATION_JSON})
   public String retrieveProduct(
-      @QueryParam(ShareAccountApiConstants.clientid_paramname) final Long clientId,
       @PathParam("productId") final Long productId,
       @Context final UriInfo uriInfo) {
 
-    this.appUserClientMapperReadService.validateAppSelfServiceUserClientsMapping(clientId);
+    this.context.authenticatedSelfServiceUser();
     final ApiRequestJsonSerializationSettings settings =
         this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
     final ProductData productData =
@@ -67,12 +65,11 @@ public class SelfShareProductsApiResource {
   @Consumes({MediaType.APPLICATION_JSON})
   @Produces({MediaType.APPLICATION_JSON})
   public String retrieveAllProducts(
-      @QueryParam(ShareAccountApiConstants.clientid_paramname) final Long clientId,
       @QueryParam("offset") final Integer offset,
       @QueryParam("limit") final Integer limit,
       @Context final UriInfo uriInfo) {
 
-    this.appUserClientMapperReadService.validateAppSelfServiceUserClientsMapping(clientId);
+    this.context.authenticatedSelfServiceUser();
     final ApiRequestJsonSerializationSettings settings =
         this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
     final Page<ProductData> products =

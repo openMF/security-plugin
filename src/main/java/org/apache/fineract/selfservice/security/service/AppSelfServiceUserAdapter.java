@@ -15,7 +15,6 @@
 package org.apache.fineract.selfservice.security.service;
 
 import java.lang.reflect.Field;
-import java.util.HashSet;
 import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.springframework.security.core.userdetails.User;
@@ -45,7 +44,7 @@ final class AppSelfServiceUserAdapter {
     AppUser stub = new AppUser(
         selfServiceUser.getOffice(),
         springUser,
-        new HashSet<>(),
+        selfServiceUser.getRoles(),
         selfServiceUser.getEmail(),
         selfServiceUser.getFirstname(),
         selfServiceUser.getLastname(),
