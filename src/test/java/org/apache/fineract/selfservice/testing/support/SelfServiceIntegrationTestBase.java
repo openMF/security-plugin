@@ -65,6 +65,10 @@ public abstract class SelfServiceIntegrationTestBase {
                 .withEnv("FINERACT_DEFAULT_TENANTDB_PWD", "postgres")
                 .withEnv("FINERACT_DEFAULT_TENANTDB_CONN_PARAMS", "")
                 
+                // Enable the plugin via property and allow bean overriding for the CORS bean
+                .withEnv("fineract.modules.selfservice.enabled", "true")
+                .withEnv("SPRING_MAIN_ALLOW_BEAN_DEFINITION_OVERRIDING", "true")
+                
                 // Timezone (Optional but highly recommended to prevent sync errors)
                 .withEnv("TZ", "UTC")
                 .withEnv("JAVA_TOOL_OPTIONS", "-Xmx2G")
@@ -73,12 +77,12 @@ public abstract class SelfServiceIntegrationTestBase {
                 .withEnv("FINERACT_SERVER_SSL_ENABLED", "false")
                 .withEnv("FINERACT_SERVER_PORT", "8080")
                 
-                // Mount the compiled Plugin JAR
+                // Mount the compiled Plugin JAR into the auto-scanned /app/plugins directory
                 .withCopyFileToContainer(
                         MountableFile.forHostPath("target/selfservice-plugin-1.15.0-SNAPSHOT.jar"), 
-                        "/app/libs/selfservice-plugin-1.15.0-SNAPSHOT.jar"
+                        "/app/plugins/selfservice-plugin-1.15.0-SNAPSHOT.jar"
                 )
-                
+                        
                 // Wait for the Tomcat server to finish Liquibase and report healthy
                 .waitingFor(Wait.forHttp("/fineract-provider/actuator/health")
                     .forStatusCode(200)

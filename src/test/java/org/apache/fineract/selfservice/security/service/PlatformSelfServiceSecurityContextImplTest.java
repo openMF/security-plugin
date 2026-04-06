@@ -16,12 +16,16 @@ package org.apache.fineract.selfservice.security.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -39,18 +43,26 @@ import org.apache.fineract.useradministration.exception.UnAuthenticatedUserExcep
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 
+@ExtendWith(MockitoExtension.class)
 class PlatformSelfServiceSecurityContextImplTest {
 
-  private PlatformSelfServiceSecurityContextImpl securityContext;
-  private ConfigurationDomainService configService;
+  @Mock private ConfigurationDomainService configurationDomainService;
+
+  private PlatformSelfServiceSecurityContextImpl context;
 
   @BeforeEach
   void setUp() {
+    context = new PlatformSelfServiceSecurityContextImpl(configurationDomainService);
+
     FineractPlatformTenant tenant =
         new FineractPlatformTenant(1L, "default", "Default Tenant", "UTC", null);
     ThreadLocalContextUtil.setTenant(tenant);
@@ -59,9 +71,7 @@ class PlatformSelfServiceSecurityContextImplTest {
     businessDates.put(BusinessDateType.COB_DATE, LocalDate.now().minusDays(1));
     ThreadLocalContextUtil.setBusinessDates(businessDates);
 
-    configService = mock(ConfigurationDomainService.class);
-    when(configService.isPasswordForcedResetEnable()).thenReturn(false);
-    securityContext = new PlatformSelfServiceSecurityContextImpl(configService);
+    lenient().when(configurationDomainService.isPasswordForcedResetEnable()).thenReturn(false);
   }
 
   @AfterEach
@@ -72,8 +82,8 @@ class PlatformSelfServiceSecurityContextImplTest {
 
   private AppSelfServiceUser createAndSetSelfServiceUser(Set<Role> roles) {
     Office office = mock(Office.class);
-    when(office.getId()).thenReturn(1L);
-    when(office.getHierarchy()).thenReturn(".");
+    lenient().when(office.getId()).thenReturn(1L);
+    lenient().when(office.getHierarchy()).thenReturn(".");
 
     Collection<SimpleGrantedAuthority> authorities = new ArrayList<>();
     for (Role role : roles) {
@@ -103,47 +113,28 @@ class PlatformSelfServiceSecurityContextImplTest {
     SecurityContextHolder.getContext().setAuthentication(auth);
   }
 
-  private Role createRoleWithPermissions(String roleName, String... permissionCodes) {
-    Role role = mock(Role.class);
-    when(role.getId()).thenReturn(1L);
-    when(role.getName()).thenReturn(roleName);
-    when(role.isDisabled()).thenReturn(false);
-
-    Set<Permission> permissions = new HashSet<>();
-    for (String code : permissionCodes) {
-      Permission perm = mock(Permission.class);
-      when(perm.getCode()).thenReturn(code);
-      permissions.add(perm);
-      when(role.hasPermissionTo(code)).thenReturn(true);
-    }
-    when(role.getPermissions()).thenReturn(permissions);
-    return role;
-  }
-
   // --- authenticatedSelfServiceUser ---
 
   @Test
   void authenticatedSelfServiceUser_shouldReturnUserWhenPrincipalIsSet() {
     AppSelfServiceUser ssUser = createAndSetSelfServiceUser(new HashSet<>());
-    AppSelfServiceUser result = securityContext.authenticatedSelfServiceUser();
+    AppSelfServiceUser result = context.authenticatedSelfServiceUser();
     assertThat(result).isSameAs(ssUser);
   }
 
   @Test
   void authenticatedSelfServiceUser_shouldThrowWhenNoPrincipal() {
-    // No authentication set
-    assertThatThrownBy(() -> securityContext.authenticatedSelfServiceUser())
+    assertThatThrownBy(() -> context.authenticatedSelfServiceUser())
         .isInstanceOf(UnAuthenticatedUserException.class);
   }
 
   @Test
   void authenticatedSelfServiceUser_shouldThrowWhenPrincipalIsNotSelfServiceUser() {
-    // Set a non-AppSelfServiceUser principal
     UsernamePasswordAuthenticationToken auth =
         new UsernamePasswordAuthenticationToken("anonymous", null);
     SecurityContextHolder.getContext().setAuthentication(auth);
 
-    assertThatThrownBy(() -> securityContext.authenticatedSelfServiceUser())
+    assertThatThrownBy(() -> context.authenticatedSelfServiceUser())
         .isInstanceOf(UnAuthenticatedUserException.class);
   }
 
@@ -154,14 +145,17 @@ class PlatformSelfServiceSecurityContextImplTest {
     AppSelfServiceUser principal = mock(AppSelfServiceUser.class);
     when(principal.getAuthorities()).thenReturn(new ArrayList<>());
     setAuthenticatedPrincipal(principal);
-    securityContext.validateHasReadPermission("CLIENT");
+    context.validateHasReadPermission("CLIENT");
     verify(principal).validateHasReadPermission("CLIENT");
   }
 
   @Test
-  void validateHasReadPermission_shouldThrowWhenNotAuthenticated() {
-    assertThatThrownBy(() -> securityContext.validateHasReadPermission("CLIENT"))
-        .isInstanceOf(UnAuthenticatedUserException.class);
+  void validateHasReadPermission_throwsWhenPrincipalIsNotSelfServiceUser() {
+    SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken("mifos", null));
+
+    assertThrows(
+        UnAuthenticatedUserException.class,
+        () -> context.validateHasReadPermission("SAVINGSPRODUCT"));
   }
 
   // --- validateHasCreatePermission ---
@@ -171,7 +165,7 @@ class PlatformSelfServiceSecurityContextImplTest {
     AppSelfServiceUser principal = mock(AppSelfServiceUser.class);
     when(principal.getAuthorities()).thenReturn(new ArrayList<>());
     setAuthenticatedPrincipal(principal);
-    securityContext.validateHasCreatePermission("CLIENTIMAGE");
+    context.validateHasCreatePermission("CLIENTIMAGE");
     verify(principal).validateHasCreatePermission("CLIENTIMAGE");
   }
 
@@ -182,7 +176,7 @@ class PlatformSelfServiceSecurityContextImplTest {
     AppSelfServiceUser principal = mock(AppSelfServiceUser.class);
     when(principal.getAuthorities()).thenReturn(new ArrayList<>());
     setAuthenticatedPrincipal(principal);
-    securityContext.validateHasDeletePermission("CLIENTIMAGE");
+    context.validateHasDeletePermission("CLIENTIMAGE");
     verify(principal).validateHasDeletePermission("CLIENTIMAGE");
   }
 
@@ -191,13 +185,12 @@ class PlatformSelfServiceSecurityContextImplTest {
   @Test
   void isAuthenticated_shouldNotThrowWhenSelfServiceUserIsPresent() {
     createAndSetSelfServiceUser(new HashSet<>());
-    // Should not throw
-    securityContext.isAuthenticated();
+    context.isAuthenticated();
   }
 
   @Test
   void isAuthenticated_shouldThrowWhenNoPrincipal() {
-    assertThatThrownBy(() -> securityContext.isAuthenticated())
+    assertThatThrownBy(() -> context.isAuthenticated())
         .isInstanceOf(UnAuthenticatedUserException.class);
   }
 
@@ -206,13 +199,13 @@ class PlatformSelfServiceSecurityContextImplTest {
   @Test
   void getAuthenticatedUserIfPresent_shouldReturnUserWhenPresent() {
     AppSelfServiceUser ssUser = createAndSetSelfServiceUser(new HashSet<>());
-    AppSelfServiceUser result = securityContext.getAuthenticatedUserIfPresent();
+    AppSelfServiceUser result = context.getAuthenticatedUserIfPresent();
     assertThat(result).isSameAs(ssUser);
   }
 
   @Test
   void getAuthenticatedUserIfPresent_shouldReturnNullWhenNoPrincipal() {
-    AppSelfServiceUser result = securityContext.getAuthenticatedUserIfPresent();
+    AppSelfServiceUser result = context.getAuthenticatedUserIfPresent();
     assertThat(result).isNull();
   }
 
@@ -221,8 +214,7 @@ class PlatformSelfServiceSecurityContextImplTest {
   @Test
   void validateAccessRights_shouldPassWhenHierarchyMatches() {
     createAndSetSelfServiceUser(new HashSet<>());
-    // Office hierarchy is "." so "." starts with "."
-    securityContext.validateAccessRights(".");
+    context.validateAccessRights(".");
   }
 
   // --- officeHierarchy ---
@@ -230,6 +222,7 @@ class PlatformSelfServiceSecurityContextImplTest {
   @Test
   void officeHierarchy_shouldReturnUserOfficeHierarchy() {
     createAndSetSelfServiceUser(new HashSet<>());
-    assertThat(securityContext.officeHierarchy()).isEqualTo(".");
+    assertThat(context.officeHierarchy()).isEqualTo(".");
   }
+
 }
