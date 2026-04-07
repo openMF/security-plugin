@@ -1,4 +1,4 @@
-# Self service Plugin for Apache Fineract
+# Self service Plugin for Apache Fineract.
 
 ## For Users
 
