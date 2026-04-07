@@ -580,6 +580,31 @@ public class AppSelfServiceUser extends AbstractPersistableCustom<Long> implemen
         validateHasPermission("READ", resourceType);
     }
 
+    /**
+     * Self-service read permission check that requires an explicit READ_* grant
+     * for the given resource type.
+     *
+     * <p>This intentionally does <strong>not</strong> honor broad grants such as
+     * ALL_FUNCTIONS or ALL_FUNCTIONS_READ, to ensure that self-service APIs
+     * follow a strict explicit-grant model without affecting core Fineract
+     * authorization semantics.</p>
+     *
+     * @param resourceType the resource type token (e.g. "SAVINGSPRODUCT")
+     * @throws NoAuthorizationException when the self-service user does not have
+     *         an explicit READ_* grant for the resource
+     */
+    public void validateHasSelfServiceReadPermission(final String resourceType) {
+        final String authorizationMessage =
+                "Self-service user has no authority to read " + resourceType.toLowerCase() + "s";
+        final String matchPermission = "READ_" + resourceType.toUpperCase();
+
+        if (hasSpecificPermissionTo(matchPermission)) {
+            return;
+        }
+
+        throw new NoAuthorizationException(authorizationMessage);
+    }
+
     public void validateHasCreatePermission(final String resourceType) {
         validateHasPermission("CREATE", resourceType);
     }

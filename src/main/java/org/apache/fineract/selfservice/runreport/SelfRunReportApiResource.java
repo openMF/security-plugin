@@ -28,15 +28,28 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.PathSegment;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
 import jakarta.ws.rs.core.UriInfo;
+import java.net.URI;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.apache.fineract.infrastructure.dataqueries.api.RunreportsApiResource;
+import org.apache.fineract.infrastructure.security.exception.NoAuthorizationException;
 import org.apache.fineract.selfservice.security.service.PlatformSelfServiceSecurityContext;
+import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Path("/v1/self/runreports")
-@Component
+@Component("selfservicePluginSelfRunReportApiResource")
 @Tag(
     name = "Self Run Report",
     description =
@@ -55,6 +68,13 @@ public class SelfRunReportApiResource {
 
   private final PlatformSelfServiceSecurityContext context;
   private final RunreportsApiResource runreportsApiResource;
+
+  /**
+   * Comma-separated allowlist of report names permitted for self-service. Deny
+   * by default when empty to avoid IDOR via tenant-custom reports.
+   */
+  @Value("${fineract.modules.selfservice.runreports.allowlist:}")
+  private String allowlistedReportsCsv;
 
   @GET
   @Path("{reportName}")
@@ -92,8 +112,146 @@ public class SelfRunReportApiResource {
   public Response runReport(
       @PathParam("reportName") @Parameter(description = "reportName") final String reportName,
       @Context final UriInfo uriInfo) {
-    this.context.authenticatedSelfServiceUser();
-    final boolean isSelfServiceUserReport = true;
-    return this.runreportsApiResource.runReport(reportName, uriInfo);
+
+    final AppSelfServiceUser user = this.context.authenticatedSelfServiceUser();
+
+    final Set<String> allowlist =
+        Arrays.stream((allowlistedReportsCsv == null ? "" : allowlistedReportsCsv).split(","))
+            .map(String::trim)
+            .filter(s -> !s.isBlank())
+            .map(s -> s.toLowerCase(Locale.ROOT))
+            .collect(Collectors.toSet());
+
+    if (allowlist.isEmpty() || !allowlist.contains(reportName.toLowerCase(Locale.ROOT))) {
+      throw new NoAuthorizationException("Self-service is not permitted to run this report: " + reportName);
+    }
+
+    // Scrub all R_* parameters and re-inject trusted scoping params derived from the
+    // authenticated self-service user mapping.
+    final MultivaluedMap<String, String> qp = new MultivaluedHashMap<>();
+    uriInfo.getQueryParameters(true).forEach((k, v) -> {
+      if (!k.startsWith("R_")) {
+        qp.put(k, v);
+      }
+    });
+
+    // Force report scope to the user's mapped clientId (if any).
+    final Long mappedClientId =
+        user.getAppUserClientMappings() == null || user.getAppUserClientMappings().isEmpty()
+            ? null
+            : user.getAppUserClientMappings().iterator().next().getClient().getId();
+    if (mappedClientId != null) {
+      qp.putSingle("R_clientId", String.valueOf(mappedClientId));
+    }
+
+    return this.runreportsApiResource.runReport(reportName, new UriInfoWithQueryParams(uriInfo, qp));
+  }
+
+  /**
+   * Minimal UriInfo wrapper overriding query parameters only.
+   */
+  static final class UriInfoWithQueryParams implements UriInfo {
+    private final UriInfo delegate;
+    private final MultivaluedMap<String, String> queryParams;
+
+    UriInfoWithQueryParams(UriInfo delegate, MultivaluedMap<String, String> queryParams) {
+      this.delegate = delegate;
+      this.queryParams = queryParams;
+    }
+
+    @Override
+    public MultivaluedMap<String, String> getQueryParameters() {
+      return queryParams;
+    }
+
+    @Override
+    public MultivaluedMap<String, String> getQueryParameters(boolean decode) {
+      return queryParams;
+    }
+
+    @Override
+    public URI getRequestUri() {
+      return delegate.getRequestUri();
+    }
+
+    @Override
+    public UriBuilder getRequestUriBuilder() {
+      return delegate.getRequestUriBuilder();
+    }
+
+    @Override
+    public URI getAbsolutePath() {
+      return delegate.getAbsolutePath();
+    }
+
+    @Override
+    public UriBuilder getAbsolutePathBuilder() {
+      return delegate.getAbsolutePathBuilder();
+    }
+
+    @Override
+    public URI getBaseUri() {
+      return delegate.getBaseUri();
+    }
+
+    @Override
+    public UriBuilder getBaseUriBuilder() {
+      return delegate.getBaseUriBuilder();
+    }
+
+    @Override
+    public String getPath() {
+      return delegate.getPath();
+    }
+
+    @Override
+    public String getPath(boolean decode) {
+      return delegate.getPath(decode);
+    }
+
+    @Override
+    public List<PathSegment> getPathSegments() {
+      return delegate.getPathSegments();
+    }
+
+    @Override
+    public List<PathSegment> getPathSegments(boolean decode) {
+      return delegate.getPathSegments(decode);
+    }
+
+    @Override
+    public MultivaluedMap<String, String> getPathParameters() {
+      return delegate.getPathParameters();
+    }
+
+    @Override
+    public MultivaluedMap<String, String> getPathParameters(boolean decode) {
+      return delegate.getPathParameters(decode);
+    }
+
+    @Override
+    public List<String> getMatchedURIs() {
+      return delegate.getMatchedURIs();
+    }
+
+    @Override
+    public List<String> getMatchedURIs(boolean decode) {
+      return delegate.getMatchedURIs(decode);
+    }
+
+    @Override
+    public List<Object> getMatchedResources() {
+      return delegate.getMatchedResources();
+    }
+
+    @Override
+    public URI resolve(URI uri) {
+      return delegate.resolve(uri);
+    }
+
+    @Override
+    public URI relativize(URI uri) {
+      return delegate.relativize(uri);
+    }
   }
 }

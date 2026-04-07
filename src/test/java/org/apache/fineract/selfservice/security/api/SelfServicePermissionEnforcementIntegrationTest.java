@@ -120,6 +120,25 @@ public class SelfServicePermissionEnforcementIntegrationTest extends SelfService
         .then()
         .statusCode(403);
 
+    // 4b. Even if ALL_FUNCTIONS is set, self-service must still require explicit READ_SAVINGSPRODUCT
+    permissions.clear();
+    permissions.put("ALL_FUNCTIONS", true);
+    permissions.put("ALL_FUNCTIONS_READ", true);
+    permissions.put("READ_SAVINGSPRODUCT", false);
+    permissionBody.put("permissions", permissions);
+
+    given(SelfServiceTestUtils.requestSpecWithAuth(getFineractPort(), "mifos", "password"))
+        .body(permissionBody)
+        .put(SelfServiceTestUtils.CONTEXT_PATH + "/api/v1/roles/" + roleId + "/permissions")
+        .then()
+        .statusCode(200);
+
+    given(SelfServiceTestUtils.requestSpecWithAuth(getFineractPort(), "tomas", "password"))
+        .when()
+        .get(SelfServiceTestUtils.CONTEXT_PATH + "/api/v1/self/savingsproducts")
+        .then()
+        .statusCode(403);
+
     // 5. Grant READ_SAVINGSPRODUCT
     permissions.clear();
     permissions.put("READ_SAVINGSPRODUCT", true);

@@ -195,7 +195,7 @@ public class PlatformSelfServiceSecurityContextImpl implements PlatformSelfServi
   @Override
   public void validateHasReadPermission(String resourceType) {
     final AppSelfServiceUser ssUser = authenticatedSelfServiceUser();
-    ssUser.validateHasReadPermission(resourceType);
+    ssUser.validateHasSelfServiceReadPermission(resourceType);
   }
 
   @Override
