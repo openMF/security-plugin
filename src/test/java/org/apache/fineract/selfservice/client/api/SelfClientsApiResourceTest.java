@@ -191,6 +191,22 @@ class SelfClientsApiResourceTest {
     verify(selfServiceClientReadPlatformService, never()).retrieveOne(anyLong());
   }
 
+  // --- retrieveAssociatedAccounts ---
+
+  @Test
+  void retrieveAssociatedAccounts_filtersParametersCorrectly() {
+    mockClientMapped();
+    AccountSummaryCollectionData accounts = mock(AccountSummaryCollectionData.class);
+    when(accountDetailsReadPlatformService.retrieveClientAccountDetails(CLIENT_ID)).thenReturn(accounts);
+    when(accountSummarySerializer.serialize(any(ApiRequestJsonSerializationSettings.class), eq(accounts), eq(ClientApiConstants.CLIENT_ACCOUNTS_DATA_PARAMETERS))).thenReturn("{\"mocked\":true}");
+
+    String result = resource.retrieveAssociatedAccounts(CLIENT_ID, uriInfo);
+
+    verify(context).validateHasReadPermission(ClientApiConstants.CLIENT_RESOURCE_NAME);
+    verify(accountDetailsReadPlatformService).retrieveClientAccountDetails(CLIENT_ID);
+    assertNotNull(result);
+  }
+
   // --- retrieveAllClientTransactions ---
 
   @Test
