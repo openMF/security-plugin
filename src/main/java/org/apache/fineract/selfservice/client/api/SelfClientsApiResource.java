@@ -250,7 +250,7 @@ public class SelfClientsApiResource {
         accountDetailsReadPlatformService.retrieveClientAccountDetails(clientId);
     final ApiRequestJsonSerializationSettings settings =
         apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-    return accountSummarySerializer.serialize(settings, accounts);
+    return accountSummarySerializer.serialize(settings, accounts, ClientApiConstants.CLIENT_ACCOUNTS_DATA_PARAMETERS);
   }
 
   @GET
