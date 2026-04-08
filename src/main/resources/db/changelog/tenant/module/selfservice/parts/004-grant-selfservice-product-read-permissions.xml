@@ -16,7 +16,7 @@
          SavingsProductsApiResource which call validateHasReadPermission() as part of
          their authorization model.
          Uses ANSI-standard NOT EXISTS for cross-database compatibility (PostgreSQL/MySQL). -->
-    <changeSet author="fineract" id="ss-0002-1">
+    <changeSet author="fineract" id="ss-0004-1">
         <preConditions onFail="MARK_RAN">
             <tableExists tableName="m_role_permission"/>
             <tableExists tableName="m_permission"/>

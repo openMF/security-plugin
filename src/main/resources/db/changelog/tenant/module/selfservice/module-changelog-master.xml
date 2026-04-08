@@ -10,9 +10,10 @@
 <databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.1.xsd">
-  <include relativeToChangelogFile="true" file="parts/001-create-selfserviceuser-initial-schema.xml"/>
-  <include file="parts/002-grant-selfservice-product-read-permissions.xml" relativeToChangelogFile="true"/>
+  <include file="parts/001-create-selfservice-initial-schema.xml" relativeToChangelogFile="true"/>
+  <include file="parts/002-migrate-selfservice-users.xml" relativeToChangelogFile="true"/>
   <include file="parts/003-grant-selfservice-client-read-permissions.xml" relativeToChangelogFile="true"/>
-  <include file="parts/004-grant-selfservice-report-read-permissions.xml" relativeToChangelogFile="true"/>
-  <include file="parts/005-grant-selfservice-savings-account-read-permissions.xml" relativeToChangelogFile="true"/>
+  <include file="parts/004-grant-selfservice-product-read-permissions.xml" relativeToChangelogFile="true"/>
+  <include file="parts/005-grant-selfservice-report-read-permissions.xml" relativeToChangelogFile="true"/>
+  <include file="parts/006-grant-selfservice-savings-account-read-permissions.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>
