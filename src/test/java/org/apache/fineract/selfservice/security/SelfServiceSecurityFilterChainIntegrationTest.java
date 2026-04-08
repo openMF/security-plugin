@@ -51,7 +51,8 @@ class SelfServiceSecurityFilterChainIntegrationTest {
             }
         };
 
-        mockMvc.perform(get("/v1/self/clients"))
+        mockMvc.perform(get("/v1/self/clients")
+                .header("Fineract-Platform-TenantId", "default"))
             .andExpect(unauthorizedOrForbidden);
     }
 

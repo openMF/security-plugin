@@ -23,8 +23,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.Collections;
+import org.apache.fineract.selfservice.registration.SelfServiceApiConstants;
 import org.apache.fineract.selfservice.security.domain.PlatformSelfServiceUserRepository;
 import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
+import org.apache.fineract.selfservice.useradministration.service.SelfServiceRoleReadPlatformService;
+import org.apache.fineract.useradministration.data.RoleData;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,6 +43,8 @@ class TenantAwareJpaPlatformSelfServiceUserDetailsServiceTest {
 
     @Mock
     private PlatformSelfServiceUserRepository platformUserRepository;
+  @Mock
+  private SelfServiceRoleReadPlatformService roleReadPlatformService;
 
     @InjectMocks
     private TenantAwareJpaPlatformSelfServiceUserDetailsService service;
@@ -51,14 +57,14 @@ class TenantAwareJpaPlatformSelfServiceUserDetailsServiceTest {
     }
 
     @Test
-    void loadUserByUsername_returnsAppSelfServiceUser_whenUserIsActiveAndNotDeleted() {
+  void loadUserByUsername_throwsWhenSelfServiceRoleMissingOrDisabled() {
         when(platformUserRepository.findByUsernameAndDeletedAndEnabled("roberto@gmail.com", false, true))
                 .thenReturn(activeUser);
+        // Present but not flagged as self-service or without an enabled self-service role
+        when(activeUser.isSelfServiceUser()).thenReturn(false);
 
-        UserDetails result = service.loadUserByUsername("roberto@gmail.com");
-
-        assertThat(result).isSameAs(activeUser);
-        assertThat(result).isInstanceOf(AppSelfServiceUser.class);
+        assertThatThrownBy(() -> service.loadUserByUsername("roberto@gmail.com"))
+                .isInstanceOf(UsernameNotFoundException.class);
     }
 
     @Test

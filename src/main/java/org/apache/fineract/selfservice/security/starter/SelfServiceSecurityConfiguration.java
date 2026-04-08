@@ -40,6 +40,7 @@ import org.apache.fineract.infrastructure.security.service.AuthTenantDetailsServ
 import org.apache.fineract.infrastructure.security.service.PlatformUserDetailsChecker;
 import org.apache.fineract.infrastructure.security.service.TwoFactorService;
 import org.apache.fineract.notification.service.UserNotificationService;
+import org.apache.fineract.selfservice.security.service.SelfServiceUserAuthorizationManager;
 import org.apache.fineract.selfservice.security.service.TenantAwareJpaPlatformSelfServiceUserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -127,8 +128,10 @@ public class SelfServiceSecurityConfiguration {
                 .requestMatchers(HttpMethod.POST, "/api/v1/self/authentication").permitAll()
                 .requestMatchers(HttpMethod.POST, "/v1/self/authentication").permitAll()
 
-                // All other self-service endpoints require self-service authentication
-                .requestMatchers("/api/v1/self/**", "/v1/self/**").authenticated()
+                // All other self-service endpoints require self-service authentication and must
+                // pass the self-service authorization manager (guards self vs non-self traffic).
+                .requestMatchers("/api/v1/self/**", "/v1/self/**")
+                    .access(SelfServiceUserAuthorizationManager.selfServiceUserAuthManager())
 
                 .anyRequest().permitAll()
             );
@@ -175,7 +178,12 @@ public class SelfServiceSecurityConfiguration {
                 selfServiceBasicAuthenticationEntryPoint(), toApiJsonSerializer, configurationDomainService, cacheWritePlatformService,
                 userNotificationService, basicAuthTenantDetailsService, businessDateReadPlatformService);
 
-        filter.setRequestMatcher(API_MATCHER.matcher("/api/**"));
+        // Must match both /api/v1/self/** and /v1/self/** endpoints.
+        // Some self-service resources (e.g. runreports) are registered under /v1/self/** without
+        // the /api prefix, so authentication filter must cover both patterns.
+        filter.setRequestMatcher(
+                new org.springframework.security.web.util.matcher.OrRequestMatcher(
+                        API_MATCHER.matcher("/api/v1/self/**"), API_MATCHER.matcher("/v1/self/**")));
         return filter;
     }
 

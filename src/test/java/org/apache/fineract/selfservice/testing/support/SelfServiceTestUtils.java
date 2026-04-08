@@ -58,6 +58,8 @@ public final class SelfServiceTestUtils {
    */
   public static RequestSpecification requestSpec(int port) {
     return given()
+        .relaxedHTTPSValidation()
+        .baseUri("https://localhost")
         .port(port)
         .contentType(ContentType.JSON)
         .accept(ContentType.JSON)
