@@ -142,6 +142,14 @@
     </changeSet>
     <!-- Alter App Self Service User Client Mapping Table -->
     <changeSet author="fineract" id="ss-0001-5">
+        <preConditions onFail="MARK_RAN">            
+            <not>
+                <constraintExists constraintName="appuser_id_client_id" tableName="m_selfservice_user_client_mapping"/>
+            </not>
+            <not>
+                <constraintExists constraintName="unique_self_client" tableName="m_selfservice_user_client_mapping"/>
+            </not>
+        </preConditions>
         <addUniqueConstraint columnNames="appuser_id, client_id" constraintName="appuser_id_client_id"
                              tableName="m_selfservice_user_client_mapping"/>
         <addUniqueConstraint columnNames="client_id" constraintName="unique_self_client"
