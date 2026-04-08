@@ -289,28 +289,5 @@
                 WHERE t.id = s.id
             );
         </sql>
-    </changeSet>    
-    <!-- Give minimal grants for Savings Account to the Self Service Role-->
-    <changeSet author="fineract" id="ss-0001-13">
-        <preConditions onFail="MARK_RAN">            
-            <tableExists tableName="m_role_permission"/>
-            <tableExists tableName="m_permission"/>
-            <tableExists tableName="m_role"/>
-        </preConditions>
-        <sql>
-            INSERT INTO m_role_permission (role_id, permission_id)
-            SELECT 
-                r.id AS role_id,
-                p.id AS permission_id
-            FROM m_role r
-            JOIN m_permission p ON p.code = 'READ_SAVINGSACCOUNT'
-            WHERE r.name = 'Self Service User'
-              AND NOT EXISTS (
-                    SELECT 1 
-                    FROM m_role_permission rp 
-                    WHERE rp.role_id = r.id 
-                      AND rp.permission_id = p.id
-                  );
-        </sql>
-    </changeSet>
+    </changeSet>        
 </databaseChangeLog>
