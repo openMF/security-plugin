@@ -1,57 +1,62 @@
-# .coderabbit.yaml
-language: 'en-US'
+language: en-US
 early_access: false
-
 chat:
   auto_reply: true
-  
 reviews:
   poem: false
-  profile: 'assertive' # Options: assertive, chill, or thorough
+  profile: assertive
   high_level_summary: true
   review_status: true
   commit_status: true
   collapse_walkthrough: false
-
-  # Repo-specific guidance
-  # Custom instructions to guide the AI on Spring Boot specifics
-  instructions: |
+  instructions: >
     Review the Java code focusing on Spring Boot best practices:
-    - Ensure proper use of @Service, @Repository, and @RestController annotations.
-    - Check for constructor-based dependency injection over @Autowired field injection.
-    - Verify that sensitive data is not logged and proper exception handling is in place.
+
+    - Ensure proper use of @Service, @Repository, and @RestController
+    annotations.
+
+    - Check for constructor-based dependency injection over @Autowired field
+    injection.
+
+    - Verify that sensitive data is not logged and proper exception handling is
+    in place.
+
     - Monitor for efficient JPA/Hibernate usage to avoid N+1 query problems.
-    - Ensure Spring Boot configuration (application.properties/yaml) follows security standards.
-    - Look for proper use of @Transactional and thread-safety in shared services.
 
-  tone_instructions: "You are a senior Java architect. Provide constructive, technical, and concise feedback."
+    - Ensure Spring Boot configuration (application.properties/yaml) follows
+    security standards.
 
-  # Use path + instructions
-  # Configure which files CodeRabbit should analyze or ignore
+    - Look for proper use of @Transactional and thread-safety in shared
+    services.
+  tone_instructions: >-
+    You are a senior Java architect. Provide constructive, technical, and
+    concise feedback.
   path_filters:
     include:
-      - "src/main/java/**"
-      - "src/main/resources/*.yml"
-      - "src/main/resources/*.properties"
+      - src/main/java/**
+      - src/main/resources/*.yml
+      - src/main/resources/*.properties
     exclude:
-      - "**/generated/**"
-      - "src/test/**" # Optional: exclude tests if you only want logic reviews
-   
+      - '**/generated/**'
+      - src/test/**
   auto_review:
     enabled: true
     auto_incremental_review: true
     drafts: false
-    base_branches: ['develop']
-    ignore_title_keywords: ['WIP', 'Draft']
-    labels: ['!skip-ai-review']
-    ignore_usernames: ['dependabot', 'renovate[bot]']
-
+    base_branches:
+      - develop
+    ignore_title_keywords:
+      - WIP
+      - Draft
+    labels:
+      - '!skip-ai-review'
+    ignore_usernames:
+      - dependabot
+      - 'renovate[bot]'
   finishing_touches:
     docstrings:
       enabled: true
     unit_tests:
       enabled: true
-
-# Valid schema: turn off gates entirely
 pre_merge_checks:
   mode: 'off'
