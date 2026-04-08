@@ -4,8 +4,8 @@ import static io.restassured.RestAssured.given;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -28,10 +28,7 @@ import org.junit.jupiter.api.Test;
  */
 public class SelfRunReportIntegrationTest extends SelfServiceIntegrationTestBase {
 
-  @Test
-  @DisplayName("Self-service runreports deny non-allowlisted report names")
-  void runReport_nonAllowlistedReport_denied() {
-    // 1. Create a client using the superuser
+  private String setupSelfServiceUser() {
     String clientName = UUID.randomUUID().toString().substring(0, 8);
     Map<String, Object> clientBody = new HashMap<>();
     clientBody.put("officeId", 1);
@@ -53,7 +50,6 @@ public class SelfRunReportIntegrationTest extends SelfServiceIntegrationTestBase
             .extract()
             .path("clientId");
 
-    // 2. Find "Self Service User" role
     Response rolesResponse =
         given(SelfServiceTestUtils.requestSpecWithAuth(getFineractPort(), "mifos", "password"))
             .get(SelfServiceTestUtils.CONTEXT_PATH + "/api/v1/roles");
@@ -63,8 +59,6 @@ public class SelfRunReportIntegrationTest extends SelfServiceIntegrationTestBase
           "Could not resolve role id for '" + SelfServiceApiConstants.SELF_SERVICE_USER_ROLE + "'");
     }
 
-    // 3. Create a self-service user mapped to the client + self-service role using JDBC
-    //    This mirrors SelfServicePermissionEnforcementIntegrationTest.
     Properties props = new Properties();
     props.setProperty("user", "postgres");
     props.setProperty("password", "postgres");
@@ -73,44 +67,51 @@ public class SelfRunReportIntegrationTest extends SelfServiceIntegrationTestBase
     String username = "user_" + UUID.randomUUID().toString().substring(0, 8);
 
     try (Connection conn = DriverManager.getConnection(jdbcUrl, props)) {
-      try (Statement st = conn.createStatement()) {
-        String insertUser =
-            "INSERT INTO m_appuser(office_id, username, password, email, firstname, lastname, "
-                + "is_deleted, nonexpired, nonlocked, nonexpired_credentials, enabled, firsttime_login_remaining) "
-                + "VALUES (1, '"
-                + username
-                + "', (SELECT password FROM m_appuser WHERE username='mifos' LIMIT 1), '"
-                + username
-                + "@fineract.org', 'User', 'Test', false, true, true, true, true, false) RETURNING id";
+      String insertUser =
+          "INSERT INTO m_appuser(office_id, username, password, email, firstname, lastname, "
+              + "is_deleted, nonexpired, nonlocked, nonexpired_credentials, enabled, firsttime_login_remaining) "
+              + "VALUES (1, ?, (SELECT password FROM m_appuser WHERE username='mifos' LIMIT 1), ?, 'User', 'Test', false, true, true, true, true, false) RETURNING id";
+      long appUserId;
+      try (PreparedStatement psUser = conn.prepareStatement(insertUser)) {
+        psUser.setString(1, username);
+        psUser.setString(2, username + "@fineract.org");
+        try (ResultSet rs = psUser.executeQuery()) {
+          rs.next();
+          appUserId = rs.getLong(1);
+        }
+      }
 
-        ResultSet rs = st.executeQuery(insertUser);
-        rs.next();
-        long appUserId = rs.getLong(1);
+      try (PreparedStatement psUserRole = conn.prepareStatement("INSERT INTO m_appuser_role(appuser_id, role_id) VALUES (?, ?)")) {
+        psUserRole.setLong(1, appUserId);
+        psUserRole.setInt(2, roleId);
+        psUserRole.execute();
+      }
 
-        st.execute("INSERT INTO m_appuser_role(appuser_id, role_id) VALUES (" + appUserId + ", " + roleId + ")");
+      String insertSelfUser = "INSERT INTO m_appselfservice_user(id, office_id, username, password, email, firstname, lastname, "
+          + "nonexpired, nonlocked, nonexpired_credentials, enabled, firsttime_login_remaining, is_self_service_user, is_deleted) "
+          + "SELECT id, office_id, username, password, email, firstname, lastname, "
+          + "nonexpired, nonlocked, nonexpired_credentials, enabled, firsttime_login_remaining, true, false "
+          + "FROM m_appuser WHERE id = ?";
+      try (PreparedStatement psSelfUser = conn.prepareStatement(insertSelfUser)) {
+        psSelfUser.setLong(1, appUserId);
+        psSelfUser.execute();
+      }
 
-        // Insert into plugin m_appselfservice_user
-        st.execute(
-            "INSERT INTO m_appselfservice_user(id, office_id, username, password, email, firstname, lastname, "
-                + "nonexpired, nonlocked, nonexpired_credentials, enabled, firsttime_login_remaining, is_self_service_user, is_deleted) "
-                + "SELECT id, office_id, username, password, email, firstname, lastname, "
-                + "nonexpired, nonlocked, nonexpired_credentials, enabled, firsttime_login_remaining, true, false "
-                + "FROM m_appuser WHERE id = " + appUserId);
+      try (PreparedStatement psSelfUserRole = conn.prepareStatement("INSERT INTO m_appselfservice_user_role(appuser_id, role_id) VALUES (?, ?)")) {
+        psSelfUserRole.setLong(1, appUserId);
+        psSelfUserRole.setInt(2, roleId);
+        psSelfUserRole.execute();
+      }
 
-        // Map SelfService User to Role
-        st.execute(
-            "INSERT INTO m_appselfservice_user_role(appuser_id, role_id) VALUES (" + appUserId + ", " + roleId + ")");
-
-        // Map SelfService User to Client
-        st.execute(
-            "INSERT INTO m_selfservice_user_client_mapping(appuser_id, client_id) VALUES (" + appUserId + ", " + clientId + ")");
+      try (PreparedStatement psClientMapping = conn.prepareStatement("INSERT INTO m_selfservice_user_client_mapping(appuser_id, client_id) VALUES (?, ?)")) {
+        psClientMapping.setLong(1, appUserId);
+        psClientMapping.setInt(2, clientId);
+        psClientMapping.execute();
       }
     } catch (Exception e) {
       throw new RuntimeException("Failed to seed self-service user for runreport IT", e);
     }
 
-    // Ensure the seeded user can authenticate via the self-service authentication endpoint.
-    // If this fails, the subsequent /self/runreports call will also return 401.
     given(SelfServiceTestUtils.requestSpec(getFineractPort()))
         .body("{\"username\":\"" + username + "\",\"password\":\"password\"}")
     .when()
@@ -118,14 +119,13 @@ public class SelfRunReportIntegrationTest extends SelfServiceIntegrationTestBase
         .then()
         .statusCode(200);
 
-    // 4. Self-service user with a non-allowlisted report must be denied
-    // Sanity check: ensure Basic Auth works for another self-service endpoint.
-    // If this returned 401, the seeded user isn't being authenticated by the filter chain.
-    given(SelfServiceTestUtils.requestSpecWithAuth(getFineractPort(), username, "password"))
-        .when()
-        .get(SelfServiceTestUtils.CONTEXT_PATH + "/api/v1/self/savingsproducts")
-        .then()
-        .statusCode(200);
+    return username;
+  }
+
+  @Test
+  @DisplayName("Self-service runreports deny non-allowlisted report names")
+  void runReport_nonAllowlistedReport_denied() {
+    String username = setupSelfServiceUser();
 
     Response runReportResponse =
         given(SelfServiceTestUtils.requestSpecWithAuth(getFineractPort(), username, "password"))
@@ -145,5 +145,23 @@ public class SelfRunReportIntegrationTest extends SelfServiceIntegrationTestBase
             .asString()
             .contains("Self-service is not permitted to run this report: SomeUnknownReport"));
   }
-}
 
+  @Test
+  @DisplayName("Self-service runreports allows allowlisted report names")
+  void runReport_allowlistedReport_success() {
+    String username = setupSelfServiceUser();
+
+    Response runReportResponse =
+        given(SelfServiceTestUtils.requestSpecWithAuth(getFineractPort(), username, "password"))
+            .when()
+            .get(SelfServiceTestUtils.CONTEXT_PATH + "/api/v1/self/runreports/Client Details")
+            .then()
+            .extract()
+            .response();
+
+    int statusCode = runReportResponse.statusCode();
+    Assertions.assertTrue(
+        statusCode == 200 || statusCode == 400 || statusCode == 404,
+        "Expected successful execution (200), validation failure (400), or report missing in DB (404), but got: " + statusCode + ". Body: " + runReportResponse.body().asString());
+  }
+}

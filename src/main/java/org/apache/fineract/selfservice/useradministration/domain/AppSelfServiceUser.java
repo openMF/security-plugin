@@ -524,7 +524,7 @@ public class AppSelfServiceUser extends AbstractPersistableCustom<Long> implemen
 
     public boolean hasNotPermissionForReport(final String reportName) {
 
-        if(hasNotPermissionForAnyOf("ALL_FUNCTIONS", "ALL_FUNCTIONS_READ", "REPORTING_SUPER_USER", "READ_" + reportName)) {
+        if(hasNotPermissionForAnyOf("ALL_FUNCTIONS", "ALL_FUNCTIONS_READ", "REPORTING_SUPER_USER", "READ_REPORT", "READ_" + reportName)) {
             return true;
         }
         return false;

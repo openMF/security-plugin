@@ -83,6 +83,7 @@ public abstract class SelfServiceIntegrationTestBase {
                 // Enable the self-service module (matches Fineract docker-compose.override.yml)
                 .withEnv("FINERACT_MODULE_SELFSERVICE_ENABLED", "true")
                 .withEnv("SPRING_MAIN_ALLOW_BEAN_DEFINITION_OVERRIDING", "true")
+                .withEnv("FINERACT_MODULES_SELFSERVICE_RUNREPORTS_ALLOWLIST", "Client Details")
                 
                 // Timezone (Optional but highly recommended to prevent sync errors)
                 .withEnv("TZ", "UTC")
