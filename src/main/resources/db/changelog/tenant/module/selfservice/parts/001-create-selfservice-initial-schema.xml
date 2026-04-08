@@ -157,11 +157,22 @@
     </changeSet>
     <!-- Alter App Self Service Beneficiaries Table -->
     <changeSet author="fineract" id="ss-0001-6">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists tableName="m_selfservice_beneficiaries_tpt" indexName="uk_m_selfservice_beneficiaries_tpt_name"/>
+            </not>            
+        </preConditions>
         <addUniqueConstraint columnNames="name, app_user_id, is_active" constraintName="uk_m_selfservice_beneficiaries_tpt_name"
                              tableName="m_selfservice_beneficiaries_tpt"/>
     </changeSet>
     <!-- Alter App Self Service User Client Mapping Table -->
-    <changeSet author="fineract" id="ss-0001-7">
+    <changeSet author="fineract" id="ss-0001-7">        
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <foreignKeyConstraintExists foreignKeyName="m_selfservice_appuser_id" 
+                                            foreignKeyTableName="m_selfservice_user_client_mapping"/>
+            </not>
+        </preConditions>
         <addForeignKeyConstraint baseColumnNames="appuser_id" baseTableName="m_selfservice_user_client_mapping"
                                  constraintName="m_selfservice_appuser_id" deferrable="false" initiallyDeferred="false"
                                  onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="id"
@@ -169,6 +180,12 @@
     </changeSet>
     <!-- Alter App Self Service User Client Mapping Table -->
     <changeSet author="fineract" id="ss-0001-8">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <foreignKeyConstraintExists foreignKeyName="m_selfservice_client_id" 
+                                            foreignKeyTableName="m_selfservice_user_client_mapping"/>
+            </not>
+        </preConditions>
         <addForeignKeyConstraint baseColumnNames="client_id" baseTableName="m_selfservice_user_client_mapping"
                                  constraintName="m_selfservice_client_id" deferrable="false" initiallyDeferred="false"
                                  onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="id"
