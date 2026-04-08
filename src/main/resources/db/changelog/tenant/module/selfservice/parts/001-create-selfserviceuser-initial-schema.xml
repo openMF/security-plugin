@@ -214,7 +214,12 @@
             INNER JOIN m_appselfservice_user su ON su.id = ar.appuser_id
             INNER JOIN m_role r ON r.id = ar.role_id
             WHERE r.name = 'Self Service User'
-            ON CONFLICT DO NOTHING;
+            AND NOT EXISTS (
+                SELECT 1 
+                FROM m_appselfservice_user_role existing
+                WHERE existing.appuser_id = ar.appuser_id 
+                AND existing.role_id = ar.role_id
+            );
         </sql>
     </changeSet>
     <!-- Enable the Self Service User Role-->
@@ -256,29 +261,33 @@
                 cannot_change_password
             )
             SELECT 
-                id,
-                is_deleted,
-                office_id,
-                staff_id,
-                username,
-                firstname,
-                lastname,
-                password,
-                email,
-                firsttime_login_remaining,
-                nonexpired,
-                nonlocked,
-                nonexpired_credentials,
-                enabled,
-                last_time_password_updated,
-                password_never_expires,
-                password_reset_required,
+                s.id,
+                s.is_deleted,
+                s.office_id,
+                s.staff_id,
+                s.username,
+                s.firstname,
+                s.lastname,
+                s.password,
+                s.email,
+                s.firsttime_login_remaining,
+                s.nonexpired,
+                s.nonlocked,
+                s.nonexpired_credentials,
+                s.enabled,
+                s.last_time_password_updated,
+                s.password_never_expires,
+                s.password_reset_required,
                 FALSE AS is_self_service_user,
-                cannot_change_password
-            FROM m_appuser 
-            WHERE is_self_service_user = TRUE 
-            AND id IS NOT NULL 
-            ON CONFLICT DO NOTHING;
+                s.cannot_change_password
+            FROM m_appuser s
+            WHERE s.is_self_service_user = TRUE 
+            AND s.id IS NOT NULL
+            AND NOT EXISTS (
+                SELECT 1 
+                FROM m_appselfservice_user t 
+                WHERE t.id = s.id
+            );
         </sql>
     </changeSet>    
     <!-- Give minimal grants for Savings Account to the Self Service Role-->
@@ -301,8 +310,7 @@
                     FROM m_role_permission rp 
                     WHERE rp.role_id = r.id 
                       AND rp.permission_id = p.id
-                  ) 
-            ON CONFLICT DO NOTHING;
+                  );
         </sql>
     </changeSet>
 </databaseChangeLog>
