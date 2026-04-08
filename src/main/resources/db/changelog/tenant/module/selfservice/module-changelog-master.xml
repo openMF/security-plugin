@@ -14,4 +14,5 @@
   <include file="parts/002-grant-selfservice-product-read-permissions.xml" relativeToChangelogFile="true"/>
   <include file="parts/003-grant-selfservice-client-read-permissions.xml" relativeToChangelogFile="true"/>
   <include file="parts/004-grant-selfservice-report-read-permissions.xml" relativeToChangelogFile="true"/>
+  <include file="parts/005-grant-selfservice-savings-account-read-permissions.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>
