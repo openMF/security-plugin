@@ -12,7 +12,7 @@
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
 
     <!-- Grant client read/image permissions to the 'Self Service User' role via m_role_permission. -->
-    <changeSet id="MX-219-selfservice-client-read-permissions" author="fineract">
+    <changeSet id="ss-0003-1" author="fineract">
         <preConditions onFail="MARK_RAN">
             <tableExists tableName="m_role_permission"/>
             <tableExists tableName="m_permission"/>

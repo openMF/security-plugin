@@ -11,7 +11,7 @@
                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
 
-    <changeSet id="MX-228-selfservice-report-read-permissions" author="fineract">
+    <changeSet id="ss-0004-1" author="fineract">
         <preConditions onFail="MARK_RAN">
             <tableExists tableName="m_role_permission"/>
             <tableExists tableName="m_permission"/>
