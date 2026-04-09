@@ -18,7 +18,20 @@ reviews:
   high_level_summary: true
   suggested_labels: true
   auto_apply_labels: true
-  finishing_touches: true
+  finishing_touches:
+    # docstrings: auto-generates Javadoc for functions changed in the PR,
+    # then opens a follow-up PR containing only the docstring edits.
+    docstrings:
+      enabled: true
+    # unit_tests: suggests unit-test stubs for new/changed methods.
+    unit_tests:
+      enabled: true
+    # simplify: reviews changed code for reuse, quality, and efficiency
+    # and applies targeted improvements (disabled by default upstream; enabled here).
+    simplify:
+      enabled: true
+    # custom: up to 5 named recipes triggerable via @coderabbitai run <name>.
+    custom: []
   labeling_instructions:
     - label: '⏱️ <10 Min Review'
       instructions: Apply for PRs with <200 lines changed
@@ -111,14 +124,13 @@ reviews:
         org.apache.fineract.selfservice.<module>
         ├── api        # REST resource classes and Swagger annotation holders only
         ├── data       # Read-model DTOs and command/response objects
-        ├── domain     # Entities, value objects, domain events — zero framework dependencies
+        ├── domain     # Entities / value objects — may carry JPA annotations per Fineract convention
         ├── exception  # Domain-specific exception types
         ├── handler    # CQRS command handlers
         ├── service    # Application services and use-case orchestrators
         └── starter    # Spring Boot auto-configuration entry points
         ```
         - No circular dependencies between packages within or across modules.
-        - Domain must not import from api, service, handler, or starter packages.
         - Starter classes are the only place where the module wires itself into Spring Boot.
 
     # ── API / CONTROLLER LAYER ────────────────────────────────────────────────
@@ -183,40 +195,52 @@ reviews:
         - Use `@Async` with a configured `ThreadPoolTaskExecutor` for any blocking or long-running operation.
           Flag any `Thread.sleep()` or blocking I/O call on a request thread.
 
-    # ── DOMAIN LAYER — ZERO FRAMEWORK TOLERANCE ───────────────────────────────
+    # ── DOMAIN LAYER ──────────────────────────────────────────────────────────
     - path: 'src/main/java/**/domain/**/*.java'
       instructions: |
-        ## Domain Layer — Framework Independence is MANDATORY
+        ## Domain Layer
 
-        ### Forbidden Imports — Flag Every Occurrence
-        The following import namespaces must NEVER appear in the domain layer.
-        Flag immediately if any of the following prefixes are found in an import statement:
+        This repository follows Fineract's Active Record convention: domain classes
+        are also JPA entities. `jakarta.persistence.*` annotations (`@Entity`, `@Table`,
+        `@Column`, `@ManyToOne`, etc.) are **permitted and expected** here. Do not flag them.
 
-        - `org.springframework.`          — No Spring annotations, beans, context, or utilities.
-        - `jakarta.persistence.`          — No JPA annotations (`@Entity`, `@Table`, `@Column`, `@Id`, `@ManyToOne`, etc.).
-        - `javax.persistence.`            — Legacy JPA namespace, also banned.
-        - `org.hibernate.`                — No Hibernate-specific annotations or types.
-        - `jakarta.ws.rs.`                — No JAX-RS (Jersey) web annotations.
-        - `javax.ws.rs.`                  — Legacy JAX-RS, also banned.
-        - `jakarta.servlet.`              — No Servlet API.
-        - `com.fasterxml.jackson.`        — No Jackson annotations on domain objects.
-        - `io.swagger.`                   — No Swagger/OpenAPI annotations on domain objects.
+        ### Permitted in Domain Classes
+        - `jakarta.persistence.*` — JPA mapping annotations are standard in this codebase.
+        - `org.springframework.security.*` — domain user objects implement Spring Security
+          interfaces (e.g., `UserDetails`) per Fineract convention.
+        - `org.apache.fineract.*` — cross-module Fineract types (Office, Client, Role, etc.).
 
-        ### What Belongs Here
-        - **Entities**: model business concepts with behaviour, not just data.
-          Entities must protect their own invariants in constructors or factory methods.
-        - **Value Objects**: immutable, all fields `final`, no setters.
-          Lombok `@Value` is acceptable (compile-time only, no runtime Spring dependency).
-        - **Domain Events**: plain POJOs named after what happened (e.g., `LoanRepaymentMadeEvent`).
-        - **Repository interfaces**: interfaces only — zero implementation code.
-          Implementations live in the infrastructure or starter layer.
-        - **Domain Services**: stateless classes for business logic that spans multiple entities.
+        ### Forbidden in Domain Classes
+        - `jakarta.ws.rs.*` / `javax.ws.rs.*` — JAX-RS/Jersey annotations belong in `api` only.
+          Flag any occurrence.
+        - `jakarta.servlet.*` / `javax.servlet.*` — Servlet API must not appear here.
+          Flag any occurrence.
+        - `io.swagger.*` — Swagger/OpenAPI annotations belong in `*ApiResourceSwagger.java` only.
+          Flag any occurrence.
+        - `com.fasterxml.jackson.*` — Jackson serialisation annotations do not belong on domain
+          objects; use dedicated DTO classes in the `data` package instead. Flag any occurrence.
 
-        ### Invariants & Behaviour
-        - Avoid anemic domain models (entities with only getters/setters and no behaviour).
-          Flag any entity class where all methods are trivial accessors with no business logic.
-        - Do not expose setters for fields that must not change after construction — use private setters or none.
-        - `equals` and `hashCode` on entities must be based solely on the persistent identity (primary key).
+        ### JPA Usage Rules
+        - `@Data` (Lombok) is banned on JPA entities — it generates `equals`/`hashCode` on mutable
+          state and breaks Hibernate dirty-checking. Flag any occurrence.
+        - `equals` and `hashCode` on entities must be based solely on the persistent identity
+          (primary key). Flag any implementation that compares mutable business fields.
+        - `@ManyToMany(fetch = FetchType.EAGER)` should be flagged as a potential N+1 source.
+          Prefer `LAZY` and document any intentional eager fetch with an inline comment.
+        - `CascadeType.ALL` on a `@ManyToOne` should be flagged — cascading deletes from the
+          child side of a relationship is almost always unintentional.
+
+        ### Behaviour & Invariants
+        - Domain classes must contain business behaviour, not just getters and setters.
+          Flag any class in `domain/` where every method is a trivial accessor with no logic.
+        - Invariants must be enforced in constructors or factory methods (`fromJson`, `create`, etc.).
+          Flag classes where the no-arg constructor leaves the object in a state that violates
+          its own business rules.
+        - Soft-delete methods must mark the record as deleted AND invalidate unique-constraint
+          fields (e.g., prepend the ID to the username) in a single atomic method call.
+          Flag implementations that do one but not the other.
+        - Do not expose setters for identity or unique-constraint fields (primary key, username).
+          These must only be set at construction time.
 
     # ── HANDLER LAYER (CQRS) ──────────────────────────────────────────────────
     - path: 'src/main/java/**/handler/**/*.java'
