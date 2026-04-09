@@ -19,6 +19,8 @@ import org.apache.fineract.portfolio.loanaccount.domain.LoanRepositoryWrapper;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountRepositoryWrapper;
 import org.apache.fineract.selfservice.account.data.SelfBeneficiariesTPTDataValidator;
 import org.apache.fineract.selfservice.account.domain.SelfBeneficiariesTPTRepository;
+import org.apache.fineract.selfservice.account.infrastructure.persistence.SelfBeneficiariesTPTJpaRepository;
+import org.apache.fineract.selfservice.account.infrastructure.persistence.SelfBeneficiariesTPTRepositoryAdapter;
 import org.apache.fineract.selfservice.account.service.SelfAccountTransferReadService;
 import org.apache.fineract.selfservice.account.service.SelfAccountTransferReadServiceImpl;
 import org.apache.fineract.selfservice.account.service.SelfBeneficiariesTPTReadPlatformService;
@@ -32,6 +34,13 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 @Configuration
 public class SelfAccountConfiguration {
+
+  @Bean
+  @ConditionalOnMissingBean(SelfBeneficiariesTPTRepository.class)
+  public SelfBeneficiariesTPTRepository selfBeneficiariesTPTRepository(
+      SelfBeneficiariesTPTJpaRepository jpaRepository) {
+    return new SelfBeneficiariesTPTRepositoryAdapter(jpaRepository);
+  }
 
   @Bean
   @ConditionalOnMissingBean(SelfAccountTransferReadService.class)

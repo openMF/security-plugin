@@ -99,12 +99,11 @@ public class SelfBeneficiariesTPTWritePlatformServiceImpl
     if (validAccountDetails) {
       try {
         AppSelfServiceUser user = this.context.authenticatedSelfServiceUser();
-        SelfBeneficiariesTPT beneficiary =
+        SelfBeneficiariesTPT beneficiary = this.repository.saveAndFlush(
             new SelfBeneficiariesTPT(
-                user.getId(), name, officeId, clientId, accountId, accountType, transferLimit);
-        this.repository.saveAndFlush(beneficiary);
+                user.getId(), name, officeId, clientId, accountId, accountType, transferLimit));
         return new CommandProcessingResultBuilder()
-            .withEntityId((Long) beneficiary.getId())
+            .withEntityId(beneficiary.getId())
             .build();
       } catch (DataAccessException dae) {
         handleDataIntegrityIssues(command, dae);

@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.fineract.infrastructure.core.api.ApiParameterHelper;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
@@ -31,18 +32,13 @@ import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidati
 import org.apache.fineract.infrastructure.core.exception.UnsupportedParameterException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.portfolio.savings.SavingsApiConstants;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class SelfSavingsDataValidator {
 
   private final FromJsonHelper fromApiJsonHelper;
-
-  @Autowired
-  public SelfSavingsDataValidator(final FromJsonHelper fromApiJsonHelper) {
-    this.fromApiJsonHelper = fromApiJsonHelper;
-  }
 
   private static final Set<String> allowedAssociationParameters =
       new HashSet<>(Arrays.asList(SavingsApiConstants.transactions, SavingsApiConstants.charges));

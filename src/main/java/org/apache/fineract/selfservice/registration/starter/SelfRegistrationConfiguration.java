@@ -21,6 +21,8 @@ import org.apache.fineract.infrastructure.sms.domain.SmsMessageRepository;
 import org.apache.fineract.infrastructure.sms.scheduler.SmsMessageScheduledJobService;
 import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
 import org.apache.fineract.selfservice.registration.domain.SelfServiceRegistrationRepository;
+import org.apache.fineract.selfservice.registration.infrastructure.persistence.SelfServiceRegistrationJpaRepository;
+import org.apache.fineract.selfservice.registration.infrastructure.persistence.SelfServiceRegistrationRepositoryAdapter;
 import org.apache.fineract.selfservice.registration.service.SelfServiceRegistrationReadPlatformService;
 import org.apache.fineract.selfservice.registration.service.SelfServiceRegistrationReadPlatformServiceImpl;
 import org.apache.fineract.selfservice.registration.service.SelfServiceRegistrationWritePlatformService;
@@ -37,6 +39,13 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 @Configuration
 public class SelfRegistrationConfiguration {
+
+    @Bean
+    @ConditionalOnMissingBean(SelfServiceRegistrationRepository.class)
+    public SelfServiceRegistrationRepository selfServiceRegistrationRepository(
+            SelfServiceRegistrationJpaRepository jpaRepository, ClientRepositoryWrapper clientRepository) {
+        return new SelfServiceRegistrationRepositoryAdapter(jpaRepository, clientRepository);
+    }
 
     @Bean
     @ConditionalOnMissingBean(SelfServiceRegistrationReadPlatformService.class)
@@ -56,9 +65,16 @@ public class SelfRegistrationConfiguration {
             SmsCampaignDropdownReadPlatformService smsCampaignDropdownReadPlatformService,
             AppSelfServiceUserReadPlatformService appUserReadPlatformService, RoleRepository roleRepository,
             AppSelfServiceUserClientMappingRepository appUserClientMappingRepository) {
-        return new SelfServiceRegistrationWritePlatformServiceImpl(selfServiceRegistrationRepository, fromApiJsonHelper,
-                selfServiceRegistrationReadPlatformService, clientRepository, passwordValidationPolicy, userDomainService,
-                gmailBackedPlatformEmailService, smsMessageRepository, smsMessageScheduledJobService,
-                 smsCampaignDropdownReadPlatformService, appUserReadPlatformService, roleRepository, appUserClientMappingRepository);
+        return new SelfServiceRegistrationWritePlatformServiceImpl(
+                new SelfServiceRegistrationWritePlatformServiceImpl.RegistrationContext(
+                        selfServiceRegistrationRepository, fromApiJsonHelper, selfServiceRegistrationReadPlatformService,
+                        clientRepository, passwordValidationPolicy, userDomainService, appUserReadPlatformService,
+                        roleRepository, appUserClientMappingRepository
+                ),
+                new SelfServiceRegistrationWritePlatformServiceImpl.NotificationContext(
+                        gmailBackedPlatformEmailService, smsMessageRepository,
+                        smsMessageScheduledJobService, smsCampaignDropdownReadPlatformService
+                )
+        );
     }
 }

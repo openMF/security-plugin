@@ -14,9 +14,30 @@
  */
 package org.apache.fineract.selfservice.account.domain;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import java.util.Optional;
 
-public interface SelfBeneficiariesTPTRepository
-    extends JpaRepository<SelfBeneficiariesTPT, Long>,
-        JpaSpecificationExecutor<SelfBeneficiariesTPT> {}
+/**
+ * Domain repository contract for {@link SelfBeneficiariesTPT}.
+ *
+ * <p>This interface is deliberately free of any Spring or JPA dependency. The implementation lives
+ * in {@code account.infrastructure.persistence.SelfBeneficiariesTPTRepositoryAdapter}.
+ */
+public interface SelfBeneficiariesTPTRepository {
+
+  /**
+   * Persists a new beneficiary or merges an existing one.
+   *
+   * @return the saved domain object (with {@code id} populated for new entities)
+   */
+  SelfBeneficiariesTPT save(SelfBeneficiariesTPT entity);
+
+  /**
+   * Persists and immediately flushes to the underlying store.
+   *
+   * @return the saved domain object (with {@code id} populated for new entities)
+   */
+  SelfBeneficiariesTPT saveAndFlush(SelfBeneficiariesTPT entity);
+
+  /** Looks up a beneficiary by its surrogate key. */
+  Optional<SelfBeneficiariesTPT> findById(Long id);
+}

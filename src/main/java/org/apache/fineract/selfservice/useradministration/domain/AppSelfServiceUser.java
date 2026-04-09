@@ -14,6 +14,26 @@
  */
 package org.apache.fineract.selfservice.useradministration.domain;
 
+// TODO(MX230-domain-jpa-ban): Migrate AppSelfServiceUser to DDD split.
+// This class is simultaneously a JPA entity, a Spring Security UserDetails implementation,
+// and the primary domain aggregate — a coupling that violates the domain-layer
+// framework-independence rule enforced in .coderabbit.yaml.
+//
+// Required actions (tracked in issue / PR MX230):
+//   1. Extract a pure domain aggregate (no JPA, no Spring Security imports) that holds
+//      all business logic (permissions, password changes, soft-delete invariants, etc.).
+//   2. Move all JPA annotations to a new
+//      useradministration.infrastructure.persistence.AppSelfServiceUserJpaEntity.
+//   3. Create a dedicated Spring Security adapter (UserDetails wrapper) in the security
+//      starter that wraps the domain object — decoupling authentication from the entity.
+//   4. Replace AppSelfServiceUserRepository (currently JpaRepository<this, Long>)
+//      with a domain interface, backed by an infrastructure adapter.
+//   5. Migrate field-level @Autowired in any class that injects this type
+//      (see SelfServiceSecurityConfiguration — already done).
+//
+// Until this migration lands, CodeRabbit will flag JPA and Spring Security imports here.
+// Do NOT remove the imports below; doing so would break the running application.
+
 import static org.apache.fineract.useradministration.service.AppUserConstants.PASSWORD;
 
 import jakarta.persistence.CascadeType;

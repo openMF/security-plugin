@@ -31,7 +31,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.fineract.infrastructure.campaigns.sms.data.SmsProviderData;
@@ -60,7 +59,6 @@ import org.apache.fineract.selfservice.registration.domain.SelfServiceRegistrati
 import org.apache.fineract.selfservice.registration.domain.SelfServiceRegistrationRepository;
 import org.apache.fineract.selfservice.registration.exception.SelfServiceRegistrationNotFoundException;
 import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
-import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUserClientMapping;
 import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUserClientMappingRepository;
 import org.apache.fineract.useradministration.domain.PasswordValidationPolicy;
 import org.apache.fineract.useradministration.domain.PasswordValidationPolicyRepository;
@@ -74,10 +72,31 @@ import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
-@RequiredArgsConstructor
+@Service
 public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServiceRegistrationWritePlatformService {
+
+    public record RegistrationContext(
+            SelfServiceRegistrationRepository selfServiceRegistrationRepository,
+            FromJsonHelper fromApiJsonHelper,
+            SelfServiceRegistrationReadPlatformService selfServiceRegistrationReadPlatformService,
+            ClientRepositoryWrapper clientRepository,
+            PasswordValidationPolicyRepository passwordValidationPolicy,
+            SelfServiceUserDomainService userDomainService,
+            AppSelfServiceUserReadPlatformService appUserReadPlatformService,
+            RoleRepository roleRepository,
+            AppSelfServiceUserClientMappingRepository appUserClientMappingRepository
+    ) {}
+
+    public record NotificationContext(
+            GmailBackedPlatformEmailService gmailBackedPlatformEmailService,
+            SmsMessageRepository smsMessageRepository,
+            SmsMessageScheduledJobService smsMessageScheduledJobService,
+            SmsCampaignDropdownReadPlatformService smsCampaignDropdownReadPlatformService
+    ) {}
 
     private final SelfServiceRegistrationRepository selfServiceRegistrationRepository;
     private final FromJsonHelper fromApiJsonHelper;
@@ -94,118 +113,132 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
     private static final SecureRandom secureRandom = new SecureRandom();
     private final AppSelfServiceUserClientMappingRepository appUserClientMappingRepository;
 
+    public SelfServiceRegistrationWritePlatformServiceImpl(RegistrationContext regCtx, NotificationContext notifCtx) {
+        this.selfServiceRegistrationRepository = regCtx.selfServiceRegistrationRepository();
+        this.fromApiJsonHelper = regCtx.fromApiJsonHelper();
+        this.selfServiceRegistrationReadPlatformService = regCtx.selfServiceRegistrationReadPlatformService();
+        this.clientRepository = regCtx.clientRepository();
+        this.passwordValidationPolicy = regCtx.passwordValidationPolicy();
+        this.userDomainService = regCtx.userDomainService();
+        this.appUserReadPlatformService = regCtx.appUserReadPlatformService();
+        this.roleRepository = regCtx.roleRepository();
+        this.appUserClientMappingRepository = regCtx.appUserClientMappingRepository();
+
+        this.gmailBackedPlatformEmailService = notifCtx.gmailBackedPlatformEmailService();
+        this.smsMessageRepository = notifCtx.smsMessageRepository();
+        this.smsMessageScheduledJobService = notifCtx.smsMessageScheduledJobService();
+        this.smsCampaignDropdownReadPlatformService = notifCtx.smsCampaignDropdownReadPlatformService();
+    }
+
+    private record RegistrationPayload(String accountNumber, String firstName, String middleName, String lastName, String username, String password, String email, String mobileNumber, String authenticationMode) {}
+
     @Override
+    @Transactional
     public SelfServiceRegistration createRegistrationRequest(String apiRequestBodyAsJson) {
-        Gson gson = new Gson();
-        final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
-        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
-        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource("user");
-        this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, apiRequestBodyAsJson,
-                SelfServiceApiConstants.REGISTRATION_REQUEST_DATA_PARAMETERS);
-        JsonElement element = gson.fromJson(apiRequestBodyAsJson.toString(), JsonElement.class);
-
-        String accountNumber = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.accountNumberParamName, element);
-        baseDataValidator.reset().parameter(SelfServiceApiConstants.accountNumberParamName).value(accountNumber).notNull().notBlank()
-                .notExceedingLengthOf(100);
-
-        String firstName = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.firstNameParamName, element);
-        baseDataValidator.reset().parameter(SelfServiceApiConstants.firstNameParamName).value(firstName).notBlank()
-                .notExceedingLengthOf(100);
-        
-        String middleName = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.middleNameParamName, element);
-        baseDataValidator.reset().parameter(SelfServiceApiConstants.middleNameParamName).value(middleName).ignoreIfNull()
-                .notExceedingLengthOf(100);
-
-        String lastName = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.lastNameParamName, element);
-        baseDataValidator.reset().parameter(SelfServiceApiConstants.lastNameParamName).value(lastName).notBlank().notExceedingLengthOf(100);
-
-        String username = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.usernameParamName, element);
-        baseDataValidator.reset().parameter(SelfServiceApiConstants.usernameParamName).value(username).notBlank().notExceedingLengthOf(100);
-
-        // validate password policy
-        String password = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.passwordParamName, element);
-        final PasswordValidationPolicy validationPolicy = this.passwordValidationPolicy.findActivePasswordValidationPolicy();
-        final String regex = validationPolicy.getRegex();
-        final String description = validationPolicy.getDescription();
-        baseDataValidator.reset().parameter(SelfServiceApiConstants.passwordParamName).value(password)
-                .matchesRegularExpression(regex, description).notExceedingLengthOf(100);
-
-        String authenticationMode = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.authenticationModeParamName, element);
-        baseDataValidator.reset().parameter(SelfServiceApiConstants.authenticationModeParamName).value(authenticationMode).notBlank()
-                .isOneOfTheseStringValues(SelfServiceApiConstants.emailModeParamName, SelfServiceApiConstants.mobileModeParamName);
-
-        String email = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.emailParamName, element);
-        baseDataValidator.reset().parameter(SelfServiceApiConstants.emailParamName).value(email).notNull().notBlank()
-                .notExceedingLengthOf(100);
-
-        boolean isEmailAuthenticationMode = authenticationMode.equalsIgnoreCase(SelfServiceApiConstants.emailModeParamName);
-        String mobileNumber = null;
-        if (!isEmailAuthenticationMode) {
-            mobileNumber = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.mobileNumberParamName, element);
-            baseDataValidator.reset().parameter(SelfServiceApiConstants.mobileNumberParamName).value(mobileNumber).notNull()
-                    .validatePhoneNumber();
-        }
-        validateForDuplicateUsername(username);
-
-        throwExceptionIfValidationError(dataValidationErrors, accountNumber, firstName, middleName, lastName, mobileNumber, isEmailAuthenticationMode);
+        RegistrationPayload payload = parseAndValidate(apiRequestBodyAsJson);
 
         String authenticationToken = randomAuthorizationTokenGeneration();
-        Client client = this.clientRepository.getClientByAccountNumber(accountNumber);
-        SelfServiceRegistration selfServiceRegistration = SelfServiceRegistration.instance(client, accountNumber, firstName, middleName, lastName,
-                mobileNumber, email, authenticationToken, username, password);
-        this.selfServiceRegistrationRepository.saveAndFlush(selfServiceRegistration);
-        sendAuthorizationToken(selfServiceRegistration, isEmailAuthenticationMode);
+        Client client = this.clientRepository.getClientByAccountNumber(payload.accountNumber());
+        SelfServiceRegistration selfServiceRegistration = this.selfServiceRegistrationRepository.saveAndFlush(
+                SelfServiceRegistration.instance(client.getId(), payload.accountNumber(), payload.firstName(), payload.middleName(), payload.lastName(),
+                        payload.mobileNumber(), payload.email(), authenticationToken, payload.username(), payload.password(),
+                        org.apache.fineract.infrastructure.core.service.DateUtils.getLocalDateTimeOfSystem()));
+        boolean isEmailAuth = payload.authenticationMode().equalsIgnoreCase(SelfServiceApiConstants.emailModeParamName);
+        sendAuthorizationToken(selfServiceRegistration, client, isEmailAuth);
         return selfServiceRegistration;
+    }
 
+    private RegistrationPayload parseAndValidate(String apiRequestBodyAsJson) {
+        final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
+        this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, apiRequestBodyAsJson, SelfServiceApiConstants.REGISTRATION_REQUEST_DATA_PARAMETERS);
+        JsonElement element = new Gson().fromJson(apiRequestBodyAsJson, JsonElement.class);
+
+        RegistrationPayload payload = extractPayload(element);
+        validatePayload(payload);
+        return payload;
+    }
+
+    private RegistrationPayload extractPayload(JsonElement element) {
+        String authMode = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.authenticationModeParamName, element);
+        boolean isEmailAuth = authMode != null && authMode.equalsIgnoreCase(SelfServiceApiConstants.emailModeParamName);
+        return new RegistrationPayload(
+            this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.accountNumberParamName, element),
+            this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.firstNameParamName, element),
+            this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.middleNameParamName, element),
+            this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.lastNameParamName, element),
+            this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.usernameParamName, element),
+            this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.passwordParamName, element),
+            this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.emailParamName, element),
+            !isEmailAuth ? this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.mobileNumberParamName, element) : null,
+            authMode
+        );
+    }
+
+    private void validatePayload(RegistrationPayload payload) {
+        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource("user");
+
+        baseDataValidator.reset().parameter(SelfServiceApiConstants.accountNumberParamName).value(payload.accountNumber()).notNull().notBlank().notExceedingLengthOf(100);
+        baseDataValidator.reset().parameter(SelfServiceApiConstants.firstNameParamName).value(payload.firstName()).notBlank().notExceedingLengthOf(100);
+        baseDataValidator.reset().parameter(SelfServiceApiConstants.middleNameParamName).value(payload.middleName()).ignoreIfNull().notExceedingLengthOf(100);
+        baseDataValidator.reset().parameter(SelfServiceApiConstants.lastNameParamName).value(payload.lastName()).notBlank().notExceedingLengthOf(100);
+        baseDataValidator.reset().parameter(SelfServiceApiConstants.usernameParamName).value(payload.username()).notBlank().notExceedingLengthOf(100);
+
+        final PasswordValidationPolicy validationPolicy = this.passwordValidationPolicy.findActivePasswordValidationPolicy();
+        baseDataValidator.reset().parameter(SelfServiceApiConstants.passwordParamName).value(payload.password())
+                .matchesRegularExpression(validationPolicy.getRegex(), validationPolicy.getDescription()).notExceedingLengthOf(100);
+
+        baseDataValidator.reset().parameter(SelfServiceApiConstants.authenticationModeParamName).value(payload.authenticationMode()).notBlank()
+                .isOneOfTheseStringValues(SelfServiceApiConstants.emailModeParamName, SelfServiceApiConstants.mobileModeParamName);
+        baseDataValidator.reset().parameter(SelfServiceApiConstants.emailParamName).value(payload.email()).notNull().notBlank().notExceedingLengthOf(100);
+
+        boolean isEmailAuth = payload.authenticationMode() != null && payload.authenticationMode().equalsIgnoreCase(SelfServiceApiConstants.emailModeParamName);
+        if (!isEmailAuth) {
+            baseDataValidator.reset().parameter(SelfServiceApiConstants.mobileNumberParamName).value(payload.mobileNumber()).notNull().validatePhoneNumber();
+        }
+        
+        validateForDuplicateUsername(payload.username());
+        throwExceptionIfValidationError(dataValidationErrors, payload.accountNumber(), payload.firstName(), payload.middleName(), payload.lastName(), payload.mobileNumber(), isEmailAuth);
     }
 
     public void validateForDuplicateUsername(String username) {
         boolean isDuplicateUserName = this.appUserReadPlatformService.isUsernameExist(username);
         if (isDuplicateUserName) {
-            final StringBuilder defaultMessageBuilder = new StringBuilder("User with username ").append(username)
-                    .append(" already exists.");
-            throw new PlatformDataIntegrityException("error.msg.user.duplicate.username", defaultMessageBuilder.toString(),
-                    SelfServiceApiConstants.usernameParamName, username);
+            throw new PlatformDataIntegrityException("error.msg.user.duplicate.username", 
+                    "User with username " + username + " already exists.", SelfServiceApiConstants.usernameParamName, username);
         }
     }
 
-    public void sendAuthorizationToken(SelfServiceRegistration selfServiceRegistration, Boolean isEmailAuthenticationMode) {
+    public void sendAuthorizationToken(SelfServiceRegistration selfServiceRegistration, Client client, Boolean isEmailAuthenticationMode) {
         if (isEmailAuthenticationMode) {
             sendAuthorizationMail(selfServiceRegistration);
         } else {
-            sendAuthorizationMessage(selfServiceRegistration);
+            sendAuthorizationMessage(selfServiceRegistration, client);
         }
     }
 
-    private void sendAuthorizationMessage(SelfServiceRegistration selfServiceRegistration) {
+    private void sendAuthorizationMessage(SelfServiceRegistration selfServiceRegistration, Client client) {
         Collection<SmsProviderData> smsProviders = this.smsCampaignDropdownReadPlatformService.retrieveSmsProviders();
         if (smsProviders.isEmpty()) {
-            throw new PlatformDataIntegrityException("error.msg.mobile.service.provider.not.available",
-                    "Mobile service provider not available.");
+            throw new PlatformDataIntegrityException("error.msg.mobile.service.provider.not.available", "Mobile service provider not available.");
         }
         Long providerId = new ArrayList<>(smsProviders).get(0).getId();
-        final String message = "Hola  " + selfServiceRegistration.getFirstName() + "," + "\n\n"
-                + "Para crear un usuario, utilice los siguientes datos \n" + "\nId de Petición : " + selfServiceRegistration.getId()
-                + "\n Código de Autorización : " + selfServiceRegistration.getAuthenticationToken();
-        String externalId = null;
-        Group group = null;
-        Staff staff = null;
-        SmsCampaign smsCampaign = null;
-        boolean isNotification = false;
-        SmsMessage smsMessage = SmsMessage.instance(externalId, group, selfServiceRegistration.getClient(), staff,
-                SmsMessageStatusType.PENDING, message, selfServiceRegistration.getMobileNumber(), smsCampaign, isNotification);
+        final String message = String.format("Hola %s,\n\nPara crear un usuario, utilice los siguientes datos\n\nId de Petición : %s\nCódigo de Autorización : %s",
+                selfServiceRegistration.getFirstName(), selfServiceRegistration.getId(), selfServiceRegistration.getAuthenticationToken());
+        
+        SmsMessage smsMessage = java.util.Objects.requireNonNull(
+                SmsMessage.instance(null, null, client, null,
+                        SmsMessageStatusType.PENDING, message, selfServiceRegistration.getMobileNumber(), null, false));
         this.smsMessageRepository.save(smsMessage);
         this.smsMessageScheduledJobService.sendTriggeredMessage(new ArrayList<>(Arrays.asList(smsMessage)), providerId);
     }
 
     private void sendAuthorizationMail(SelfServiceRegistration selfServiceRegistration) {
         final String subject = "Código de Autorización ";
-        final String body = "Hola  " + selfServiceRegistration.getFirstName() + "," + "\n" + "Para crear un usuario, utilice los siguientes datos\n\n"
-                + "\nId de Petición: " + selfServiceRegistration.getId() + "\nCódigo de Autorización : "
-                + selfServiceRegistration.getAuthenticationToken();
+        final String body = String.format("Hola %s,\nPara crear un usuario, utilice los siguientes datos\n\nId de Petición: %s\nCódigo de Autorización : %s",
+                selfServiceRegistration.getFirstName(), selfServiceRegistration.getId(), selfServiceRegistration.getAuthenticationToken());
 
-        final EmailDetail emailDetail = new EmailDetail(subject, body, selfServiceRegistration.getEmail(),
-                selfServiceRegistration.getFirstName());
+        final EmailDetail emailDetail = new EmailDetail(subject, body, selfServiceRegistration.getEmail(), selfServiceRegistration.getFirstName());
         this.gmailBackedPlatformEmailService.sendDefinedEmail(emailDetail);
     }
 
@@ -227,77 +260,75 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
     }
 
     @Override
+    @Transactional
     public AppSelfServiceUser createSelfServiceUser(String apiRequestBodyAsJson) {
         JsonCommand command = null;
         String username = null;
         try {
-            Gson gson = new Gson();
-            final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
-            final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
-            final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource("user");
-            this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, apiRequestBodyAsJson,
-                    SelfServiceApiConstants.CREATE_USER_REQUEST_DATA_PARAMETERS);
-            JsonElement element = gson.fromJson(apiRequestBodyAsJson.toString(), JsonElement.class);
-
+            JsonElement element = validateAndParseUserRequest(apiRequestBodyAsJson);
             Long id = this.fromApiJsonHelper.extractLongNamed(SelfServiceApiConstants.requestIdParamName, element);
-            baseDataValidator.reset().parameter(SelfServiceApiConstants.requestIdParamName).value(id).notNull().integerGreaterThanZero();
+            String token = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.authenticationTokenParamName, element);
             command = JsonCommand.fromJsonElement(id, element);
-            String authenticationToken = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.authenticationTokenParamName,
-                    element);
-            baseDataValidator.reset().parameter(SelfServiceApiConstants.authenticationTokenParamName).value(authenticationToken).notBlank()
-                    .notNull().notExceedingLengthOf(100);
 
-            if (!dataValidationErrors.isEmpty()) {
-                throw new PlatformApiDataValidationException(dataValidationErrors);
+            SelfServiceRegistration reg = this.selfServiceRegistrationRepository.getRequestByIdAndAuthenticationToken(id, token);
+            if (reg == null) {
+                throw new SelfServiceRegistrationNotFoundException(id, token);
             }
-
-            SelfServiceRegistration selfServiceRegistration = this.selfServiceRegistrationRepository
-                    .getRequestByIdAndAuthenticationToken(id, authenticationToken);
-            if (selfServiceRegistration == null) {
-                throw new SelfServiceRegistrationNotFoundException(id, authenticationToken);
-            }
-            username = selfServiceRegistration.getUsername();
-            Client client = selfServiceRegistration.getClient();
-            final boolean passwordNeverExpire = true;
-            final boolean isSelfServiceUser = true;
-            final Collection<SimpleGrantedAuthority> authorities = new ArrayList<>();
-            authorities.add(new SimpleGrantedAuthority("DUMMY_ROLE_NOT_USED_OR_PERSISTED_TO_AVOID_EXCEPTION"));
-            final Set<Role> allRoles = new HashSet<>();
-            Role role = this.roleRepository.getRoleByName(SelfServiceApiConstants.SELF_SERVICE_USER_ROLE);
-            if (role != null) {
-                allRoles.add(role);
-            } else {
-                throw new RoleNotFoundException(SelfServiceApiConstants.SELF_SERVICE_USER_ROLE);
-            }
-            List<Client> clients = new ArrayList<>();
-            User user = new User(selfServiceRegistration.getUsername(), selfServiceRegistration.getPassword(), authorities);
-            AppSelfServiceUser appUser = new AppSelfServiceUser(client.getOffice(), user, allRoles, selfServiceRegistration.getEmail(), client.getFirstname(),
-                    client.getLastname(), null, passwordNeverExpire, isSelfServiceUser, clients, null);
-            AppSelfServiceUserClientMapping appUserClientMapping = this.appUserClientMappingRepository.fetchByClientId(client.getId());
-            this.userDomainService.create(appUser, true);
-            appUserClientMapping = new AppSelfServiceUserClientMapping(appUser,client);
-            this.appUserClientMappingRepository.saveClientUserMapping(appUser.getId(),client.getId());
-            return appUser;
-
+            username = reg.getUsername();
+            return doCreateSelfServiceUser(reg);
         } catch (final JpaSystemException | DataIntegrityViolationException dve) {
-            handleDataIntegrityIssues(command, dve.getMostSpecificCause(), dve, username);
-            return null;
+            throw handleDataIntegrityIssues(command, dve.getMostSpecificCause(), dve, username);
         } catch (final PersistenceException | AuthenticationServiceException dve) {
-            Throwable throwable = ExceptionUtils.getRootCause(dve.getCause());
-            handleDataIntegrityIssues(command, throwable, dve, username);
-            return null;
+            throw handleDataIntegrityIssues(command, ExceptionUtils.getRootCause(dve.getCause()), dve, username);
         }
-
     }
 
-    private void handleDataIntegrityIssues(final JsonCommand command, final Throwable realCause, final Exception dve, String username) {
-        if (realCause.getMessage().contains("'username_org'")) {
-            final StringBuilder defaultMessageBuilder = new StringBuilder("User with username ").append(username)
-                    .append(" already exists.");
-            throw new PlatformDataIntegrityException("error.msg.user.duplicate.username", defaultMessageBuilder.toString(), "username",
-                    username);
+    private JsonElement validateAndParseUserRequest(String apiRequestBodyAsJson) {
+        final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
+        this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, apiRequestBodyAsJson, SelfServiceApiConstants.CREATE_USER_REQUEST_DATA_PARAMETERS);
+        JsonElement element = new Gson().fromJson(apiRequestBodyAsJson, JsonElement.class);
+
+        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource("user");
+
+        Long id = this.fromApiJsonHelper.extractLongNamed(SelfServiceApiConstants.requestIdParamName, element);
+        baseDataValidator.reset().parameter(SelfServiceApiConstants.requestIdParamName).value(id).notNull().integerGreaterThanZero();
+        String authenticationToken = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.authenticationTokenParamName, element);
+        baseDataValidator.reset().parameter(SelfServiceApiConstants.authenticationTokenParamName).value(authenticationToken).notBlank()
+                .notNull().notExceedingLengthOf(100);
+
+        if (!dataValidationErrors.isEmpty()) {
+            throw new PlatformApiDataValidationException(dataValidationErrors);
         }
-        throw ErrorHandler.getMappable(dve, "error.msg.unknown.data.integrity.issue", "Unknown data integrity issue with resource.");
+        return element;
     }
 
+    private AppSelfServiceUser doCreateSelfServiceUser(SelfServiceRegistration reg) {
+        Client client = this.clientRepository.findOneWithNotFoundDetection(reg.getClientId());
+        final boolean passwordNeverExpire = true;
+        final boolean isSelfServiceUser = true;
+        final Collection<SimpleGrantedAuthority> authorities = new ArrayList<>();
+        authorities.add(new SimpleGrantedAuthority("DUMMY_ROLE_NOT_USED_OR_PERSISTED_TO_AVOID_EXCEPTION"));
+        final Set<Role> allRoles = new HashSet<>();
+        Role role = this.roleRepository.getRoleByName(SelfServiceApiConstants.SELF_SERVICE_USER_ROLE);
+        if (role == null) {
+            throw new RoleNotFoundException(SelfServiceApiConstants.SELF_SERVICE_USER_ROLE);
+        }
+        allRoles.add(role);
+        List<Client> clients = new ArrayList<>();
+        User user = new User(reg.getUsername(), reg.getPassword(), authorities);
+        AppSelfServiceUser appUser = new AppSelfServiceUser(client.getOffice(), user, allRoles, reg.getEmail(), client.getFirstname(),
+                client.getLastname(), null, passwordNeverExpire, isSelfServiceUser, clients, null);
+        this.userDomainService.create(appUser, true);
+        this.appUserClientMappingRepository.saveClientUserMapping(appUser.getId(), client.getId());
+        return appUser;
+    }
+
+    private RuntimeException handleDataIntegrityIssues(final JsonCommand command, final Throwable realCause, final Exception dve, String username) {
+        if (realCause.getMessage() != null && realCause.getMessage().contains("'username_org'")) {
+            return new PlatformDataIntegrityException("error.msg.user.duplicate.username", 
+                    "User with username " + username + " already exists.", "username", username);
+        }
+        return ErrorHandler.getMappable(dve, "error.msg.unknown.data.integrity.issue", "Unknown data integrity issue with resource.");
+    }
 }

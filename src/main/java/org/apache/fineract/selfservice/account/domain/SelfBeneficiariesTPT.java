@@ -17,52 +17,38 @@ package org.apache.fineract.selfservice.account.domain;
 import static org.apache.fineract.selfservice.account.api.SelfBeneficiariesTPTApiConstants.NAME_PARAM_NAME;
 import static org.apache.fineract.selfservice.account.api.SelfBeneficiariesTPTApiConstants.TRANSFER_LIMIT_PARAM_NAME;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.fineract.infrastructure.core.domain.AbstractPersistableCustom;
 
-@Entity
-@Table(
-    name = "m_selfservice_beneficiaries_tpt",
-    uniqueConstraints = {
-      @UniqueConstraint(
-          columnNames = {"name", "app_user_id", "is_active"},
-          name = "name")
-    })
-public class SelfBeneficiariesTPT extends AbstractPersistableCustom {
+/**
+ * Pure domain entity for a self-service third-party transfer beneficiary.
+ *
+ * <p>No JPA or framework annotations are permitted here. All persistence mapping lives in
+ * {@code account.infrastructure.persistence.SelfBeneficiariesTPTJpaEntity}.
+ */
+public class SelfBeneficiariesTPT {
 
-  @Column(name = "app_user_id", nullable = false)
-  private Long appUserId;
+  /** Database-generated surrogate key. {@code null} for instances that have not yet been saved. */
+  private Long id;
 
-  @Column(name = "name", length = 50, nullable = false)
+  private final Long appUserId;
   private String name;
-
-  @Column(name = "office_id", nullable = false)
-  private Long officeId;
-
-  @Column(name = "client_id", nullable = false)
-  private Long clientId;
-
-  @Column(name = "account_id", nullable = false)
-  private Long accountId;
-
-  @Column(name = "account_type", nullable = false)
-  private Integer accountType;
-
-  @Column(name = "transfer_limit", nullable = true)
+  private final Long officeId;
+  private final Long clientId;
+  private final Long accountId;
+  private final Integer accountType;
   private Long transferLimit;
-
-  @Column(name = "is_active", nullable = false)
-  private boolean isActive = true;
+  private boolean isActive;
 
   protected SelfBeneficiariesTPT() {
-    //
+    this.appUserId = null;
+    this.officeId = null;
+    this.clientId = null;
+    this.accountId = null;
+    this.accountType = null;
   }
 
+  /** Constructor for creating a new (not-yet-persisted) beneficiary. */
   public SelfBeneficiariesTPT(
       Long appUserId,
       String name,
@@ -78,6 +64,36 @@ public class SelfBeneficiariesTPT extends AbstractPersistableCustom {
     this.accountId = accountId;
     this.accountType = accountType;
     this.transferLimit = transferLimit;
+    this.isActive = true;
+  }
+
+  /**
+   * Reconstruction constructor used by the infrastructure adapter to hydrate a persisted entity.
+   * Must not be called directly from application or domain code.
+   */
+  public SelfBeneficiariesTPT(
+      Long id,
+      Long appUserId,
+      String name,
+      Long officeId,
+      Long clientId,
+      Long accountId,
+      Integer accountType,
+      Long transferLimit,
+      boolean isActive) {
+    this.id = id;
+    this.appUserId = appUserId;
+    this.name = name;
+    this.officeId = officeId;
+    this.clientId = clientId;
+    this.accountId = accountId;
+    this.accountType = accountType;
+    this.transferLimit = transferLimit;
+    this.isActive = isActive;
+  }
+
+  public Long getId() {
+    return id;
   }
 
   public String getName() {
@@ -124,6 +140,7 @@ public class SelfBeneficiariesTPT extends AbstractPersistableCustom {
     return this.accountType;
   }
 
+  /** Applies the requested updates and returns a map of the fields that actually changed. */
   public Map<String, Object> update(String newName, Long newTransferLimit) {
     Map<String, Object> changes = new HashMap<>();
     if (!this.name.equals(newName)) {
