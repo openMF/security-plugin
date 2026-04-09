@@ -11,20 +11,27 @@
                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
 
-    <!-- Grant client read/image permissions to the 'Self Service User' role via m_role_permission. -->
-    <changeSet id="ss-0003-1" author="fineract">
+    <changeSet id="ss-0005-1" author="fineract">
         <preConditions onFail="MARK_RAN">
             <tableExists tableName="m_role_permission"/>
             <tableExists tableName="m_permission"/>
             <tableExists tableName="m_role"/>
         </preConditions>
         <sql>
+            INSERT INTO m_permission (grouping, code, entity_name, action_name, can_maker_checker)
+            SELECT 'configuration', 'READ_REPORT', 'REPORT', 'READ', false
+            WHERE NOT EXISTS (SELECT 1 FROM m_permission WHERE code = 'READ_REPORT');
+
+            INSERT INTO m_permission (grouping, code, entity_name, action_name, can_maker_checker)
+            SELECT 'configuration', 'READ_Client Details', 'REPORT', 'READ', false
+            WHERE NOT EXISTS (SELECT 1 FROM m_permission WHERE code = 'READ_Client Details');
+
             INSERT INTO m_role_permission (role_id, permission_id)
             SELECT r.id, p.id
             FROM m_role r
             CROSS JOIN m_permission p
             WHERE r.name = 'Self Service User'
-              AND p.code IN ('READ_CLIENT', 'READ_CLIENTCHARGE', 'READ_CLIENTIMAGE', 'CREATE_CLIENTIMAGE', 'DELETE_CLIENTIMAGE')
+              AND p.code IN ('READ_REPORT', 'READ_Client Details')
               AND NOT EXISTS (
                   SELECT 1
                   FROM m_role_permission rp

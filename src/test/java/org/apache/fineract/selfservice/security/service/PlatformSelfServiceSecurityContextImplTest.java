@@ -146,7 +146,7 @@ class PlatformSelfServiceSecurityContextImplTest {
     when(principal.getAuthorities()).thenReturn(new ArrayList<>());
     setAuthenticatedPrincipal(principal);
     context.validateHasReadPermission("CLIENT");
-    verify(principal).validateHasReadPermission("CLIENT");
+    verify(principal).validateHasSelfServiceReadPermission("CLIENT");
   }
 
   @Test

@@ -34,6 +34,7 @@ import org.apache.fineract.infrastructure.security.service.PlatformUserDetailsCh
 import org.apache.fineract.infrastructure.security.service.TenantAwareJpaPlatformUserDetailsService;
 import org.apache.fineract.notification.service.UserNotificationService;
 import org.apache.fineract.selfservice.security.domain.PlatformSelfServiceUserRepository;
+import org.apache.fineract.selfservice.useradministration.service.SelfServiceRoleReadPlatformService;
 import org.apache.fineract.selfservice.security.service.TenantAwareJpaPlatformSelfServiceUserDetailsService;
 import org.apache.fineract.selfservice.security.starter.SelfServiceSecurityConfiguration;
 import org.springframework.boot.autoconfigure.web.ServerProperties;
@@ -136,4 +137,9 @@ public class SelfServiceSecurityTestConfig {
     public PlatformSelfServiceUserRepository platformSelfServiceUserRepository() {
         return mock(PlatformSelfServiceUserRepository.class);
     }
+
+  @Bean
+  public SelfServiceRoleReadPlatformService selfServiceRoleReadPlatformService() {
+      return mock(SelfServiceRoleReadPlatformService.class);
+  }
 }

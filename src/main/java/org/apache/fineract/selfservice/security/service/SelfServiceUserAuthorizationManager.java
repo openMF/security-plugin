@@ -32,8 +32,13 @@ public class SelfServiceUserAuthorizationManager implements AuthorizationManager
     @Override
     public AuthorizationDecision check(Supplier<Authentication> authentication, RequestAuthorizationContext fi) {
         if (!"OPTIONS".equalsIgnoreCase(fi.getRequest().getMethod())) {
-            AppSelfServiceUser user = (AppSelfServiceUser) authentication.get().getPrincipal();
-            log.warn("SELF SERVICE REQUEST");
+            Authentication auth = authentication.get();
+            if (auth == null || auth.getPrincipal() == null) {
+                return new AuthorizationDecision(false);
+            }
+            if (!(auth.getPrincipal() instanceof AppSelfServiceUser user)) {
+                return new AuthorizationDecision(false);
+            }
             String pathURL = fi.getRequest().getRequestURL().toString();
             boolean isSelfServiceRequest = pathURL.contains("/self/");
 
@@ -41,10 +46,8 @@ public class SelfServiceUserAuthorizationManager implements AuthorizationManager
                     || (!isSelfServiceRequest && user.isSelfServiceUser()));
 
             if (notAllowed) {
-                log.warn("SELF SERVICE REQUEST NOT ALLOWED");
                 return new AuthorizationDecision(false);
             }
-            log.warn("SELF SERVICE REQUEST ALLOWED");
         }
         return new AuthorizationDecision(true);
     }

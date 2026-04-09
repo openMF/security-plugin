@@ -10,29 +10,27 @@
 <databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
-
-    <!-- Grant READ_LOANPRODUCT and READ_SAVINGSPRODUCT to the Self Service User role.
-         These permissions are required by the core Fineract LoanProductsApiResource and
-         SavingsProductsApiResource which call validateHasReadPermission() as part of
-         their authorization model.
-         Uses ANSI-standard NOT EXISTS for cross-database compatibility (PostgreSQL/MySQL). -->
-    <changeSet author="fineract" id="ss-0002-1">
-        <preConditions onFail="MARK_RAN">
+    <!-- Give minimal grants for Savings Account to the Self Service Role-->
+    <changeSet author="fineract" id="ss-0006-1">
+        <preConditions onFail="MARK_RAN">            
             <tableExists tableName="m_role_permission"/>
             <tableExists tableName="m_permission"/>
             <tableExists tableName="m_role"/>
         </preConditions>
         <sql>
             INSERT INTO m_role_permission (role_id, permission_id)
-            SELECT r.id, p.id
-            FROM m_role r, m_permission p
+            SELECT 
+                r.id AS role_id,
+                p.id AS permission_id
+            FROM m_role r
+            JOIN m_permission p ON p.code = 'READ_SAVINGSACCOUNT'
             WHERE r.name = 'Self Service User'
-            AND p.code IN ('READ_LOANPRODUCT', 'READ_SAVINGSPRODUCT')
-            AND NOT EXISTS (
-                SELECT 1 FROM m_role_permission rp
-                WHERE rp.role_id = r.id AND rp.permission_id = p.id
-            );
+              AND NOT EXISTS (
+                    SELECT 1 
+                    FROM m_role_permission rp 
+                    WHERE rp.role_id = r.id 
+                      AND rp.permission_id = p.id
+                  );
         </sql>
     </changeSet>
-
 </databaseChangeLog>

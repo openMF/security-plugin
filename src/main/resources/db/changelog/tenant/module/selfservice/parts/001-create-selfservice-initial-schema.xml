@@ -142,6 +142,14 @@
     </changeSet>
     <!-- Alter App Self Service User Client Mapping Table -->
     <changeSet author="fineract" id="ss-0001-5">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists tableName="m_selfservice_user_client_mapping" indexName="appuser_id_client_id"/>
+            </not>
+            <not>
+                <indexExists tableName="m_selfservice_user_client_mapping" indexName="unique_self_client"/>
+            </not>
+        </preConditions>
         <addUniqueConstraint columnNames="appuser_id, client_id" constraintName="appuser_id_client_id"
                              tableName="m_selfservice_user_client_mapping"/>
         <addUniqueConstraint columnNames="client_id" constraintName="unique_self_client"
@@ -149,11 +157,22 @@
     </changeSet>
     <!-- Alter App Self Service Beneficiaries Table -->
     <changeSet author="fineract" id="ss-0001-6">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists tableName="m_selfservice_beneficiaries_tpt" indexName="uk_m_selfservice_beneficiaries_tpt_name"/>
+            </not>            
+        </preConditions>
         <addUniqueConstraint columnNames="name, app_user_id, is_active" constraintName="uk_m_selfservice_beneficiaries_tpt_name"
                              tableName="m_selfservice_beneficiaries_tpt"/>
     </changeSet>
     <!-- Alter App Self Service User Client Mapping Table -->
-    <changeSet author="fineract" id="ss-0001-7">
+    <changeSet author="fineract" id="ss-0001-7">        
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <foreignKeyConstraintExists foreignKeyName="m_selfservice_appuser_id" 
+                                            foreignKeyTableName="m_selfservice_user_client_mapping"/>
+            </not>
+        </preConditions>
         <addForeignKeyConstraint baseColumnNames="appuser_id" baseTableName="m_selfservice_user_client_mapping"
                                  constraintName="m_selfservice_appuser_id" deferrable="false" initiallyDeferred="false"
                                  onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="id"
@@ -161,6 +180,12 @@
     </changeSet>
     <!-- Alter App Self Service User Client Mapping Table -->
     <changeSet author="fineract" id="ss-0001-8">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <foreignKeyConstraintExists foreignKeyName="m_selfservice_client_id" 
+                                            foreignKeyTableName="m_selfservice_user_client_mapping"/>
+            </not>
+        </preConditions>
         <addForeignKeyConstraint baseColumnNames="client_id" baseTableName="m_selfservice_user_client_mapping"
                                  constraintName="m_selfservice_client_id" deferrable="false" initiallyDeferred="false"
                                  onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="id"
@@ -214,7 +239,12 @@
             INNER JOIN m_appselfservice_user su ON su.id = ar.appuser_id
             INNER JOIN m_role r ON r.id = ar.role_id
             WHERE r.name = 'Self Service User'
-            ON CONFLICT DO NOTHING;
+            AND NOT EXISTS (
+                SELECT 1 
+                FROM m_appselfservice_user_role existing
+                WHERE existing.appuser_id = ar.appuser_id 
+                AND existing.role_id = ar.role_id
+            );
         </sql>
     </changeSet>
     <!-- Enable the Self Service User Role-->
@@ -225,84 +255,5 @@
         <sql>
             UPDATE m_role SET is_disabled=false WHERE name = 'Self Service User';
         </sql>
-    </changeSet>
-    <!-- Migrate the existing Self Service Users-->
-    <changeSet author="fineract" id="ss-0001-12">
-        <preConditions onFail="MARK_RAN">            
-            <tableExists tableName="m_appuser"/>
-            <tableExists tableName="m_appselfservice_user"/>
-            <columnExists tableName="m_appuser" columnName="is_self_service_user"/>
-        </preConditions>
-        <sql>
-            INSERT INTO m_appselfservice_user (
-                id,
-                is_deleted,
-                office_id,
-                staff_id,
-                username,
-                firstname,
-                lastname,
-                password,
-                email,
-                firsttime_login_remaining,
-                nonexpired,
-                nonlocked,
-                nonexpired_credentials,
-                enabled,
-                last_time_password_updated,
-                password_never_expires,
-                password_reset_required,
-                is_self_service_user,
-                cannot_change_password
-            )
-            SELECT 
-                id,
-                is_deleted,
-                office_id,
-                staff_id,
-                username,
-                firstname,
-                lastname,
-                password,
-                email,
-                firsttime_login_remaining,
-                nonexpired,
-                nonlocked,
-                nonexpired_credentials,
-                enabled,
-                last_time_password_updated,
-                password_never_expires,
-                password_reset_required,
-                FALSE AS is_self_service_user,
-                cannot_change_password
-            FROM m_appuser 
-            WHERE is_self_service_user = TRUE 
-            AND id IS NOT NULL 
-            ON CONFLICT DO NOTHING;
-        </sql>
-    </changeSet>    
-    <!-- Give minimal grants for Savings Account to the Self Service Role-->
-    <changeSet author="fineract" id="ss-0001-13">
-        <preConditions onFail="MARK_RAN">            
-            <tableExists tableName="m_role_permission"/>
-            <tableExists tableName="m_permission"/>
-            <tableExists tableName="m_role"/>
-        </preConditions>
-        <sql>
-            INSERT INTO m_role_permission (role_id, permission_id)
-            SELECT 
-                r.id AS role_id,
-                p.id AS permission_id
-            FROM m_role r
-            JOIN m_permission p ON p.code = 'READ_SAVINGSACCOUNT'
-            WHERE r.name = 'Self Service User'
-              AND NOT EXISTS (
-                    SELECT 1 
-                    FROM m_role_permission rp 
-                    WHERE rp.role_id = r.id 
-                      AND rp.permission_id = p.id
-                  ) 
-            ON CONFLICT DO NOTHING;
-        </sql>
-    </changeSet>
+    </changeSet>           
 </databaseChangeLog>
