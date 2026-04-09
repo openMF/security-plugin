@@ -5,7 +5,9 @@ chat:
   auto_reply: true
   art: false
 reviews:
-  profile: 'chill'
+  # Changed from 'chill' — 'assertive' is consistent with request_changes_workflow: true.
+  # 'chill' only flags high-severity issues and would silently skip most of the rules below.
+  profile: 'assertive'
   request_changes_workflow: true
   auto_review:
     enabled: true
@@ -16,6 +18,7 @@ reviews:
   high_level_summary: true
   suggested_labels: true
   auto_apply_labels: true
+  finishing_touches: true
   labeling_instructions:
     - label: '⏱️ <10 Min Review'
       instructions: Apply for PRs with <200 lines changed
@@ -27,153 +30,300 @@ reviews:
       instructions: Apply for PRs with >2000 lines changed
 
   path_instructions:
+
+    # ── GLOBAL ────────────────────────────────────────────────────────────────
+    # Rules here apply to every file in the repository.
+    # Specific layers below ADD to these rules, they do not replace them.
     - path: '**'
       instructions: |
-        ## General Project Standards
-        ### Security & Performance
-        - Validate and sanitize all incoming data (use Bean Validation with `@Valid` and constraints).
-        - Always use prepared statements, parameterized queries, or Spring Data repositories.
-        - Use Spring Security for authentication and method-level authorization.
-        - Apply the principle of least privilege for access control.
-        - Configure connection pools (HikariCP) properly for performance.
-        - Cache frequently accessed results with `@Cacheable` and invalidate with `@CacheEvict`.
-        - Offload long-running or blocking work using `@Async`, schedulers, or queues.
-        - Avoid blocking I/O in reactive (WebFlux) contexts.
+        ## Global Standards
 
-        ### Code Quality & Documentation
-        - Apply DRY, SOLID, and Clean Architecture principles.
-        - Avoid framework coupling in domain or application layers.
-        - Maintain up-to-date API documentation via SpringDoc (OpenAPI 3) or REST Docs.
-        - Use Checkstyle or SpotBugs for static code analysis.
-        - Prefer immutability and constructor injection for all beans.
+        ### Security
+        - Validate all incoming data at API boundaries using Bean Validation (`@Valid`, `@NotNull`, `@Size`, etc.).
+        - Use only parameterized queries, Spring Data repositories, or named queries.
+          Flag any string concatenation used to build SQL or JPQL.
+        - Apply least-privilege: permissions and roles must be restricted to the minimum required.
+        - Flag any Spring Security configuration that uses `permitAll()` on a non-public endpoint.
 
-    - path: 'src/main/java/**'
-      instructions: |
-        ## Project & Package Structure
-        - Follow DDD-inspired modular structure:
-          ```
-          com.company.project
-          ├── api          # REST controllers, request/response DTOs
-          ├── application  # Services, use cases, orchestrators
-          ├── domain       # Entities, value objects, domain events, aggregates
-          ├── infrastructure
-          │   ├── persistence  # JPA, repositories, adapters
-          │   ├── messaging    # Kafka, RabbitMQ adapters
-          │   └── config       # Spring @Configuration classes
-          └── shared        # Common utilities, constants, base abstractions
-          ```
-        - Each module should have a clear boundary and minimal dependencies.
-        - No circular dependencies between packages.
-        - Do not mix domain and infrastructure code.
+        ### Secrets & Sensitive Data
+        - Never commit secrets, credentials, or environment-specific values.
+          Flag hard-coded passwords, API keys, tokens, or JDBC connection strings in source code.
+        - Never log sensitive data: passwords, tokens, card numbers, national IDs, or any PII.
+          Flag any log statement that interpolates a field named `password`, `token`, `secret`, `pin`, or `key`.
 
+        ### Observability
+        - `System.out.println`, `System.err.println`, and `java.util.logging` are banned everywhere.
+          Flag any occurrence. All logging must use SLF4J via `@Slf4j` (Lombok).
+        - Log at the correct level: DEBUG for internal state, INFO for lifecycle events,
+          WARN for recoverable problems, ERROR for failures that need attention.
+        - Include contextual identifiers (tenant ID, user ID) in log messages where applicable.
+
+        ### General Hygiene
+        - No magic numbers or bare string literals in logic — extract to named constants or enums.
+        - No commented-out production code. Remove dead code or replace with a TODO referencing an issue tracker link.
+        - Flag methods with cyclomatic complexity above 5 (more than 4 decision branches) as refactoring candidates.
+
+    # ── ALL JAVA FILES ────────────────────────────────────────────────────────
     - path: '**/*.java'
       instructions: |
-        ## General Java + Spring Coding Standards
-        ### Style & Conventions
-        - Class names: PascalCase. Methods/fields: camelCase. Constants: UPPER_CASE.
-        - Avoid wildcard imports; import explicitly.
-        - Use Lombok judiciously. Avoid `@Data`; prefer `@Value`, `@Getter`, and explicit constructors.
-        - Apply `final` to fields injected via constructors.
-        - Avoid mutable static state or utility singletons.
+        ## Java Coding Standards
 
-        ### Dependency Injection
-        - Prefer constructor-based injection. Avoid field injection.
-        - Mark service components with `@Service` or `@Component`.
-        - Use `@ConfigurationProperties` for structured config, validated with `@Validated`.
-        - Keep beans stateless wherever possible.
+        ### Naming & Style
+        - Classes: PascalCase. Methods and fields: camelCase. Constants: UPPER_SNAKE_CASE.
+        - No wildcard imports (e.g., `import java.util.*`). All imports must be fully qualified and explicit.
+        - One top-level class per file. The file name must match the public class name.
+
+        ### Dependency Injection — STRICT
+        - **`@Autowired` on fields is banned.** Flag every occurrence without exception.
+          Correct pattern: constructor injection with all injected fields marked `final`.
+        - `@RequiredArgsConstructor` (Lombok) is the preferred shorthand for constructor injection.
+        - `@Autowired` on a constructor is redundant since Spring 4.3 and should also be flagged.
+        - `@Inject` (JSR-330) on fields carries the same problem as `@Autowired` — flag it too.
+
+        ### Lombok Usage
+        - `@Data` is banned on JPA entities and domain objects.
+          It generates `equals`/`hashCode` on mutable state and breaks JPA dirty-checking. Flag it.
+        - `@SneakyThrows` is banned. Handle or declare checked exceptions explicitly.
+        - Prefer `@Getter`, `@Value`, `@RequiredArgsConstructor`, and `@Builder` over `@Data`.
+        - `@EqualsAndHashCode` on JPA entities must use `onlyExplicitlyIncluded = true` with `@EqualsAndHashCode.Include` only on the primary key.
 
         ### Methods & Classes
-        - Keep methods concise (<20 lines).
-        - Limit public methods in classes; prefer package-private visibility for internal logic.
-        - Extract reusable logic to smaller, cohesive components.
-        - Avoid logic inside constructors or `@PostConstruct` unless necessary.
-        - Prefer returning Optional or sealed result types instead of null.
+        - Methods should stay under 20 lines. Flag anything over 30 lines as a refactoring candidate.
+        - Flag any class with more than 5 injected constructor parameters — it has too many responsibilities.
+        - Never return `null` from a public method. Use `Optional<T>` or throw a domain exception.
+        - Apply `final` to fields injected via constructors and to local variables that are not reassigned.
 
-        ### Logging & Exceptions
-        - Use SLF4J (`@Slf4j`) for logging.
-        - Never log sensitive data (PII, tokens).
-        - Throw domain-specific exceptions rather than generic ones.
-        - Use `@ControllerAdvice` with `@ExceptionHandler` for global error mapping.
+        ### Exception Handling
+        - Never swallow exceptions silently (e.g., `catch (Exception e) { /* nothing */ }`). Always log and/or rethrow.
+        - Do not throw raw `RuntimeException` or `Exception` — use domain-specific exception types.
+        - No try-catch blocks in controllers. Use `@ControllerAdvice` + `@ExceptionHandler` for all error handling.
 
         ### Documentation
-        - Public methods and classes MUST have Javadoc.
-        - Document complex business rules with “why” comments, not “what”.
+        - All `public` methods and classes must have Javadoc.
+        - Comments must explain *why* — not *what* the code does. Obvious "what" comments are noise and should be removed.
 
+    # ── MAIN SOURCE ROOT ──────────────────────────────────────────────────────
+    - path: 'src/main/java/**'
+      instructions: |
+        ## Package & Module Structure
+        This repo follows a DDD-inspired layout. Each self-service module uses:
+        ```
+        org.apache.fineract.selfservice.<module>
+        ├── api        # REST resource classes and Swagger annotation holders only
+        ├── data       # Read-model DTOs and command/response objects
+        ├── domain     # Entities, value objects, domain events — zero framework dependencies
+        ├── exception  # Domain-specific exception types
+        ├── handler    # CQRS command handlers
+        ├── service    # Application services and use-case orchestrators
+        └── starter    # Spring Boot auto-configuration entry points
+        ```
+        - No circular dependencies between packages within or across modules.
+        - Domain must not import from api, service, handler, or starter packages.
+        - Starter classes are the only place where the module wires itself into Spring Boot.
+
+    # ── API / CONTROLLER LAYER ────────────────────────────────────────────────
     - path: 'src/main/java/**/api/**/*.java'
       instructions: |
-        ## API & Controllers
-        - Use `@RestController` for REST endpoints, `@RequestMapping` for base paths.
-        - Controllers must delegate all logic to application or domain layers.
-        - Validate inputs with `@Valid` and Jakarta validation annotations.
-        - Always return DTOs, never entities.
-        - Use meaningful HTTP status codes (`ResponseEntity` preferred).
-        - Document endpoints using OpenAPI annotations or SpringDoc.
-        - Avoid excessive controller logic — aim for single responsibility per endpoint.
+        ## API Layer
 
-    - path: 'src/main/java/**/application/**/*.java'
+        ### Controller Responsibilities
+        - Controllers are responsible for exactly three things: parsing the request,
+          delegating to a service, and serialising the response. Nothing else.
+        - Flag any non-trivial branching, computation, or database access directly in a controller method.
+        - Always return DTOs or data classes — never JPA entities or domain objects.
+
+        ### Input Validation
+        - Every request body parameter must be annotated with `@Valid` before being passed to the service.
+        - Request DTO fields must carry Jakarta validation annotations (`@NotNull`, `@NotBlank`, `@Size`, `@Min`, `@Max`, `@Pattern`).
+        - Flag any controller method that accepts a raw `String`, `Map<String, Object>`, or `JsonNode` as a body parameter without explicit validation.
+
+        ### HTTP Status Codes
+        - Use semantically correct status codes:
+          200 OK, 201 Created, 204 No Content, 400 Bad Request, 401 Unauthorized,
+          403 Forbidden, 404 Not Found, 409 Conflict, 422 Unprocessable Entity, 500 Internal Server Error.
+        - Flag endpoints that return 200 for all outcomes including errors.
+
+        ### Standard Error Response
+        - All error responses from this plugin MUST conform to this exact structure,
+          enforced via a single `@ControllerAdvice` class:
+          ```json
+          {
+            "timestamp": "2024-01-15T10:30:00Z",
+            "status":    400,
+            "error":     "Bad Request",
+            "code":      "SS-4001",
+            "message":   "Client identifier must not be blank",
+            "path":      "/v1/self/clients"
+          }
+          ```
+          - `code` uses the prefix `SS-` followed by a numeric error code unique to the domain error.
+          - `timestamp` must be ISO-8601 UTC.
+          - Never expose stack traces, internal class names, or raw exception messages in a response body.
+        - Flag any controller or exception handler that returns a plain `String`, an unstructured `Map`,
+          or a response body that does not match the structure above.
+
+        ### OpenAPI / Swagger Documentation
+        - Every endpoint must have `@Operation(summary = "...", description = "...")`.
+        - Use `@ApiResponse` to document every possible HTTP response code, including 4xx and 5xx.
+        - Request and response bodies must reference `@Schema`-annotated DTO classes.
+        - Swagger holder classes (`*ApiResourceSwagger.java`) must stay in sync with the actual DTOs
+          returned by the endpoint — flag any mismatch.
+
+    # ── SERVICE / APPLICATION LAYER ───────────────────────────────────────────
+    - path: 'src/main/java/**/service/**/*.java'
       instructions: |
-        ## Application Layer (Use Cases)
-        - Services encapsulate use cases — stateless and orchestrate domain operations.
-        - Annotate with `@Service`; manage transactions with `@Transactional`.
-        - Avoid direct dependency on controllers or persistence details.
-        - Return well-defined domain or DTO responses.
-        - Avoid leaking persistence entities or DTOs outside the application layer.
+        ## Service Layer
 
+        - Services are the **only** layer that manages transactions. No `@Transactional` in controllers, handlers, or repositories.
+        - Annotate with `@Service`. Apply `@Transactional` at the method level (preferred) or class level.
+        - **`@Transactional(readOnly = true)` is mandatory on every read-only method.**
+          Flag any service method that only reads data but is missing `readOnly = true`.
+        - Services must not import or depend on `HttpServletRequest`, `HttpHeaders`, or any web-layer type.
+        - Return domain objects or DTOs. Never return a raw JPA entity to the controller layer.
+        - Use `@Async` with a configured `ThreadPoolTaskExecutor` for any blocking or long-running operation.
+          Flag any `Thread.sleep()` or blocking I/O call on a request thread.
+
+    # ── DOMAIN LAYER — ZERO FRAMEWORK TOLERANCE ───────────────────────────────
     - path: 'src/main/java/**/domain/**/*.java'
       instructions: |
-        ## Domain Layer
-        - Contains entities, value objects, and domain events only.
-        - No dependencies on Spring, frameworks, or infrastructure.
-        - Entities should encapsulate behavior and invariants.
-        - Use immutable patterns for Value Objects (explicit constructors, final fields). Lombok `@Value` may be used as it's compile-time only.
-        - Domain events should be POJOs with clear purpose.
-        - Domain services should express business logic that doesn’t belong to entities.
+        ## Domain Layer — Framework Independence is MANDATORY
 
-    - path: 'src/main/java/**/infrastructure/**/*.java'
+        ### Forbidden Imports — Flag Every Occurrence
+        The following import namespaces must NEVER appear in the domain layer.
+        Flag immediately if any of the following prefixes are found in an import statement:
+
+        - `org.springframework.`          — No Spring annotations, beans, context, or utilities.
+        - `jakarta.persistence.`          — No JPA annotations (`@Entity`, `@Table`, `@Column`, `@Id`, `@ManyToOne`, etc.).
+        - `javax.persistence.`            — Legacy JPA namespace, also banned.
+        - `org.hibernate.`                — No Hibernate-specific annotations or types.
+        - `jakarta.ws.rs.`                — No JAX-RS (Jersey) web annotations.
+        - `javax.ws.rs.`                  — Legacy JAX-RS, also banned.
+        - `jakarta.servlet.`              — No Servlet API.
+        - `com.fasterxml.jackson.`        — No Jackson annotations on domain objects.
+        - `io.swagger.`                   — No Swagger/OpenAPI annotations on domain objects.
+
+        ### What Belongs Here
+        - **Entities**: model business concepts with behaviour, not just data.
+          Entities must protect their own invariants in constructors or factory methods.
+        - **Value Objects**: immutable, all fields `final`, no setters.
+          Lombok `@Value` is acceptable (compile-time only, no runtime Spring dependency).
+        - **Domain Events**: plain POJOs named after what happened (e.g., `LoanRepaymentMadeEvent`).
+        - **Repository interfaces**: interfaces only — zero implementation code.
+          Implementations live in the infrastructure or starter layer.
+        - **Domain Services**: stateless classes for business logic that spans multiple entities.
+
+        ### Invariants & Behaviour
+        - Avoid anemic domain models (entities with only getters/setters and no behaviour).
+          Flag any entity class where all methods are trivial accessors with no business logic.
+        - Do not expose setters for fields that must not change after construction — use private setters or none.
+        - `equals` and `hashCode` on entities must be based solely on the persistent identity (primary key).
+
+    # ── HANDLER LAYER (CQRS) ──────────────────────────────────────────────────
+    - path: 'src/main/java/**/handler/**/*.java'
       instructions: |
-        ## Infrastructure Layer
-        - Contains all technical implementations (persistence, messaging, integration).
-        - JPA entities should reside here, separate from domain models.
-        - Use repositories extending `JpaRepository` or custom interfaces.
-        - Mark adapters with `@Repository`, `@Component`, or `@Configuration`.
-        - Manage transactions only at the service level, not in repositories.
-        - Define mappers for converting between persistence models and domain models.
+        ## Command Handler Layer
 
+        - Each handler class must handle exactly one command type. Flag handlers that branch on command type.
+        - Handlers must not access repositories directly — delegate to domain or application services.
+        - Keep handlers thin: validate the command, delegate, return the result. No business logic here.
+        - Annotate with `@Component`. Do not annotate with `@Service` (semantic distinction matters).
+        - Follow Fineract's `CommandProcessingResult` return convention where applicable.
+
+    # ── CONFIGURATION LAYER ───────────────────────────────────────────────────
     - path: 'src/main/java/**/config/**/*.java'
       instructions: |
         ## Configuration & Bootstrapping
-        - Use `@Configuration` for bean definitions.
-        - Use `@EnableScheduling`, `@EnableAsync`, or other annotations only where necessary.
-        - Configuration must be environment-agnostic.
-        - Avoid business logic in configuration classes.
-        - Use profiles (`@Profile`) for environment-specific beans.
-        - Externalize configuration in `application.yml` and validate on startup.
 
+        - `@Configuration` classes must contain only bean definitions — zero business logic.
+        - Flag any `@Configuration` class that performs database queries, makes HTTP calls, or contains conditional branching beyond `@ConditionalOn*` annotations.
+        - All tuneable settings must be externalised to `application.yml` and bound via `@ConfigurationProperties`.
+        - The `@ConfigurationProperties` class must be annotated with `@Validated` to enforce constraints at startup.
+        - Use `@Profile` for environment-specific beans. Never use `if (env.equals("prod"))` in config code.
+        - `@EnableScheduling` and `@EnableAsync` must only appear where a scheduler or async executor is explicitly configured.
+
+    # ── TESTS ─────────────────────────────────────────────────────────────────
     - path: 'src/test/java/**'
       instructions: |
         ## Testing Standards
-        - Use JUnit 5, Mockito, and AssertJ.
-        - Name tests `ClassNameTest` or `ClassNameIT` (for integration).
-        - Unit tests must be isolated (mock dependencies).
-        - Use Testcontainers for database or integration tests.
-        - Use `@SpringBootTest` only for full-context integration tests.
-        - Verify both happy path and edge cases.
-        - Maintain >80% coverage for core business logic.
 
-    - path: '{pom.xml,build.gradle,README.md,application.yml,application.properties}'
+        ### Tooling
+        - JUnit 5 (`@Test`, `@ParameterizedTest`), Mockito, and AssertJ are the required testing stack.
+        - Raw JUnit assertions (`assertEquals`, `assertTrue`) are banned — use AssertJ equivalents.
+        - REST Assured for HTTP-level integration tests. Do not use `MockMvc` in integration tests.
+        - Testcontainers for any test requiring a real database or external service.
+
+        ### Naming & File Suffixes
+        - Unit tests: `ClassNameTest.java` — picked up by Maven Surefire (`mvn test`), no Docker required.
+        - Integration tests: `ClassNameIntegrationTest.java` — picked up by Maven Failsafe (`mvn verify`), requires Docker.
+        - Test method naming must follow: `methodName_scenario_expectedOutcome()`
+          e.g., `authenticate_withExpiredPassword_returns403()`.
+
+        ### Scope Rules
+        - **`@SpringBootTest` is banned in unit test files (`*Test.java`).** Flag any occurrence.
+          Unit tests must mock all dependencies with Mockito — no Spring context.
+        - Integration tests must extend `SelfServiceIntegrationTestBase`, which provides the
+          Testcontainers PostgreSQL + Fineract stack.
+        - Do not use `@MockBean` inside `SelfServiceIntegrationTestBase` subclasses — the real stack must be exercised.
+
+        ### Structure & Coverage
+        - Follow the Arrange–Act–Assert (AAA) pattern. Separate the three sections with a blank line.
+        - Every test must cover at least one happy-path scenario AND at least one failure/edge-case scenario.
+        - Core service and domain methods must have >80% line coverage. Flag PRs that decrease existing coverage.
+        - Do not write tests for trivial getters/setters, Lombok-generated code, or framework wiring.
+
+        ### Assertions
+        - Use descriptive assertion messages: `assertThat(result).as("should return client list").isNotEmpty()`.
+        - Prefer specific assertions (`isEqualTo`, `contains`, `hasSize`) over generic ones (`isTrue`, `isNotNull` alone).
+
+    # ── DATABASE MIGRATIONS ───────────────────────────────────────────────────
+    - path: 'src/main/resources/db/changelog/**'
       instructions: |
-        ## Project-Level Standards
-        - **pom.xml / build.gradle:**
-          - Use Java 21+ and Spring Boot 3.x.
-          - Include dependencies: Spring Boot Starter (Web, Data JPA, Validation, Test).
-          - Enforce static analysis: Checkstyle, Spotless, PMD.
-          - Configure `jacoco` or `kover` for code coverage reporting.
-        - **README.md:**
-          - Must include setup, build, and run instructions.
-          - List all environment variables and required external services.
-          - Describe how to run tests and generate API docs.
-        - **application.yml:**
-          - Organize by domain (e.g., `spring.datasource`, `app.security`, `app.cache`).
-          - Never commit secrets.
-          - Validate configuration via `@ConfigurationProperties`.
-          - Provide `application-example.yml` for reference.
+        ## Liquibase Migration Standards
+
+        ### Changeset Identity
+        - Every changeset must have a unique, sequential, descriptive `id`
+          (e.g., `007-add-selfservice-notification-table`) and an `author`.
+        - Never reuse or recycle a changeset `id`. Never modify the content of an already-merged changeset.
+          If a correction is needed, add a new changeset.
+
+        ### Rollback
+        - Every changeset that creates or alters a schema object MUST include a `<rollback>` block.
+          Flag any changeset without a rollback strategy.
+        - Never DROP columns or tables in a changeset unless the corresponding application code
+          that references those columns was removed in the same PR or a prior merged PR.
+
+        ### Content Rules
+        - DDL statements (CREATE TABLE, ALTER TABLE, ADD COLUMN) must not be mixed with
+          DML statements (INSERT, UPDATE, DELETE) in the same changeset. Split them.
+        - Table and column names must use `snake_case`.
+        - Self-service tables must use the prefix `m_selfservice_` to avoid collisions with Fineract core tables.
+        - Every new table must include `created_at TIMESTAMP NOT NULL DEFAULT NOW()` and `updated_at TIMESTAMP`.
+        - Add a comment on the changeset explaining the business reason for the schema change.
+
+    # ── BUILD FILES ───────────────────────────────────────────────────────────
+    - path: '{pom.xml,build.gradle}'
+      instructions: |
+        ## Build Configuration
+
+        - Java version must be 21 or higher. Spring Boot must be 3.x or higher.
+        - Every new dependency must include an XML comment explaining why it is needed.
+        - Flag any `compile`-scoped dependency that is only required at test time — move it to `test` scope.
+        - Flag any SNAPSHOT dependency declared in `compile` scope — SNAPSHOT artifacts must not be
+          used in production unless this is itself a SNAPSHOT version under active development.
+        - Spotless (Google Java Format) must remain configured and enforced on the `compile` phase.
+        - JaCoCo must remain configured for both unit (`jacoco.exec`) and integration (`jacoco-it.exec`) coverage.
+        - Do not lower any existing JaCoCo minimum coverage threshold (`<minimum>`). Only raise them.
+        - Flag the removal of any existing static-analysis or coverage plugin.
+
+    # ── README ────────────────────────────────────────────────────────────────
+    - path: 'README.md'
+      instructions: |
+        ## README Standards
+
+        - Must include: project purpose, prerequisites, build instructions, and run instructions.
+        - Must document how to load the plugin into Fineract via Docker AND via Tomcat.
+        - Must list all required environment variables with their purpose and an example value.
+        - Must include separate commands for running unit tests (`mvn test`) and
+          integration tests (`mvn verify`) with a note on Docker requirement for the latter.
+        - Must not contain broken links. Flag any Markdown link where the target URL returns 4xx/5xx
+          or references a file path that does not exist in the repository.
