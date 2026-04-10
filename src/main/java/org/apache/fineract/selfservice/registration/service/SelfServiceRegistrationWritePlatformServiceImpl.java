@@ -331,7 +331,8 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
     }
 
     private RuntimeException handleDataIntegrityIssues(final JsonCommand command, final Throwable realCause, final Exception dve, String username) {
-        if (realCause.getMessage() != null && realCause.getMessage().contains("'username_org'")) {
+        Throwable causeToEvaluate = realCause != null ? realCause : dve;
+        if (causeToEvaluate.getMessage() != null && causeToEvaluate.getMessage().contains("'username_org'")) {
             return new PlatformDataIntegrityException("error.msg.user.duplicate.username", 
                     "User with username " + username + " already exists.", "username", username);
         }
