@@ -138,6 +138,10 @@ class SelfServiceRegistrationWritePlatformServiceImplTest {
         Client client = mock(Client.class);
         when(clientRepository.getClientByAccountNumber("12345")).thenReturn(client);
         
+        SelfServiceRegistration registration = mock(SelfServiceRegistration.class);
+        when(registration.getFirstName()).thenReturn("John");
+        when(selfServiceRegistrationRepository.saveAndFlush(any(SelfServiceRegistration.class))).thenReturn(registration);
+        
         SelfServiceRegistration result = service.createRegistrationRequest("{}");
         
         assertNotNull(result);
