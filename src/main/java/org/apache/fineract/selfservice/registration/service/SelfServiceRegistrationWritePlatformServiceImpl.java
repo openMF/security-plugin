@@ -144,7 +144,13 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
                         payload.mobileNumber(), payload.email(), authenticationToken, payload.username(), payload.password(),
                         org.apache.fineract.infrastructure.core.service.DateUtils.getLocalDateTimeOfSystem()));
         boolean isEmailAuth = payload.authenticationMode().equalsIgnoreCase(SelfServiceApiConstants.emailModeParamName);
-        sendAuthorizationToken(selfServiceRegistration, client, isEmailAuth);
+        org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+            new org.springframework.transaction.support.TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    sendAuthorizationToken(selfServiceRegistration, client, isEmailAuth);
+                }
+            });
         return selfServiceRegistration;
     }
 
