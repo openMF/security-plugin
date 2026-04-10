@@ -41,22 +41,8 @@ public class SelfServiceRegistration {
   private final String password;
   private final LocalDateTime createdDate;
 
-  protected SelfServiceRegistration() {
-    this.clientId = null;
-    this.accountNumber = null;
-    this.firstName = null;
-    this.middleName = null;
-    this.lastName = null;
-    this.mobileNumber = null;
-    this.email = null;
-    this.authenticationToken = null;
-    this.username = null;
-    this.password = null;
-    this.createdDate = null;
-  }
-
   /** Constructor for creating a new (not-yet-persisted) registration request. */
-  public SelfServiceRegistration(
+  private SelfServiceRegistration(
       final Long clientId,
       final String accountNumber,
       final String firstName,
@@ -85,7 +71,7 @@ public class SelfServiceRegistration {
    * Reconstruction constructor used by the infrastructure adapter to hydrate a persisted entity.
    * Must not be called directly from application or domain code.
    */
-  public SelfServiceRegistration(
+  private SelfServiceRegistration(
       final Long id,
       final Long clientId,
       final String accountNumber,
@@ -128,8 +114,33 @@ public class SelfServiceRegistration {
       final String username,
       final String password,
       final LocalDateTime createdDate) {
+    java.util.Objects.requireNonNull(clientId, "clientId cannot be null");
+    java.util.Objects.requireNonNull(createdDate, "createdDate cannot be null");
     return new SelfServiceRegistration(
         clientId, accountNumber, firstName, middleName, lastName,
+        mobileNumber, email, authenticationToken, username, password, createdDate);
+  }
+
+  /**
+   * Factory method used by the infrastructure adapter to hydrate a persisted entity.
+   */
+  public static SelfServiceRegistration reconstruct(
+      final Long id,
+      final Long clientId,
+      final String accountNumber,
+      final String firstName,
+      final String middleName,
+      final String lastName,
+      final String mobileNumber,
+      final String email,
+      final String authenticationToken,
+      final String username,
+      final String password,
+      final LocalDateTime createdDate) {
+    java.util.Objects.requireNonNull(clientId, "clientId cannot be null");
+    java.util.Objects.requireNonNull(createdDate, "createdDate cannot be null");
+    return new SelfServiceRegistration(
+        id, clientId, accountNumber, firstName, middleName, lastName,
         mobileNumber, email, authenticationToken, username, password, createdDate);
   }
 

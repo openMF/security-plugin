@@ -60,10 +60,9 @@ public class SelfBeneficiariesTPTRepositoryAdapter implements SelfBeneficiariesT
       entity =
           jpaRepository
               .findById(domain.getId())
-              .orElseThrow(
-                  () ->
-                      new IllegalStateException(
-                          "SelfBeneficiariesTPT not found with id " + domain.getId()));
+              .orElseThrow(() ->
+                      new org.apache.fineract.selfservice.account.exception.SelfBeneficiariesTPTNotFoundException(
+                          domain.getId()));
       entity.applyChangesFrom(domain);
     }
 

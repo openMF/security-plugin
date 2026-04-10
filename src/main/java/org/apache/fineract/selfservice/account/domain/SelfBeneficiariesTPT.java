@@ -14,9 +14,6 @@
  */
 package org.apache.fineract.selfservice.account.domain;
 
-import static org.apache.fineract.selfservice.account.api.SelfBeneficiariesTPTApiConstants.NAME_PARAM_NAME;
-import static org.apache.fineract.selfservice.account.api.SelfBeneficiariesTPTApiConstants.TRANSFER_LIMIT_PARAM_NAME;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -40,13 +37,6 @@ public class SelfBeneficiariesTPT {
   private Long transferLimit;
   private boolean isActive;
 
-  protected SelfBeneficiariesTPT() {
-    this.appUserId = null;
-    this.officeId = null;
-    this.clientId = null;
-    this.accountId = null;
-    this.accountType = null;
-  }
 
   /** Constructor for creating a new (not-yet-persisted) beneficiary. */
   public SelfBeneficiariesTPT(
@@ -145,12 +135,12 @@ public class SelfBeneficiariesTPT {
     Map<String, Object> changes = new HashMap<>();
     if (!this.name.equals(newName)) {
       this.name = newName;
-      changes.put(NAME_PARAM_NAME, newName);
+      changes.put("name", newName);
     }
     if ((this.transferLimit != null && !this.transferLimit.equals(newTransferLimit))
         || (this.transferLimit == null && newTransferLimit != null)) {
       this.transferLimit = newTransferLimit;
-      changes.put(TRANSFER_LIMIT_PARAM_NAME, newTransferLimit);
+      changes.put("transferLimit", newTransferLimit);
     }
     return changes;
   }

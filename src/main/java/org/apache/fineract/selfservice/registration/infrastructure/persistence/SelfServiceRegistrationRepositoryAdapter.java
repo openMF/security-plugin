@@ -37,9 +37,15 @@ public class SelfServiceRegistrationRepositoryAdapter implements SelfServiceRegi
   @Override
   public SelfServiceRegistration saveAndFlush(SelfServiceRegistration domain) {
     Client client = clientRepository.findOneWithNotFoundDetection(domain.getClientId());
-    return jpaRepository
-        .saveAndFlush(SelfServiceRegistrationJpaEntity.fromNewDomain(domain, client))
-        .toDomain();
+    SelfServiceRegistrationJpaEntity entity;
+    if (domain.getId() != null) {
+      entity = jpaRepository.findById(domain.getId())
+          .orElseThrow(() -> new IllegalStateException("Entity not found for id: " + domain.getId()));
+      entity.updateFromDomain(domain, client);
+    } else {
+      entity = SelfServiceRegistrationJpaEntity.fromNewDomain(domain, client);
+    }
+    return jpaRepository.saveAndFlush(entity).toDomain();
   }
 
   @Override

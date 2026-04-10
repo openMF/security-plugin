@@ -123,7 +123,7 @@ public class SelfServiceRegistrationJpaEntity extends AbstractPersistableCustom<
 
   /** Converts this JPA entity back to the pure domain object. */
   public SelfServiceRegistration toDomain() {
-    return new SelfServiceRegistration(
+    return SelfServiceRegistration.reconstruct(
         getId(),
         client != null ? client.getId() : null,
         accountNumber,
@@ -136,5 +136,18 @@ public class SelfServiceRegistrationJpaEntity extends AbstractPersistableCustom<
         username,
         password,
         createdDate);
+  }
+  public void updateFromDomain(SelfServiceRegistration domain, Client client) {
+    this.client = client;
+    this.accountNumber = domain.getAccountNumber();
+    this.firstName = domain.getFirstName();
+    this.middleName = domain.getMiddleName();
+    this.lastName = domain.getLastName();
+    this.mobileNumber = domain.getMobileNumber();
+    this.email = domain.getEmail();
+    this.authenticationToken = domain.getAuthenticationToken();
+    this.username = domain.getUsername();
+    this.password = domain.getPassword();
+    this.createdDate = domain.getCreatedDate();
   }
 }
