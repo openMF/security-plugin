@@ -130,7 +130,7 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
         this.smsCampaignDropdownReadPlatformService = notifCtx.smsCampaignDropdownReadPlatformService();
     }
 
-    private record RegistrationPayload(String accountNumber, String firstName, String middleName, String lastName, String username, String password, String email, String mobileNumber, String authenticationMode) {}
+    private record RegistrationPayload(String accountNumber, String firstName, String middleName, String lastName, String username, String email, String mobileNumber, String authenticationMode) {}
 
     @Override
     @Transactional
@@ -141,7 +141,7 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
         Client client = this.clientRepository.getClientByAccountNumber(payload.accountNumber());
         SelfServiceRegistration selfServiceRegistration = this.selfServiceRegistrationRepository.saveAndFlush(
                 SelfServiceRegistration.instance(client.getId(), payload.accountNumber(), payload.firstName(), payload.middleName(), payload.lastName(),
-                        payload.mobileNumber(), payload.email(), authenticationToken, payload.username(), payload.password(),
+                        payload.mobileNumber(), payload.email(), authenticationToken, payload.username(),
                         org.apache.fineract.infrastructure.core.service.DateUtils.getLocalDateTimeOfSystem()));
         boolean isEmailAuth = payload.authenticationMode().equalsIgnoreCase(SelfServiceApiConstants.emailModeParamName);
         org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
@@ -173,7 +173,6 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
             this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.middleNameParamName, element),
             this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.lastNameParamName, element),
             this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.usernameParamName, element),
-            this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.passwordParamName, element),
             this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.emailParamName, element),
             !isEmailAuth ? this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.mobileNumberParamName, element) : null,
             authMode
@@ -189,10 +188,6 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
         baseDataValidator.reset().parameter(SelfServiceApiConstants.middleNameParamName).value(payload.middleName()).ignoreIfNull().notExceedingLengthOf(100);
         baseDataValidator.reset().parameter(SelfServiceApiConstants.lastNameParamName).value(payload.lastName()).notBlank().notExceedingLengthOf(100);
         baseDataValidator.reset().parameter(SelfServiceApiConstants.usernameParamName).value(payload.username()).notBlank().notExceedingLengthOf(100);
-
-        final PasswordValidationPolicy validationPolicy = this.passwordValidationPolicy.findActivePasswordValidationPolicy();
-        baseDataValidator.reset().parameter(SelfServiceApiConstants.passwordParamName).value(payload.password())
-                .matchesRegularExpression(validationPolicy.getRegex(), validationPolicy.getDescription()).notExceedingLengthOf(100);
 
         baseDataValidator.reset().parameter(SelfServiceApiConstants.authenticationModeParamName).value(payload.authenticationMode()).notBlank()
                 .isOneOfTheseStringValues(SelfServiceApiConstants.emailModeParamName, SelfServiceApiConstants.mobileModeParamName);
@@ -274,6 +269,7 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
             JsonElement element = validateAndParseUserRequest(apiRequestBodyAsJson);
             Long id = this.fromApiJsonHelper.extractLongNamed(SelfServiceApiConstants.requestIdParamName, element);
             String token = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.authenticationTokenParamName, element);
+            String password = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.passwordParamName, element);
             command = JsonCommand.fromJsonElement(id, element);
 
             SelfServiceRegistration reg = this.selfServiceRegistrationRepository.getRequestByIdAndAuthenticationToken(id, token);
@@ -281,7 +277,7 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
                 throw new SelfServiceRegistrationNotFoundException(id, token);
             }
             username = reg.getUsername();
-            return doCreateSelfServiceUser(reg);
+            return doCreateSelfServiceUser(reg, password);
         } catch (final JpaSystemException | DataIntegrityViolationException dve) {
             throw handleDataIntegrityIssues(command, dve.getMostSpecificCause(), dve, username);
         } catch (final PersistenceException | AuthenticationServiceException dve) {
@@ -303,13 +299,19 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
         baseDataValidator.reset().parameter(SelfServiceApiConstants.authenticationTokenParamName).value(authenticationToken).notBlank()
                 .notNull().notExceedingLengthOf(100);
 
+        String password = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.passwordParamName, element);
+        final PasswordValidationPolicy validationPolicy = this.passwordValidationPolicy.findActivePasswordValidationPolicy();
+        baseDataValidator.reset().parameter(SelfServiceApiConstants.passwordParamName).value(password)
+                .notNull()
+                .matchesRegularExpression(validationPolicy.getRegex(), validationPolicy.getDescription()).notExceedingLengthOf(100);
+
         if (!dataValidationErrors.isEmpty()) {
             throw new PlatformApiDataValidationException(dataValidationErrors);
         }
         return element;
     }
 
-    private AppSelfServiceUser doCreateSelfServiceUser(SelfServiceRegistration reg) {
+    private AppSelfServiceUser doCreateSelfServiceUser(SelfServiceRegistration reg, String password) {
         Client client = this.clientRepository.findOneWithNotFoundDetection(reg.getClientId());
         final boolean passwordNeverExpire = true;
         final boolean isSelfServiceUser = true;
@@ -322,7 +324,7 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
         }
         allRoles.add(role);
         List<Client> clients = new ArrayList<>();
-        User user = new User(reg.getUsername(), reg.getPassword(), authorities);
+        User user = new User(reg.getUsername(), password, authorities);
         AppSelfServiceUser appUser = new AppSelfServiceUser(client.getOffice(), user, allRoles, reg.getEmail(), client.getFirstname(),
                 client.getLastname(), null, passwordNeverExpire, isSelfServiceUser, clients, null);
         this.userDomainService.create(appUser, true);

@@ -45,10 +45,10 @@ public final class SelfServiceApiConstants {
     public static final String requestIdParamName = "requestId";
     public static final String createRequestSuccessMessage = "Self service request created.";
     public static final Set<String> REGISTRATION_REQUEST_DATA_PARAMETERS = Collections
-            .unmodifiableSet(new HashSet<>(Arrays.asList(usernameParamName, accountNumberParamName, passwordParamName, firstNameParamName,
+            .unmodifiableSet(new HashSet<>(Arrays.asList(usernameParamName, accountNumberParamName, firstNameParamName,
                     mobileNumberParamName, lastNameParamName, emailParamName, authenticationModeParamName,middleNameParamName)));
     public static final Set<String> CREATE_USER_REQUEST_DATA_PARAMETERS = Collections
-            .unmodifiableSet(new HashSet<>(Arrays.asList(requestIdParamName, authenticationTokenParamName)));
+            .unmodifiableSet(new HashSet<>(Arrays.asList(requestIdParamName, authenticationTokenParamName, passwordParamName)));
     public static final List<Object> SUPPORTED_AUTHENTICATION_MODE_PARAMETERS = List
             .copyOf(Arrays.asList(emailModeParamName, mobileModeParamName));
     public static final String SELF_SERVICE_USER_ROLE = "Self Service User";

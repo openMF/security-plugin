@@ -421,7 +421,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"username\": \"pedro.marmol\",\n    \"accountNumber\": \"000000001\",\n    \"password\": \"MifosInitiative2026#\",\n    \"firstName\": \"PEDRO\",\n    \"middleName\": \"MARMOL\",\n    \"lastName\": \"PEREZ\",\n    \"mobileNumber\": \"5522649498\",    \n    \"email\": \"victor.romero@fintecheando.mx\",\n    \"authenticationMode\": \"email\"\n}",
+                  "raw": "{\n    \"username\": \"pedro.marmol\",\n    \"accountNumber\": \"000000001\",\n    \"firstName\": \"PEDRO\",\n    \"middleName\": \"MARMOL\",\n    \"lastName\": \"PEREZ\",\n    \"mobileNumber\": \"5522649498\",    \n    \"email\": \"victor.romero@fintecheando.mx\",\n    \"authenticationMode\": \"email\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -462,7 +462,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"username\": \"tomas\",\n    \"accountNumber\": \"000000001\",\n    \"password\": \"MifosInitiative2026#\",\n    \"firstName\": \"TOMAS\",\n    \"middleName\": \"ASCENCIO\",\n    \"lastName\": \"HERNANDEZ\",\n    \"mobileNumber\": \"5522649498\",    \n    \"email\": \"victor.romero@fintecheando.mx\",\n    \"authenticationMode\": \"email\"\n}",
+                  "raw": "{\n    \"username\": \"tomas\",\n    \"accountNumber\": \"000000001\",\n    \"firstName\": \"TOMAS\",\n    \"middleName\": \"ASCENCIO\",\n    \"lastName\": \"HERNANDEZ\",\n    \"mobileNumber\": \"5522649498\",    \n    \"email\": \"victor.romero@fintecheando.mx\",\n    \"authenticationMode\": \"email\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -504,7 +504,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"requestId\": 1,\n    \"authenticationToken\": \"7331\"\n}",
+                  "raw": "{\n    \"requestId\": 1,\n    \"authenticationToken\": \"7331\",\n    \"password\": \"MifosInitiative2026#\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -546,7 +546,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"requestId\": 4,\n    \"authenticationToken\": \"5920\"\n}",
+                  "raw": "{\n    \"requestId\": 4,\n    \"authenticationToken\": \"5920\",\n    \"password\": \"MifosInitiative2026#\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"

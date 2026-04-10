@@ -38,7 +38,6 @@ public class SelfServiceRegistration {
   private final String email;
   private final String authenticationToken;
   private final String username;
-  private final String password;
   private final LocalDateTime createdDate;
 
   /** Constructor for creating a new (not-yet-persisted) registration request. */
@@ -52,7 +51,6 @@ public class SelfServiceRegistration {
       final String email,
       final String authenticationToken,
       final String username,
-      final String password,
       final LocalDateTime createdDate) {
     this.clientId = clientId;
     this.accountNumber = accountNumber;
@@ -63,7 +61,6 @@ public class SelfServiceRegistration {
     this.email = email;
     this.authenticationToken = authenticationToken;
     this.username = username;
-    this.password = password;
     this.createdDate = createdDate;
   }
 
@@ -82,7 +79,6 @@ public class SelfServiceRegistration {
       final String email,
       final String authenticationToken,
       final String username,
-      final String password,
       final LocalDateTime createdDate) {
     this.id = id;
     this.clientId = clientId;
@@ -94,7 +90,6 @@ public class SelfServiceRegistration {
     this.email = email;
     this.authenticationToken = authenticationToken;
     this.username = username;
-    this.password = password;
     this.createdDate = createdDate;
   }
 
@@ -112,13 +107,12 @@ public class SelfServiceRegistration {
       final String email,
       final String authenticationToken,
       final String username,
-      final String password,
       final LocalDateTime createdDate) {
     java.util.Objects.requireNonNull(clientId, "clientId cannot be null");
     java.util.Objects.requireNonNull(createdDate, "createdDate cannot be null");
     return new SelfServiceRegistration(
         clientId, accountNumber, firstName, middleName, lastName,
-        mobileNumber, email, authenticationToken, username, password, createdDate);
+        mobileNumber, email, authenticationToken, username, createdDate);
   }
 
   /**
@@ -135,13 +129,12 @@ public class SelfServiceRegistration {
       final String email,
       final String authenticationToken,
       final String username,
-      final String password,
       final LocalDateTime createdDate) {
     java.util.Objects.requireNonNull(clientId, "clientId cannot be null");
     java.util.Objects.requireNonNull(createdDate, "createdDate cannot be null");
     return new SelfServiceRegistration(
         id, clientId, accountNumber, firstName, middleName, lastName,
-        mobileNumber, email, authenticationToken, username, password, createdDate);
+        mobileNumber, email, authenticationToken, username, createdDate);
   }
 
   public Long getId() {
@@ -185,9 +178,6 @@ public class SelfServiceRegistration {
     return this.username;
   }
 
-  public String getPassword() {
-    return this.password;
-  }
 
   public String getAccountNumber() {
     return this.accountNumber;

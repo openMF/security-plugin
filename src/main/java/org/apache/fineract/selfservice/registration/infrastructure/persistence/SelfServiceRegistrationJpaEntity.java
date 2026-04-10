@@ -63,8 +63,6 @@ public class SelfServiceRegistrationJpaEntity extends AbstractPersistableCustom<
   @Column(name = "username", length = 100, nullable = false)
   private String username;
 
-  @Column(name = "password", length = 100, nullable = false)
-  private String password;
 
   @Column(name = "created_date", nullable = false)
   private LocalDateTime createdDate;
@@ -82,7 +80,6 @@ public class SelfServiceRegistrationJpaEntity extends AbstractPersistableCustom<
       String email,
       String authenticationToken,
       String username,
-      String password,
       LocalDateTime createdDate) {
     this.client = client;
     this.accountNumber = accountNumber;
@@ -93,7 +90,6 @@ public class SelfServiceRegistrationJpaEntity extends AbstractPersistableCustom<
     this.email = email;
     this.authenticationToken = authenticationToken;
     this.username = username;
-    this.password = password;
     this.createdDate = createdDate;
   }
 
@@ -117,7 +113,6 @@ public class SelfServiceRegistrationJpaEntity extends AbstractPersistableCustom<
         domain.getEmail(),
         domain.getAuthenticationToken(),
         domain.getUsername(),
-        domain.getPassword(),
         domain.getCreatedDate());
   }
 
@@ -134,7 +129,6 @@ public class SelfServiceRegistrationJpaEntity extends AbstractPersistableCustom<
         email,
         authenticationToken,
         username,
-        password,
         createdDate);
   }
   public void updateFromDomain(SelfServiceRegistration domain, Client client) {
@@ -147,7 +141,6 @@ public class SelfServiceRegistrationJpaEntity extends AbstractPersistableCustom<
     this.email = domain.getEmail();
     this.authenticationToken = domain.getAuthenticationToken();
     this.username = domain.getUsername();
-    this.password = domain.getPassword();
     this.createdDate = domain.getCreatedDate();
   }
 }
