@@ -15,7 +15,7 @@ namespace: "org.apache.fineract.selfservice"
 # Runtime configuration
 runtime:
   java_version: "21"
-  spring_boot_version: "3.5.13"
+  spring_boot_version: "3"
   fineract_version: "1.15.0-SNAPSHOT"
 
 # Security and permissions
@@ -23,7 +23,7 @@ security:
   authentication_required: true
   permissions:
     - "READ_SAVINGSPRODUCT"
-    - "READ_LOANPRODUCTS" 
+    - "READ_LOANPRODUCT" 
     - "READ_SAVINGSACCOUNT"
     - "READ_LOAN"
     - "SELF_SERVICE_USER"
@@ -74,7 +74,7 @@ features:
 # Development metadata
 repository:
   url: "https://github.com/openMF/selfservice-plugin"
-  license: "Apache-2.0"
+  license: "MPL-2.0"
   organization: "Mifos Initiative"
 
 # Build and deployment
@@ -84,4 +84,3 @@ build:
   deployment:
     - "docker"
     - "tomcat"
-    - "standalone"

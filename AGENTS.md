@@ -8,7 +8,7 @@ The **Mifos Self Service Plugin** is a Spring Boot plugin that extends Apache Fi
 
 ### Architecture
 
-- **Framework**: Spring Boot 3.5.13 with Java 21
+- **Framework**: Spring Boot 3 with Java 21
 - **Integration**: Apache Fineract 1.15.0-SNAPSHOT
 - **Security**: Spring Security with Basic Auth and OAuth2 support
 - **Database**: PostgreSQL/MySQL with JPA/EclipseLink
@@ -43,21 +43,24 @@ The **Mifos Self Service Plugin** is a Spring Boot plugin that extends Apache Fi
 ```
 
 ### Database Setup
-The plugin uses Liquibase for database migrations. Scripts are located in `src/main/resources/db/migration/`.
+The plugin uses Liquibase for database migrations. Scripts are located in `src/main/resources/db/changelog/`.
 
 ### Running the Plugin
+This is a library/plugin that extends Apache Fineract. It runs as part of the Fineract application, not as a standalone service.
+
+#### Deployment Options:
 ```bash
-# With Docker
+# With Apache Fineract (Docker)
 java -Dloader.path=$PLUGIN_HOME/libs/ -jar fineract-provider.jar
 
-# With Tomcat
+# With Apache Fineract (Tomcat)
 Copy JAR to $TOMCAT_HOME/webapps/fineract-provider/WEB-INF/lib/
 ```
 
 ## Coding Standards
 
 ### File Structure
-```
+```text
 src/main/java/org/apache/fineract/selfservice/
   - security/          # Authentication and authorization
   - useradministration/ # User management

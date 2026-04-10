@@ -1,4 +1,4 @@
-# Skills Guide for Mifos Self Service Plugin
+# Skills Guide for Mifos Self-Service Plugin
 
 This document defines procedural rules and patterns for AI agents working with the Mifos Self Service Plugin codebase.
 
@@ -30,7 +30,7 @@ package org.apache.fineract.selfservice.example;
 
 ### Package Structure
 Follow the established package structure:
-```
+```text
 org.apache.fineract.selfservice.*
   - security/           # Authentication, authorization, security context
   - useradministration/ # User management and roles
@@ -167,7 +167,7 @@ public interface SelfSavingsRepository {
     @Query("SELECT s FROM SelfSavingsAccount s WHERE s.clientId = :clientId")
     List<SelfSavingsAccount> findByClientId(@Param("clientId") Long clientId);
     
-    void save(SelfSavingsAccount account);
+    SelfSavingsAccount save(SelfSavingsAccount account);
     
     void delete(SelfSavingsAccount account);
 }
@@ -183,8 +183,8 @@ public class SelfSavingsServiceImpl implements SelfSavingsService {
     public CommandProcessingResult createSavingsAccount(Command command) {
         validateCommand(command);
         SelfSavingsAccount account = createAccountFromCommand(command);
-        repository.save(account);
-        return new CommandProcessingResultBuilder().withEntityId(account.getId()).build();
+        SelfSavingsAccount savedAccount = repository.save(account);
+        return new CommandProcessingResultBuilder().withEntityId(savedAccount.getId()).build();
     }
 }
 ```
@@ -313,12 +313,16 @@ Ensure proper plugin configuration in `pom.xml`:
 </plugin>
 ```
 
-### Docker Deployment
-```dockerfile
-FROM openjdk:21-jre-slim
-COPY target/selfservice-plugin-*.jar /app/
-EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "/app/selfservice-plugin.jar"]
+### Plugin Deployment
+This is a library/plugin that extends Apache Fineract. It does not run as a standalone Docker container.
+
+#### Deployment Options:
+```bash
+# As dependency in Apache Fineract (Docker)
+The JAR is loaded via -Dloader.path parameter when running Fineract
+
+# As dependency in Apache Fineract (Tomcat)
+Copy JAR to $TOMCAT_HOME/webapps/fineract-provider/WEB-INF/lib/
 ```
 
 ## Best Practices

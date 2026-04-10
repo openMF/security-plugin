@@ -9,7 +9,7 @@ This is a plugin that extends Apache Fineract with self-service features. Users 
 ## Documentation
 
 - [AGENTS.md](./AGENTS.md) - Comprehensive development guide for AI agents and developers
-- [skills.md](./skills.md) - UI/UX patterns and coding guidelines
+- [skills.md](./skills.md) - Java/Spring Boot coding patterns and backend guidelines
 - [README.md](./README.md) - Installation and usage instructions
 - [TODO.md](./TODO.md) - Development roadmap and known issues
 
@@ -23,7 +23,7 @@ This is a plugin that extends Apache Fineract with self-service features. Users 
 
 ## Architecture
 
-Built with Spring Boot 3.5.13 and Java 21, integrating seamlessly with Apache Fineract 1.15.0-SNAPSHOT.
+Built with Spring Boot 3 and Java 21, integrating seamlessly with Apache Fineract 1.15.0-SNAPSHOT.
 
 ## Getting Help
 
