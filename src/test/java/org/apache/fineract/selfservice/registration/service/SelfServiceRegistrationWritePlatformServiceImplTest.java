@@ -62,21 +62,28 @@ class SelfServiceRegistrationWritePlatformServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        service = new SelfServiceRegistrationWritePlatformServiceImpl(
-            selfServiceRegistrationRepository,
-            fromApiJsonHelper,
-            selfServiceRegistrationReadPlatformService,
-            clientRepository,
-            passwordValidationPolicyRepository,
-            userDomainService,
-            gmailBackedPlatformEmailService,
-            smsMessageRepository,
-            smsMessageScheduledJobService,
-            smsCampaignDropdownReadPlatformService,
-            appUserReadPlatformService,
-            roleRepository,
-            appUserClientMappingRepository
-        );
+        SelfServiceRegistrationWritePlatformServiceImpl.RegistrationContext regCtx =
+            new SelfServiceRegistrationWritePlatformServiceImpl.RegistrationContext(
+                selfServiceRegistrationRepository,
+                fromApiJsonHelper,
+                selfServiceRegistrationReadPlatformService,
+                clientRepository,
+                passwordValidationPolicyRepository,
+                userDomainService,
+                appUserReadPlatformService,
+                roleRepository,
+                appUserClientMappingRepository
+            );
+
+        SelfServiceRegistrationWritePlatformServiceImpl.NotificationContext notifCtx =
+            new SelfServiceRegistrationWritePlatformServiceImpl.NotificationContext(
+                gmailBackedPlatformEmailService,
+                smsMessageRepository,
+                smsMessageScheduledJobService,
+                smsCampaignDropdownReadPlatformService
+            );
+
+        service = new SelfServiceRegistrationWritePlatformServiceImpl(regCtx, notifCtx);
     }
 
     @Test
@@ -164,7 +171,8 @@ class SelfServiceRegistrationWritePlatformServiceImplTest {
         Client client = mock(Client.class);
         when(client.getFirstname()).thenReturn("John");
         when(client.getLastname()).thenReturn("Doe");
-        when(registration.getClient()).thenReturn(client);
+        when(registration.getClientId()).thenReturn(1L);
+        when(clientRepository.findOneWithNotFoundDetection(1L)).thenReturn(client);
         Office office = mock(Office.class);
         when(client.getOffice()).thenReturn(office);
         
