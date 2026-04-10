@@ -12,7 +12,7 @@ reviews:
   high_level_summary: true
   suggested_labels: true
   auto_apply_labels: true
-  finishing_touches: true
+  finishing_touches: {}
   labeling_instructions:
     - label: '⏱️ <10 Min Review'
       instructions: Apply for PRs with <200 lines changed
@@ -209,7 +209,7 @@ reviews:
         - Document endpoints using OpenAPI annotations or SpringDoc.
         - Avoid excessive controller logic — aim for single responsibility per endpoint.
 
-    - path: 'src/main/java/**/application/**/*.java'
+    - path: 'src/main/java/**/api/**/*.java'
       instructions: |
         ## API Layer
 
@@ -277,7 +277,7 @@ reviews:
           Flag any `Thread.sleep()` or blocking I/O call on a request thread.
 
     # ── DOMAIN LAYER — ZERO FRAMEWORK TOLERANCE ───────────────────────────────
-    - path: 'src/main/java/**/domain/**/*.java'
+    - path: 'src/main/java/**/infrastructure/**/*.java'
       instructions: |
         ## Domain Layer
         - Contains entities, value objects, and domain events only.
@@ -287,7 +287,7 @@ reviews:
         - Domain events should be POJOs with clear purpose.
         - Domain services should express business logic that doesn't belong to entities.
 
-    - path: 'src/main/java/**/infrastructure/**/*.java'
+    - path: 'src/main/java/**/domain/**/*.java'
       instructions: |
         ## Domain Layer — Framework Independence is MANDATORY
 

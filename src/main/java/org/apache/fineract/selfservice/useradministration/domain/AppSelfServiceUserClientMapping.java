@@ -16,7 +16,7 @@ package org.apache.fineract.selfservice.useradministration.domain;
 
 // TODO(MX230-domain-jpa-ban): Migrate AppSelfServiceUserClientMapping to DDD split.
 // This class is a JPA entity living in the domain package, which violates the
-// domain-layer framework-independence rule enforced in .coderabbit.yaml.
+// domain-layer framework-independence rule enforced in .coderabbit.yml.
 //
 // Required actions (tracked in issue / PR MX230):
 //   1. Create a pure domain value-object / record that holds only appUserId + clientId.

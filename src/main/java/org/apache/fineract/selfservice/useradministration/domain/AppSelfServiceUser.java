@@ -17,7 +17,7 @@ package org.apache.fineract.selfservice.useradministration.domain;
 // TODO(MX230-domain-jpa-ban): Migrate AppSelfServiceUser to DDD split.
 // This class is simultaneously a JPA entity, a Spring Security UserDetails implementation,
 // and the primary domain aggregate — a coupling that violates the domain-layer
-// framework-independence rule enforced in .coderabbit.yaml.
+// framework-independence rule enforced in .coderabbit.yml.
 //
 // Required actions (tracked in issue / PR MX230):
 //   1. Extract a pure domain aggregate (no JPA, no Spring Security imports) that holds
