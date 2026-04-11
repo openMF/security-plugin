@@ -98,6 +98,19 @@ public abstract class SelfServiceIntegrationTestBase {
                         MountableFile.forHostPath("target/selfservice-plugin-1.15.0-SNAPSHOT.jar"), 
                         "/app/plugins/selfservice-plugin.jar"
                 )
+                
+                // Prepend the plugin JAR to the JIB container's classpath.
+                .withCreateContainerCmdModifier(cmd -> {
+                    cmd.withEntrypoint(
+                            "sh", "-c",
+                            "CLASSPATH=$(cat /app/jib-classpath-file) && " +
+                            "exec java $JAVA_TOOL_OPTIONS " +
+                            "-Duser.home=/tmp -Dfile.encoding=UTF-8 -Duser.timezone=UTC -Djava.security.egd=file:/dev/./urandom " +
+                            "-cp /app/plugins/selfservice-plugin.jar:$CLASSPATH " +
+                            "org.apache.fineract.ServerApplication"
+                    );
+                    cmd.withCmd();
+                })
                         
                 // HostPortWaitStrategy still runs an internal port check that requires bash (missing in
                 // apache/fineract images). HTTPS + allowInsecure waits until the app serves actuator.

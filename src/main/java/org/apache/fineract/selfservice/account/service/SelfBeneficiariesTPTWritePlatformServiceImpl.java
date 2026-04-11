@@ -44,6 +44,10 @@ import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceU
 import org.springframework.dao.DataAccessException;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Implementation of {@link SelfBeneficiariesTPTWritePlatformService} 
+ * handling the business logic for creating, updating, and deleting self-service beneficiaries.
+ */
 @RequiredArgsConstructor
 @Slf4j
 public class SelfBeneficiariesTPTWritePlatformServiceImpl
@@ -55,6 +59,12 @@ public class SelfBeneficiariesTPTWritePlatformServiceImpl
   private final LoanRepositoryWrapper loanRepositoryWrapper;
   private final SavingsAccountRepositoryWrapper savingRepositoryWrapper;
 
+  /**
+   * Adds a new self-service beneficiary.
+   *
+   * @param command the JSON command containing beneficiary details
+   * @return the result containing the generated entity ID
+   */
   @Transactional
   @Override
   public CommandProcessingResult add(JsonCommand command) {
@@ -113,6 +123,12 @@ public class SelfBeneficiariesTPTWritePlatformServiceImpl
         officeName, accountNumber, PortfolioAccountType.fromInt(accountType).getCode());
   }
 
+  /**
+   * Updates an existing self-service beneficiary.
+   *
+   * @param command the JSON command containing the fields to update
+   * @return the result containing the entity ID and the changes made
+   */
   @Transactional
   @Override
   public CommandProcessingResult update(JsonCommand command) {
@@ -130,7 +146,7 @@ public class SelfBeneficiariesTPTWritePlatformServiceImpl
           this.repository.saveAndFlush(beneficiary);
 
           return new CommandProcessingResultBuilder() //
-              .withEntityId((Long) beneficiary.getId()) //
+              .withEntityId(beneficiary.getId()) //
               .with(changes)
               .build();
         } catch (DataAccessException dae) {
@@ -141,6 +157,12 @@ public class SelfBeneficiariesTPTWritePlatformServiceImpl
     throw new InvalidBeneficiaryException(beneficiaryId);
   }
 
+  /**
+   * Deallocates or softly deletes a self-service beneficiary.
+   *
+   * @param command the JSON command requesting deletion
+   * @return the result containing the deleted entity ID
+   */
   @Transactional
   @Override
   public CommandProcessingResult delete(JsonCommand command) {
@@ -153,7 +175,7 @@ public class SelfBeneficiariesTPTWritePlatformServiceImpl
       this.repository.save(beneficiary);
 
       return new CommandProcessingResultBuilder() //
-          .withEntityId((Long) beneficiary.getId()) //
+          .withEntityId(beneficiary.getId()) //
           .build();
     }
     throw new InvalidBeneficiaryException(beneficiaryId);
