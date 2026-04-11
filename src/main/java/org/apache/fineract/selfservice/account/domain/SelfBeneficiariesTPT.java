@@ -16,6 +16,7 @@ package org.apache.fineract.selfservice.account.domain;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Pure domain entity for a self-service third-party transfer beneficiary.
@@ -47,6 +48,12 @@ public class SelfBeneficiariesTPT {
       Long accountId,
       Integer accountType,
       Long transferLimit) {
+    Objects.requireNonNull(appUserId, "appUserId cannot be null");
+    Objects.requireNonNull(name, "name cannot be null");
+    Objects.requireNonNull(officeId, "officeId cannot be null");
+    Objects.requireNonNull(clientId, "clientId cannot be null");
+    Objects.requireNonNull(accountId, "accountId cannot be null");
+    Objects.requireNonNull(accountType, "accountType cannot be null");
     this.appUserId = appUserId;
     this.name = name;
     this.officeId = officeId;
@@ -71,6 +78,13 @@ public class SelfBeneficiariesTPT {
       Integer accountType,
       Long transferLimit,
       boolean isActive) {
+    Objects.requireNonNull(id, "id cannot be null");
+    Objects.requireNonNull(appUserId, "appUserId cannot be null");
+    Objects.requireNonNull(name, "name cannot be null");
+    Objects.requireNonNull(officeId, "officeId cannot be null");
+    Objects.requireNonNull(clientId, "clientId cannot be null");
+    Objects.requireNonNull(accountId, "accountId cannot be null");
+    Objects.requireNonNull(accountType, "accountType cannot be null");
     this.id = id;
     this.appUserId = appUserId;
     this.name = name;
