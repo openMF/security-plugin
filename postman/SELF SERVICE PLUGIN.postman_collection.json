@@ -546,7 +546,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"requestId\": 4,\n    \"authenticationToken\": \"5920\",\n    \"password\": \"MifosInitiative2026#\"\n}",
+                  "raw": "{\n    \"requestId\": 4,\n    \"authenticationToken\": \"5920\",\n    \"password\": \"password\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -624,7 +624,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"password\": \"MifosInitiative2026#\",\n    \"username\": \"tomas\"\n}",
+                  "raw": "{\n    \"password\": \"password\",\n    \"username\": \"tomas\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
