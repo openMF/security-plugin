@@ -150,14 +150,14 @@ public class SelfBeneficiariesTPT {
   }
 
   /** Applies the requested updates and returns a map of the fields that actually changed. */
-  public Map<String, Object> update(String newName, Long newTransferLimit) {
+  public Map<String, Object> update(
+      boolean hasName, String newName, boolean hasTransferLimit, Long newTransferLimit) {
     Map<String, Object> changes = new HashMap<>();
-    if (!this.name.equals(newName)) {
+    if (hasName && !Objects.equals(this.name, newName)) {
       this.name = newName;
       changes.put("name", newName);
     }
-    if ((this.transferLimit != null && !this.transferLimit.equals(newTransferLimit))
-        || (this.transferLimit == null && newTransferLimit != null)) {
+    if (hasTransferLimit && !Objects.equals(this.transferLimit, newTransferLimit)) {
       this.transferLimit = newTransferLimit;
       changes.put("transferLimit", newTransferLimit);
     }

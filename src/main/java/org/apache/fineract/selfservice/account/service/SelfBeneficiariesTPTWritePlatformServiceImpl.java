@@ -140,7 +140,9 @@ public class SelfBeneficiariesTPTWritePlatformServiceImpl
       String name = (String) params.get(NAME_PARAM_NAME);
       Long transferLimit = (Long) params.get(TRANSFER_LIMIT_PARAM_NAME);
 
-      Map<String, Object> changes = beneficiary.update(name, transferLimit);
+      Map<String, Object> changes = beneficiary.update(
+          params.containsKey(NAME_PARAM_NAME), name,
+          params.containsKey(TRANSFER_LIMIT_PARAM_NAME), transferLimit);
       if (!changes.isEmpty()) {
         try {
           this.repository.saveAndFlush(beneficiary);
