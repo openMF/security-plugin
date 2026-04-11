@@ -130,6 +130,7 @@ public class SelfServiceRegistration {
       final String authenticationToken,
       final String username,
       final LocalDateTime createdDate) {
+    java.util.Objects.requireNonNull(id, "id cannot be null");
     java.util.Objects.requireNonNull(clientId, "clientId cannot be null");
     java.util.Objects.requireNonNull(createdDate, "createdDate cannot be null");
     return new SelfServiceRegistration(
