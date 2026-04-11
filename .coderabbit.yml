@@ -26,49 +26,21 @@ reviews:
     # Specific layers below ADD to these rules, they do not replace them.
     - path: '**'
       instructions: |
-        ## General Project Standards
-        ### Security & Performance
-        - Validate and sanitize all incoming data (use Bean Validation with `@Valid` and constraints).
-        - Always use prepared statements, parameterized queries, or Spring Data repositories.
-        - Use Spring Security for authentication and method-level authorization.
-        - Apply the principle of least privilege for access control.
-        - Configure connection pools (HikariCP) properly for performance.
-        - Cache frequently accessed results with `@Cacheable` and invalidate with `@CacheEvict`.
-        - Offload long-running or blocking work using `@Async`, schedulers, or queues.
-        - Avoid blocking I/O in reactive (WebFlux) contexts.
-
-        ### Code Quality & Documentation
-        - Apply DRY, SOLID, and Clean Architecture principles.
-        - Avoid framework coupling in domain or application layers.
-        - Maintain up-to-date API documentation via SpringDoc (OpenAPI 3) or REST Docs.
-        - Use Checkstyle or SpotBugs for static code analysis.
-        - Prefer immutability and constructor injection for all beans.
         ## Global Standards
-
-        ### Security
-        - Validate all incoming data at API boundaries using Bean Validation (`@Valid`, `@NotNull`, `@Size`, etc.).
-        - Use only parameterized queries, Spring Data repositories, or named queries.
-          Flag any string concatenation used to build SQL or JPQL.
-        - Apply least-privilege: permissions and roles must be restricted to the minimum required.
-        - Flag any Spring Security configuration that uses `permitAll()` on a non-public endpoint.
-
-        ### Secrets & Sensitive Data
-        - Never commit secrets, credentials, or environment-specific values.
-          Flag hard-coded passwords, API keys, tokens, or JDBC connection strings in source code.
+        
+        ### Security & Secrets
+        - Validate and sanitize all incoming data at all boundaries.
+        - Apply the principle of least privilege for access control.
+        - Never commit secrets, credentials, or environment-specific values. Flag hard-coded passwords, API keys, or tokens.
         - Never log sensitive data: passwords, tokens, card numbers, national IDs, or any PII.
-          Flag any log statement that interpolates a field named `password`, `token`, `secret`, `pin`, or `key`.
-
-        ### Observability
-        - `System.out.println`, `System.err.println`, and `java.util.logging` are banned everywhere.
-          Flag any occurrence. All logging must use SLF4J via `@Slf4j` (Lombok).
-        - Log at the correct level: DEBUG for internal state, INFO for lifecycle events,
-          WARN for recoverable problems, ERROR for failures that need attention.
-        - Include contextual identifiers (tenant ID, user ID) in log messages where applicable.
-
-        ### General Hygiene
-        - No magic numbers or bare string literals in logic — extract to named constants or enums.
+        
+        ### Code Quality & Hygiene
+        - Apply DRY, SOLID, and Clean Architecture principles.
+        - Maintain up-to-date documentation.
+        - No magic numbers or bare string literals in logic.
         - No commented-out production code. Remove dead code or replace with a TODO referencing an issue tracker link.
-        - Flag methods with cyclomatic complexity above 5 (more than 4 decision branches) as refactoring candidates.
+        - Log at the correct level: DEBUG for internal state, INFO for lifecycle events, WARN for problems, ERROR for failures.
+        - Flag methods with high cyclomatic complexity as refactoring candidates.
 
     - path: 'src/main/java/**'
       instructions: |
