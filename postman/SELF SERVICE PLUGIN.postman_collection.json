@@ -624,7 +624,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"password\": \"password\",\n    \"username\": \"tomas\"\n}",
+                  "raw": "{\n    \"password\": \"MifosInitiative2026#\",\n    \"username\": \"tomas\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
