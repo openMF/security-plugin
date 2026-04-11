@@ -236,13 +236,11 @@ reviews:
     # ── DOMAIN LAYER — ZERO FRAMEWORK TOLERANCE ───────────────────────────────
     - path: 'src/main/java/**/infrastructure/**/*.java'
       instructions: |
-        ## Domain Layer
-        - Contains entities, value objects, and domain events only.
-        - No dependencies on Spring, frameworks, or infrastructure.
-        - Entities should encapsulate behavior and invariants.
-        - Use immutable patterns for Value Objects (explicit constructors, final fields). Lombok `@Value` may be used as it's compile-time only.
-        - Domain events should be POJOs with clear purpose.
-        - Domain services should express business logic that doesn't belong to entities.
+        ## Infrastructure Layer
+        - Contains persistence, messaging, and integration adapters only.
+        - Framework dependencies are allowed here, but must not leak into the domain layer.
+        - Keep mapping between persistence and domain models explicit.
+        - Repositories and adapters should stay thin and technical.
 
     - path: 'src/main/java/**/domain/**/*.java'
       instructions: |
@@ -281,13 +279,6 @@ reviews:
     # ── HANDLER LAYER (CQRS) ──────────────────────────────────────────────────
     - path: 'src/main/java/**/handler/**/*.java'
       instructions: |
-        ## Infrastructure Layer
-        - Contains all technical implementations (persistence, messaging, integration).
-        - JPA entities should reside here, separate from domain models.
-        - Use repositories extending `JpaRepository` or custom interfaces.
-        - Mark adapters with `@Repository`, `@Component`, or `@Configuration`.
-        - Manage transactions only at the service level, not in repositories.
-        - Define mappers for converting between persistence models and domain models.
         ## Command Handler Layer
 
         - Each handler class must handle exactly one command type. Flag handlers that branch on command type.
