@@ -82,6 +82,11 @@ public class SelfBeneficiariesTPT {
     this.isActive = isActive;
   }
 
+  /**
+   * Returns the surrogate key of this beneficiary, or {@code null} if not yet persisted.
+   *
+   * @return the database-generated identifier of this {@link SelfBeneficiariesTPT} entity
+   */
   public Long getId() {
     return id;
   }
