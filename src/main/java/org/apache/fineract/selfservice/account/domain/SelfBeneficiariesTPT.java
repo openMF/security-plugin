@@ -14,55 +14,32 @@
  */
 package org.apache.fineract.selfservice.account.domain;
 
-import static org.apache.fineract.selfservice.account.api.SelfBeneficiariesTPTApiConstants.NAME_PARAM_NAME;
-import static org.apache.fineract.selfservice.account.api.SelfBeneficiariesTPTApiConstants.TRANSFER_LIMIT_PARAM_NAME;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.fineract.infrastructure.core.domain.AbstractPersistableCustom;
+import java.util.Objects;
 
-@Entity
-@Table(
-    name = "m_selfservice_beneficiaries_tpt",
-    uniqueConstraints = {
-      @UniqueConstraint(
-          columnNames = {"name", "app_user_id", "is_active"},
-          name = "name")
-    })
-public class SelfBeneficiariesTPT extends AbstractPersistableCustom<Long> {
+/**
+ * Pure domain entity for a self-service third-party transfer beneficiary.
+ *
+ * <p>No JPA or framework annotations are permitted here. All persistence mapping lives in
+ * {@code account.infrastructure.persistence.SelfBeneficiariesTPTJpaEntity}.
+ */
+public class SelfBeneficiariesTPT {
 
-  @Column(name = "app_user_id", nullable = false)
-  private Long appUserId;
+  /** Database-generated surrogate key. {@code null} for instances that have not yet been saved. */
+  private Long id;
 
-  @Column(name = "name", length = 50, nullable = false)
+  private final Long appUserId;
   private String name;
-
-  @Column(name = "office_id", nullable = false)
-  private Long officeId;
-
-  @Column(name = "client_id", nullable = false)
-  private Long clientId;
-
-  @Column(name = "account_id", nullable = false)
-  private Long accountId;
-
-  @Column(name = "account_type", nullable = false)
-  private Integer accountType;
-
-  @Column(name = "transfer_limit", nullable = true)
+  private final Long officeId;
+  private final Long clientId;
+  private final Long accountId;
+  private final Integer accountType;
   private Long transferLimit;
+  private boolean isActive;
 
-  @Column(name = "is_active", nullable = false)
-  private boolean isActive = true;
 
-  protected SelfBeneficiariesTPT() {
-    //
-  }
-
+  /** Constructor for creating a new (not-yet-persisted) beneficiary. */
   public SelfBeneficiariesTPT(
       Long appUserId,
       String name,
@@ -71,6 +48,12 @@ public class SelfBeneficiariesTPT extends AbstractPersistableCustom<Long> {
       Long accountId,
       Integer accountType,
       Long transferLimit) {
+    Objects.requireNonNull(appUserId, "appUserId cannot be null");
+    Objects.requireNonNull(name, "name cannot be null");
+    Objects.requireNonNull(officeId, "officeId cannot be null");
+    Objects.requireNonNull(clientId, "clientId cannot be null");
+    Objects.requireNonNull(accountId, "accountId cannot be null");
+    Objects.requireNonNull(accountType, "accountType cannot be null");
     this.appUserId = appUserId;
     this.name = name;
     this.officeId = officeId;
@@ -78,6 +61,48 @@ public class SelfBeneficiariesTPT extends AbstractPersistableCustom<Long> {
     this.accountId = accountId;
     this.accountType = accountType;
     this.transferLimit = transferLimit;
+    this.isActive = true;
+  }
+
+  /**
+   * Reconstruction constructor used by the infrastructure adapter to hydrate a persisted entity.
+   * Must not be called directly from application or domain code.
+   */
+  public SelfBeneficiariesTPT(
+      Long id,
+      Long appUserId,
+      String name,
+      Long officeId,
+      Long clientId,
+      Long accountId,
+      Integer accountType,
+      Long transferLimit,
+      boolean isActive) {
+    Objects.requireNonNull(id, "id cannot be null");
+    Objects.requireNonNull(appUserId, "appUserId cannot be null");
+    Objects.requireNonNull(name, "name cannot be null");
+    Objects.requireNonNull(officeId, "officeId cannot be null");
+    Objects.requireNonNull(clientId, "clientId cannot be null");
+    Objects.requireNonNull(accountId, "accountId cannot be null");
+    Objects.requireNonNull(accountType, "accountType cannot be null");
+    this.id = id;
+    this.appUserId = appUserId;
+    this.name = name;
+    this.officeId = officeId;
+    this.clientId = clientId;
+    this.accountId = accountId;
+    this.accountType = accountType;
+    this.transferLimit = transferLimit;
+    this.isActive = isActive;
+  }
+
+  /**
+   * Returns the surrogate key of this beneficiary, or {@code null} if not yet persisted.
+   *
+   * @return the database-generated identifier of this {@link SelfBeneficiariesTPT} entity
+   */
+  public Long getId() {
+    return id;
   }
 
   public String getName() {
@@ -85,6 +110,7 @@ public class SelfBeneficiariesTPT extends AbstractPersistableCustom<Long> {
   }
 
   public void setName(String name) {
+    Objects.requireNonNull(name, "name cannot be null");
     this.name = name;
   }
 
@@ -124,16 +150,20 @@ public class SelfBeneficiariesTPT extends AbstractPersistableCustom<Long> {
     return this.accountType;
   }
 
-  public Map<String, Object> update(String newName, Long newTransferLimit) {
+  /** Applies the requested updates and returns a map of the fields that actually changed. */
+  public Map<String, Object> update(
+      boolean hasName, String newName, boolean hasTransferLimit, Long newTransferLimit) {
     Map<String, Object> changes = new HashMap<>();
-    if (!this.name.equals(newName)) {
-      this.name = newName;
-      changes.put(NAME_PARAM_NAME, newName);
+    if (hasName) {
+      Objects.requireNonNull(newName, "name cannot be null");
+      if (!Objects.equals(this.name, newName)) {
+        this.name = newName;
+        changes.put("name", newName);
+      }
     }
-    if ((this.transferLimit != null && !this.transferLimit.equals(newTransferLimit))
-        || (this.transferLimit == null && newTransferLimit != null)) {
+    if (hasTransferLimit && !Objects.equals(this.transferLimit, newTransferLimit)) {
       this.transferLimit = newTransferLimit;
-      changes.put(TRANSFER_LIMIT_PARAM_NAME, newTransferLimit);
+      changes.put("transferLimit", newTransferLimit);
     }
     return changes;
   }

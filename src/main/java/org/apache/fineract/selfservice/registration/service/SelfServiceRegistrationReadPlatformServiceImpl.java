@@ -20,13 +20,17 @@ package org.apache.fineract.selfservice.registration.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+@Service
 @RequiredArgsConstructor
 public class SelfServiceRegistrationReadPlatformServiceImpl implements SelfServiceRegistrationReadPlatformService {
 
     private final JdbcTemplate jdbcTemplate;
 
     @Override
+    @Transactional(readOnly = true)
     public boolean isClientExist(String accountNumber, String firstName, String middleName, String lastName, String mobileNumber,
             boolean isEmailAuthenticationMode) {
         String sql = "select count(*) from m_client where account_no = ? and firstname = ? and lastname = ?";

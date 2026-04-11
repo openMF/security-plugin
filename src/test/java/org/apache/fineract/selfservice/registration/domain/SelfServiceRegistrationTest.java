@@ -10,10 +10,9 @@ class SelfServiceRegistrationTest {
 
   @Test
   void instance_shouldCreateRegistrationWithAllFields() {
-    Client client = mock(Client.class);
     SelfServiceRegistration reg =
         SelfServiceRegistration.instance(
-            client,
+            1L,
             "000000001",
             "Pedro",
             "Marmol",
@@ -22,9 +21,9 @@ class SelfServiceRegistrationTest {
             "pedro@test.com",
             "1234",
             "pedro.marmol",
-            "SecurePass123#");
+            java.time.LocalDateTime.now());
 
-    assertEquals(client, reg.getClient());
+    assertEquals(1L, reg.getClientId());
     assertEquals("000000001", reg.getAccountNumber());
     assertEquals("Pedro", reg.getFirstName());
     assertEquals("Marmol", reg.getMiddleName());
@@ -33,16 +32,14 @@ class SelfServiceRegistrationTest {
     assertEquals("pedro@test.com", reg.getEmail());
     assertEquals("1234", reg.getAuthenticationToken());
     assertEquals("pedro.marmol", reg.getUsername());
-    assertEquals("SecurePass123#", reg.getPassword());
     assertNotNull(reg.getCreatedDate());
   }
 
   @Test
   void instance_shouldHandleNullMiddleName() {
-    Client client = mock(Client.class);
     SelfServiceRegistration reg =
         SelfServiceRegistration.instance(
-            client,
+            1L,
             "000000002",
             "John",
             null,
@@ -51,17 +48,12 @@ class SelfServiceRegistrationTest {
             "john@test.com",
             "5678",
             "john.doe",
-            "Pass456#");
+            java.time.LocalDateTime.now());
 
     assertNull(reg.getMiddleName());
     assertNull(reg.getMobileNumber());
     assertEquals("John", reg.getFirstName());
   }
 
-  @Test
-  void defaultConstructor_shouldCreateEmptyInstance() {
-    SelfServiceRegistration reg = new SelfServiceRegistration();
-    assertNull(reg.getClient());
-    assertNull(reg.getFirstName());
-  }
+
 }

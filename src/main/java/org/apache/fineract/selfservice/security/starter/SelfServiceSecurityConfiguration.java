@@ -42,7 +42,8 @@ import org.apache.fineract.infrastructure.security.service.TwoFactorService;
 import org.apache.fineract.notification.service.UserNotificationService;
 import org.apache.fineract.selfservice.security.service.SelfServiceUserAuthorizationManager;
 import org.apache.fineract.selfservice.security.service.TenantAwareJpaPlatformSelfServiceUserDetailsService;
-import org.springframework.beans.factory.annotation.Autowired;
+import java.util.Optional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -67,38 +68,25 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 @Order(1)  // Very important: Must have higher priority than main security config
+@RequiredArgsConstructor
 public class SelfServiceSecurityConfiguration {
 
     private static final PathPatternRequestMatcher.Builder API_MATCHER = PathPatternRequestMatcher.withDefaults();
 
-    @Autowired
-    private ApplicationContext applicationContext;
-    @Autowired
-    private TenantAwareJpaPlatformSelfServiceUserDetailsService userDetailsService;
-    @Autowired
-    private FineractProperties fineractProperties;    
-    @Autowired
-    private ToApiJsonSerializer<PlatformRequestLog> toApiJsonSerializer;
-    @Autowired
-    private ConfigurationDomainService configurationDomainService;
-    @Autowired
-    private CacheWritePlatformService cacheWritePlatformService;
-    @Autowired
-    private UserNotificationService userNotificationService;
-    @Autowired
-    private AuthTenantDetailsService basicAuthTenantDetailsService;
-    @Autowired
-    private BusinessDateReadPlatformService businessDateReadPlatformService;
-    @Autowired
-    private MDCWrapper mdcWrapper;
-    @Autowired
-    private FineractRequestContextHolder fineractRequestContextHolder;
-    @Autowired(required = false)
-    private LoanCOBFilterHelper loanCOBFilterHelper;
-    @Autowired
-    private IdempotencyStoreHelper idempotencyStoreHelper;    
-    @Autowired
-    private PlatformUserDetailsChecker platformUserDetailsChecker;
+    private final ApplicationContext applicationContext;
+    private final TenantAwareJpaPlatformSelfServiceUserDetailsService userDetailsService;
+    private final FineractProperties fineractProperties;
+    private final ToApiJsonSerializer<PlatformRequestLog> toApiJsonSerializer;
+    private final ConfigurationDomainService configurationDomainService;
+    private final CacheWritePlatformService cacheWritePlatformService;
+    private final UserNotificationService userNotificationService;
+    private final AuthTenantDetailsService basicAuthTenantDetailsService;
+    private final BusinessDateReadPlatformService businessDateReadPlatformService;
+    private final MDCWrapper mdcWrapper;
+    private final FineractRequestContextHolder fineractRequestContextHolder;
+    private final Optional<LoanCOBFilterHelper> loanCOBFilterHelper;
+    private final IdempotencyStoreHelper idempotencyStoreHelper;
+    private final PlatformUserDetailsChecker platformUserDetailsChecker;
 
     @Bean
     public SecurityFilterChain selfServiceSecurityFilterChain(HttpSecurity http) throws Exception {
@@ -133,7 +121,7 @@ public class SelfServiceSecurityConfiguration {
                 .requestMatchers("/api/v1/self/**", "/v1/self/**")
                     .access(SelfServiceUserAuthorizationManager.selfServiceUserAuthManager())
 
-                .anyRequest().permitAll()
+                .anyRequest().authenticated()
             );
 
         // Optional: CORS if needed for mobile/web clients
@@ -149,7 +137,7 @@ public class SelfServiceSecurityConfiguration {
     }
 
     public LoanCOBApiFilter loanCOBApiFilter() {
-        return new LoanCOBApiFilter(loanCOBFilterHelper);
+        return new LoanCOBApiFilter(loanCOBFilterHelper.orElse(null));
     }
 
     public TwoFactorAuthenticationFilter twoFactorAuthenticationFilter() {

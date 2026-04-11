@@ -62,21 +62,28 @@ class SelfServiceRegistrationWritePlatformServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        service = new SelfServiceRegistrationWritePlatformServiceImpl(
-            selfServiceRegistrationRepository,
-            fromApiJsonHelper,
-            selfServiceRegistrationReadPlatformService,
-            clientRepository,
-            passwordValidationPolicyRepository,
-            userDomainService,
-            gmailBackedPlatformEmailService,
-            smsMessageRepository,
-            smsMessageScheduledJobService,
-            smsCampaignDropdownReadPlatformService,
-            appUserReadPlatformService,
-            roleRepository,
-            appUserClientMappingRepository
-        );
+        SelfServiceRegistrationWritePlatformServiceImpl.RegistrationContext regCtx =
+            new SelfServiceRegistrationWritePlatformServiceImpl.RegistrationContext(
+                selfServiceRegistrationRepository,
+                fromApiJsonHelper,
+                selfServiceRegistrationReadPlatformService,
+                clientRepository,
+                passwordValidationPolicyRepository,
+                userDomainService,
+                appUserReadPlatformService,
+                roleRepository,
+                appUserClientMappingRepository
+            );
+
+        SelfServiceRegistrationWritePlatformServiceImpl.NotificationContext notifCtx =
+            new SelfServiceRegistrationWritePlatformServiceImpl.NotificationContext(
+                gmailBackedPlatformEmailService,
+                smsMessageRepository,
+                smsMessageScheduledJobService,
+                smsCampaignDropdownReadPlatformService
+            );
+
+        service = new SelfServiceRegistrationWritePlatformServiceImpl(regCtx, notifCtx);
     }
 
     @Test
@@ -97,13 +104,8 @@ class SelfServiceRegistrationWritePlatformServiceImplTest {
         when(fromApiJsonHelper.extractStringNamed(eq(SelfServiceApiConstants.middleNameParamName), any())).thenReturn(null);
         when(fromApiJsonHelper.extractStringNamed(eq(SelfServiceApiConstants.lastNameParamName), any())).thenReturn("Doe");
         when(fromApiJsonHelper.extractStringNamed(eq(SelfServiceApiConstants.usernameParamName), any())).thenReturn("jdoe");
-        when(fromApiJsonHelper.extractStringNamed(eq(SelfServiceApiConstants.passwordParamName), any())).thenReturn("Password123!");
         when(fromApiJsonHelper.extractStringNamed(eq(SelfServiceApiConstants.authenticationModeParamName), any())).thenReturn("email");
         when(fromApiJsonHelper.extractStringNamed(eq(SelfServiceApiConstants.emailParamName), any())).thenReturn("john@test.com");
-
-        PasswordValidationPolicy policy = mock(PasswordValidationPolicy.class);
-        when(policy.getRegex()).thenReturn(".*");
-        when(passwordValidationPolicyRepository.findActivePasswordValidationPolicy()).thenReturn(policy);
 
         when(appUserReadPlatformService.isUsernameExist("jdoe")).thenReturn(false);
         when(selfServiceRegistrationReadPlatformService.isClientExist(anyString(), anyString(), any(), anyString(), any(), anyBoolean())).thenReturn(false);
@@ -118,18 +120,17 @@ class SelfServiceRegistrationWritePlatformServiceImplTest {
         when(fromApiJsonHelper.extractStringNamed(eq(SelfServiceApiConstants.middleNameParamName), any())).thenReturn(null);
         when(fromApiJsonHelper.extractStringNamed(eq(SelfServiceApiConstants.lastNameParamName), any())).thenReturn("Doe");
         when(fromApiJsonHelper.extractStringNamed(eq(SelfServiceApiConstants.usernameParamName), any())).thenReturn("jdoe");
-        when(fromApiJsonHelper.extractStringNamed(eq(SelfServiceApiConstants.passwordParamName), any())).thenReturn("Password123!");
         when(fromApiJsonHelper.extractStringNamed(eq(SelfServiceApiConstants.authenticationModeParamName), any())).thenReturn("email");
         when(fromApiJsonHelper.extractStringNamed(eq(SelfServiceApiConstants.emailParamName), any())).thenReturn("john@test.com");
-
-        PasswordValidationPolicy policy = mock(PasswordValidationPolicy.class);
-        when(policy.getRegex()).thenReturn(".*");
-        when(passwordValidationPolicyRepository.findActivePasswordValidationPolicy()).thenReturn(policy);
 
         when(appUserReadPlatformService.isUsernameExist("jdoe")).thenReturn(false);
         when(selfServiceRegistrationReadPlatformService.isClientExist(anyString(), anyString(), any(), anyString(), any(), anyBoolean())).thenReturn(true);
         Client client = mock(Client.class);
         when(clientRepository.getClientByAccountNumber("12345")).thenReturn(client);
+        
+        SelfServiceRegistration registration = mock(SelfServiceRegistration.class);
+        when(registration.getFirstName()).thenReturn("John");
+        when(selfServiceRegistrationRepository.saveAndFlush(any(SelfServiceRegistration.class))).thenReturn(registration);
         
         SelfServiceRegistration result = service.createRegistrationRequest("{}");
         
@@ -156,15 +157,20 @@ class SelfServiceRegistrationWritePlatformServiceImplTest {
     void createSelfServiceUser_returnsUserWithId() {
         when(fromApiJsonHelper.extractLongNamed(eq(SelfServiceApiConstants.requestIdParamName), any())).thenReturn(1L);
         when(fromApiJsonHelper.extractStringNamed(eq(SelfServiceApiConstants.authenticationTokenParamName), any())).thenReturn("123456");
+        when(fromApiJsonHelper.extractStringNamed(eq(SelfServiceApiConstants.passwordParamName), any())).thenReturn("Password123!");
+        
+        PasswordValidationPolicy policy = mock(PasswordValidationPolicy.class);
+        when(policy.getRegex()).thenReturn(".*");
+        when(passwordValidationPolicyRepository.findActivePasswordValidationPolicy()).thenReturn(policy);
         
         SelfServiceRegistration registration = mock(SelfServiceRegistration.class);
         when(registration.getUsername()).thenReturn("jdoe");
-        when(registration.getPassword()).thenReturn("pass");
         when(registration.getEmail()).thenReturn("test@test.com");
         Client client = mock(Client.class);
         when(client.getFirstname()).thenReturn("John");
         when(client.getLastname()).thenReturn("Doe");
-        when(registration.getClient()).thenReturn(client);
+        when(registration.getClientId()).thenReturn(1L);
+        when(clientRepository.findOneWithNotFoundDetection(1L)).thenReturn(client);
         Office office = mock(Office.class);
         when(client.getOffice()).thenReturn(office);
         

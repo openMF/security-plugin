@@ -14,5 +14,10 @@ bin/
 .idea
 
 # Ignore Fineract/Spring Boot runtime files
-keystore.jks
 /target/
+
+# VS Code IDE
+.vscode/
+
+# Claude IDE Integration
+.claude/
