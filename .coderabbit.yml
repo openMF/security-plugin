@@ -317,7 +317,7 @@ reviews:
         - Verify both happy path and edge cases.
         - Maintain >80% coverage for core business logic.
 
-    - path: '{pom.xml,build.gradle,README.md,application.yml,application.properties}'
+    - path: 'src/test/java/**/*.java'
       instructions: |
         ### Tooling
         - JUnit 5 (`@Test`, `@ParameterizedTest`), Mockito, and AssertJ are the required testing stack.
@@ -348,8 +348,8 @@ reviews:
         - Use descriptive assertion messages: `assertThat(result).as("should return client list").isNotEmpty()`.
         - Prefer specific assertions (`isEqualTo`, `contains`, `hasSize`) over generic ones (`isTrue`, `isNotNull` alone).
 
-    # ── DATABASE MIGRATIONS ───────────────────────────────────────────────────
-    - path: 'src/main/resources/db/changelog/**'
+    # ── PROJECT FILES ─────────────────────────────────────────────────────────
+    - path: '{pom.xml,build.gradle,README.md,application.yml,application.properties}'
       instructions: |
         ## Project-Level Standards
         - **pom.xml / build.gradle:**
@@ -366,6 +366,10 @@ reviews:
           - Never commit secrets.
           - Validate configuration via `@ConfigurationProperties`.
           - Provide `application-example.yml` for reference.
+
+    # ── DATABASE MIGRATIONS ───────────────────────────────────────────────────
+    - path: 'src/main/resources/db/changelog/**'
+      instructions: |
         ## Liquibase Migration Standards
 
         ### Changeset Identity
