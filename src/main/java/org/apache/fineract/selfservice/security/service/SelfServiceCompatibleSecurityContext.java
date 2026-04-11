@@ -15,11 +15,11 @@
 package org.apache.fineract.selfservice.security.service;
 
 import java.lang.reflect.Field;
+import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.security.service.SpringSecurityPlatformSecurityContext;
 import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
 import org.apache.fineract.useradministration.domain.AppUser;
-import org.apache.fineract.useradministration.exception.UnAuthenticatedUserException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -40,6 +40,11 @@ public class SelfServiceCompatibleSecurityContext extends SpringSecurityPlatform
     super(configurationDomainService);
   }
 
+  /**
+   * Retrieves the authenticated user, wrapping self-service users in a stub.
+   *
+   * @return the authenticated AppUser
+   */
   @Override
   public AppUser authenticatedUser() {
     final Object principal = extractPrincipal();
@@ -51,6 +56,28 @@ public class SelfServiceCompatibleSecurityContext extends SpringSecurityPlatform
     return super.authenticatedUser();
   }
 
+  /**
+   * Retrieves the authenticated user from the context for a specific command.
+   *
+   * @param commandWrapper the command wrapper contextualizing the request
+   * @return the authenticated AppUser
+   */
+  @Override
+  public AppUser authenticatedUser(final CommandWrapper commandWrapper) {
+    final Object principal = extractPrincipal();
+
+    if (principal instanceof AppSelfServiceUser selfServiceUser) {
+      return toAppUserStub(selfServiceUser);
+    }
+
+    return super.authenticatedUser(commandWrapper);
+  }
+
+  /**
+   * Retrieves the authenticated user if one is currently present in the security context.
+   *
+   * @return the authenticated AppUser, or null if none
+   */
   @Override
   public AppUser getAuthenticatedUserIfPresent() {
     final Object principal = extractPrincipal();

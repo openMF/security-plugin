@@ -33,7 +33,7 @@ import org.apache.fineract.infrastructure.core.domain.AbstractPersistableCustom;
           columnNames = {"name", "app_user_id", "is_active"},
           name = "name")
     })
-public class SelfBeneficiariesTPT extends AbstractPersistableCustom {
+public class SelfBeneficiariesTPT extends AbstractPersistableCustom<Long> {
 
   @Column(name = "app_user_id", nullable = false)
   private Long appUserId;
