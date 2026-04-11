@@ -44,22 +44,7 @@ reviews:
 
     - path: 'src/main/java/**'
       instructions: |
-        ## Project & Package Structure
-        - Follow DDD-inspired modular structure:
-          ```
-          com.company.project
-          ├── api          # REST controllers, request/response DTOs
-          ├── application  # Services, use cases, orchestrators
-          ├── domain       # Entities, value objects, domain events, aggregates
-          ├── infrastructure
-          │   ├── persistence  # JPA, repositories, adapters
-          │   ├── messaging    # Kafka, RabbitMQ adapters
-          │   └── config       # Spring @Configuration classes
-          └── shared        # Common utilities, constants, base abstractions
-          ```
-        - Each module should have a clear boundary and minimal dependencies.
-        - No circular dependencies between packages.
-        - Do not mix domain and infrastructure code.
+
         ### Security
         - Validate all incoming data at API boundaries using Bean Validation (`@Valid`, `@NotNull`, `@Size`, etc.).
         - Use only parameterized queries, Spring Data repositories, or named queries.
