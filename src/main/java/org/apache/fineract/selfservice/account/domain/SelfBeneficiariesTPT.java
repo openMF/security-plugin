@@ -110,6 +110,7 @@ public class SelfBeneficiariesTPT {
   }
 
   public void setName(String name) {
+    Objects.requireNonNull(name, "name cannot be null");
     this.name = name;
   }
 
@@ -153,9 +154,12 @@ public class SelfBeneficiariesTPT {
   public Map<String, Object> update(
       boolean hasName, String newName, boolean hasTransferLimit, Long newTransferLimit) {
     Map<String, Object> changes = new HashMap<>();
-    if (hasName && !Objects.equals(this.name, newName)) {
-      this.name = newName;
-      changes.put("name", newName);
+    if (hasName) {
+      Objects.requireNonNull(newName, "name cannot be null");
+      if (!Objects.equals(this.name, newName)) {
+        this.name = newName;
+        changes.put("name", newName);
+      }
     }
     if (hasTransferLimit && !Objects.equals(this.transferLimit, newTransferLimit)) {
       this.transferLimit = newTransferLimit;
