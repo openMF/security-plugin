@@ -46,20 +46,18 @@ import org.apache.fineract.useradministration.domain.PasswordValidationPolicyRep
 import org.apache.fineract.useradministration.domain.Role;
 import org.apache.fineract.useradministration.domain.RoleRepository;
 import org.apache.fineract.infrastructure.security.service.PlatformPasswordEncoder;
-import org.springframework.context.MessageSource;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.apache.fineract.useradministration.domain.AppUserRepository;
 import org.apache.fineract.portfolio.client.service.ClientWritePlatformService;
-import org.springframework.core.env.Environment;
+import org.apache.fineract.useradministration.domain.AppUserRepository;
 import org.junit.jupiter.api.AfterEach;
-import org.thymeleaf.spring6.SpringTemplateEngine;
+import org.springframework.context.MessageSource;
+import org.springframework.core.env.Environment;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.thymeleaf.ITemplateEngine;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.MessageSource;
-import org.thymeleaf.ITemplateEngine;
 
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings("unchecked")
@@ -78,8 +76,6 @@ class SelfServiceRegistrationWritePlatformServiceImplTest {
     @Mock private AppSelfServiceUserReadPlatformService appUserReadPlatformService;
     @Mock private RoleRepository roleRepository;
     @Mock private AppSelfServiceUserClientMappingRepository appUserClientMappingRepository;
-    @Mock private SpringTemplateEngine registrationTemplateEngine;
-    @Mock private MessageSource registrationMessageSource;
     @Mock private JdbcTemplate jdbcTemplate;
     @Mock private AppUserRepository appUserRepository;
     @Mock private ClientWritePlatformService clientWritePlatformService;
@@ -87,10 +83,7 @@ class SelfServiceRegistrationWritePlatformServiceImplTest {
     @Mock private PlatformPasswordEncoder platformPasswordEncoder;
     @Mock private AppSelfServiceUserRepository appSelfServiceUserRepository;
     @Mock private SelfServiceAuthorizationTokenService selfServiceAuthorizationTokenService;
-    //@Mock private SpringTemplateEngine registrationTemplateEngine;
-    // To this:
-    @Mock
-    private ITemplateEngine registrationTemplateEngine;
+    @Mock private ITemplateEngine registrationTemplateEngine;
     @Mock private MessageSource registrationMessageSource;
 
     private SelfServiceRegistrationWritePlatformServiceImpl service;
@@ -114,8 +107,6 @@ class SelfServiceRegistrationWritePlatformServiceImplTest {
             appUserReadPlatformService,
             roleRepository,
             appUserClientMappingRepository,
-            registrationTemplateEngine,
-            registrationMessageSource,
             jdbcTemplate,
             appUserRepository,
             clientWritePlatformService,

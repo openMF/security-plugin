@@ -99,8 +99,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
-import org.springframework.context.MessageSource;
-import org.springframework.context.i18n.LocaleContextHolder;
+import org.apache.fineract.portfolio.client.service.ClientWritePlatformService;
 import org.thymeleaf.ITemplateEngine;
 import org.thymeleaf.context.Context;
 
