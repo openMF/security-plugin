@@ -14,7 +14,14 @@
  */
 package org.apache.fineract.selfservice.registration.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
@@ -27,6 +34,9 @@ import org.apache.fineract.selfservice.registration.service.SelfServiceRegistrat
 import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
 import org.springframework.stereotype.Component;
 
+/**
+ * JAX-RS resource exposing self-service registration and enrollment endpoints.
+ */
 @Path("/v1/self/registration")
 @Component
 @Tag(name = "Self Service Registration", description = "")
@@ -36,18 +46,54 @@ public class SelfServiceRegistrationApiResource {
     private final SelfServiceRegistrationWritePlatformService selfServiceRegistrationWritePlatformService;
     private final DefaultToApiJsonSerializer<AppSelfServiceUser> toApiJsonSerializer;
 
+    /**
+     * Creates a self-service registration request pending later confirmation.
+     *
+     * @param apiRequestBodyAsJson request payload as raw JSON
+     * @return success message for request creation
+     */
     @POST
+    @Consumes({MediaType.APPLICATION_JSON})
     @Produces({MediaType.APPLICATION_JSON})
     public String createSelfServiceRegistrationRequest(final String apiRequestBodyAsJson) {
         this.selfServiceRegistrationWritePlatformService.createRegistrationRequest(apiRequestBodyAsJson);
         return SelfServiceApiConstants.createRequestSuccessMessage;
     }
 
+    /**
+     * Creates a self-service user from a confirmed registration request.
+     *
+     * @param apiRequestBodyAsJson request payload as raw JSON
+     * @return serialized command result containing the created user identifier
+     */
     @POST
     @Path("user")
+    @Consumes({MediaType.APPLICATION_JSON})
     @Produces({MediaType.APPLICATION_JSON})
     public String createSelfServiceUser(final String apiRequestBodyAsJson) {
         AppSelfServiceUser user = this.selfServiceRegistrationWritePlatformService.createSelfServiceUser(apiRequestBodyAsJson);
+        return this.toApiJsonSerializer.serialize(CommandProcessingResult.resourceResult(user.getId()));
+    }
+
+    /**
+     * Creates a client and linked self-service user in a single request.
+     *
+     * @param apiRequestBodyAsJson request payload as raw JSON
+     * @return serialized command result containing the created user identifier
+     */
+    @POST
+    @Path("client-user")
+    @Consumes({MediaType.APPLICATION_JSON})
+    @Produces({MediaType.APPLICATION_JSON})
+    @Operation(summary = "Self Enrollment Flow", description = "Creates a Fineract Client and Self Service User in one shot.")
+    @RequestBody(required = true, content = @Content(schema = @Schema(implementation = SelfServiceEnrollmentRequest.class)))
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "OK"),
+        @ApiResponse(responseCode = "400", description = "Bad Request"),
+        @ApiResponse(responseCode = "409", description = "Conflict (Duplicate Username, Email, etc)")
+    })
+    public String selfEnroll(final String apiRequestBodyAsJson) {
+        AppSelfServiceUser user = this.selfServiceRegistrationWritePlatformService.selfEnroll(apiRequestBodyAsJson);
         return this.toApiJsonSerializer.serialize(CommandProcessingResult.resourceResult(user.getId()));
     }
 }

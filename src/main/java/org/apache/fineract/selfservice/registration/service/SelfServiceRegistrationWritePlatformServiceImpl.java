@@ -58,6 +58,7 @@ import org.apache.fineract.portfolio.group.domain.Group;
 import org.apache.fineract.selfservice.registration.SelfServiceApiConstants;
 import org.apache.fineract.selfservice.registration.domain.SelfServiceRegistration;
 import org.apache.fineract.selfservice.registration.domain.SelfServiceRegistrationRepository;
+import org.apache.fineract.selfservice.registration.exception.SelfServiceEnrollmentConflictException;
 import org.apache.fineract.selfservice.registration.exception.SelfServiceRegistrationNotFoundException;
 import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
 import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUserClientMapping;
@@ -70,10 +71,27 @@ import org.apache.fineract.selfservice.useradministration.domain.SelfServiceUser
 import org.apache.fineract.useradministration.exception.RoleNotFoundException;
 import org.apache.fineract.selfservice.useradministration.service.AppSelfServiceUserReadPlatformService;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.security.authentication.AuthenticationServiceException;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.apache.fineract.useradministration.domain.AppUser;
+import org.apache.fineract.useradministration.domain.AppUserRepository;
+import org.apache.fineract.portfolio.client.service.ClientWritePlatformService;
+import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
+import org.springframework.core.env.Environment;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import java.util.Collections;
+import org.apache.commons.lang3.StringUtils;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -93,6 +111,10 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
     private final RoleRepository roleRepository;
     private static final SecureRandom secureRandom = new SecureRandom();
     private final AppSelfServiceUserClientMappingRepository appUserClientMappingRepository;
+    private final JdbcTemplate jdbcTemplate;
+    private final AppUserRepository appUserRepository;
+    private final ClientWritePlatformService clientWritePlatformService;
+    private final Environment env;
 
     @Override
     public SelfServiceRegistration createRegistrationRequest(String apiRequestBodyAsJson) {
@@ -290,6 +312,24 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
 
     }
 
+    /**
+     * Chooses between the legacy token-confirmation flow and the one-shot enrollment flow based on
+     * the request payload.
+     *
+     * @param apiRequestBodyAsJson JSON request body containing either confirmation fields or
+     *     self-enrollment data
+     * @return the created self-service user
+     */
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public AppSelfServiceUser createSelfServiceUserOrEnroll(String apiRequestBodyAsJson) {
+        JsonObject json = JsonParser.parseString(apiRequestBodyAsJson).getAsJsonObject();
+        if (json.has(SelfServiceApiConstants.requestIdParamName) || json.has(SelfServiceApiConstants.authenticationTokenParamName)) {
+            return createSelfServiceUser(apiRequestBodyAsJson);
+        }
+        return selfEnroll(apiRequestBodyAsJson);
+    }
+
     private void handleDataIntegrityIssues(final JsonCommand command, final Throwable realCause, final Exception dve, String username) {
         if (realCause.getMessage().contains("'username_org'")) {
             final StringBuilder defaultMessageBuilder = new StringBuilder("User with username ").append(username)
@@ -298,6 +338,251 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
                     username);
         }
         throw ErrorHandler.getMappable(dve, "error.msg.unknown.data.integrity.issue", "Unknown data integrity issue with resource.");
+    }
+
+    /**
+     * Creates a client and linked self-service user in a single transaction using the configured
+     * audit user for privileged client creation.
+     *
+     * @param apiRequestBodyAsJson JSON request body containing self-enrollment data
+     * @return the created self-service user linked to the newly created client
+     */
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public AppSelfServiceUser selfEnroll(String apiRequestBodyAsJson) {
+        Gson gson = new Gson();
+        final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
+        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource("user");
+        this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, apiRequestBodyAsJson,
+                SelfServiceApiConstants.SELF_ENROLLMENT_DATA_PARAMETERS);
+        JsonElement element = gson.fromJson(apiRequestBodyAsJson.toString(), JsonElement.class);
+
+        String username = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.usernameParamName, element);
+        baseDataValidator.reset().parameter(SelfServiceApiConstants.usernameParamName).value(username).notBlank().notExceedingLengthOf(100);
+
+        String password = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.passwordParamName, element);
+        final PasswordValidationPolicy validationPolicy = this.passwordValidationPolicy.findActivePasswordValidationPolicy();
+        baseDataValidator.reset().parameter(SelfServiceApiConstants.passwordParamName).value(password)
+                .matchesRegularExpression(validationPolicy.getRegex(), validationPolicy.getDescription()).notExceedingLengthOf(100);
+
+        String authenticationMode = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.authenticationModeParamName, element);
+        baseDataValidator.reset().parameter(SelfServiceApiConstants.authenticationModeParamName).value(authenticationMode).notBlank()
+                .isOneOfTheseStringValues(SelfServiceApiConstants.emailModeParamName, SelfServiceApiConstants.mobileModeParamName);
+
+        String email = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.emailParamName, element);
+        baseDataValidator.reset().parameter(SelfServiceApiConstants.emailParamName).value(email).notExceedingLengthOf(100);
+
+        boolean isEmailAuthenticationMode = authenticationMode != null && authenticationMode.equalsIgnoreCase(SelfServiceApiConstants.emailModeParamName);
+        if (isEmailAuthenticationMode) {
+             baseDataValidator.reset().parameter(SelfServiceApiConstants.emailParamName).value(email).notBlank();
+        }
+
+        String mobileNumber = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.mobileNumberParamName, element);
+        if (!isEmailAuthenticationMode) {
+            // Mobile auth: phone is required and must be valid
+            baseDataValidator.reset().parameter(SelfServiceApiConstants.mobileNumberParamName).value(mobileNumber).notBlank()
+                    .validatePhoneNumber();
+        } else if (mobileNumber != null) {
+            // Email auth: phone is optional but must be valid if provided,
+            // because Fineract's ClientDataValidator always validates mobileNo format.
+            baseDataValidator.reset().parameter(SelfServiceApiConstants.mobileNumberParamName).value(mobileNumber)
+                    .validatePhoneNumber();
+        }
+
+        if (!dataValidationErrors.isEmpty()) {
+            throw new PlatformApiDataValidationException(dataValidationErrors);
+        }
+
+        validateForDuplicateUsernameForEnrollment(username);
+
+        JsonObject originalJson = JsonParser.parseString(apiRequestBodyAsJson).getAsJsonObject();
+        JsonObject sanitizedJson = normalizeSelfEnrollmentClientPayload(originalJson);
+        JsonElement parsedSanitizedElement = sanitizedJson;
+
+        String auditUsername = env.getProperty("fineract.selfservice.enrollment.audit-user", "mifos");
+        final Authentication previousAuth = SecurityContextHolder.getContext().getAuthentication();
+        AppUser auditUser = resolveEnrollmentAuditUser(auditUsername);
+        Authentication auth = new UsernamePasswordAuthenticationToken(auditUser, null, auditUser.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(auth);
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                if (previousAuth != null) {
+                    SecurityContextHolder.getContext().setAuthentication(previousAuth);
+                } else {
+                    SecurityContextHolder.clearContext();
+                }
+            }
+        });
+
+        try {
+            JsonCommand command = JsonCommand.fromJsonElement(null, parsedSanitizedElement, this.fromApiJsonHelper);
+            CommandProcessingResult result = clientWritePlatformService.createClient(command);
+            Long newClientId = result.getResourceId();
+
+            Client client = clientRepository.findOneWithNotFoundDetection(newClientId);
+            Role ssRole = roleRepository.getRoleByName(SelfServiceApiConstants.SELF_SERVICE_USER_ROLE);
+            if (ssRole == null) {
+                throw new RoleNotFoundException(SelfServiceApiConstants.SELF_SERVICE_USER_ROLE);
+            }
+            Collection<SimpleGrantedAuthority> authorities = new ArrayList<>();
+            authorities.add(new SimpleGrantedAuthority("DUMMY_ROLE_NOT_USED_OR_PERSISTED_TO_AVOID_EXCEPTION"));
+
+            User springConfigUser = new User(username, password, authorities);
+            AppSelfServiceUser appUser = new AppSelfServiceUser(
+                client.getOffice(), springConfigUser, Collections.singleton(ssRole),
+                email, client.getFirstname(), client.getLastname(), null,
+                true, true, Collections.emptyList(), null
+            );
+
+            userDomainService.create(appUser, false);
+            appUserClientMappingRepository.saveClientUserMapping(appUser.getId(), client.getId());
+
+            log.info("Self-enrollment successful: clientId={}", newClientId);
+            return appUser;
+
+        } catch (PlatformDataIntegrityException pde) {
+            throw translateEnrollmentConflict(pde);
+        } catch (DataIntegrityViolationException dve) {
+            String msg = dve.getMostSpecificCause().getMessage().toLowerCase();
+            if (msg.contains("username") || msg.contains("username_org")) {
+                throw enrollmentConflict("error.msg.user.duplicate.username", "Username already exists", "username");
+            }
+            if (msg.contains("mobile_no") || msg.contains("mobileno")) {
+                throw enrollmentConflict("error.msg.client.duplicate.mobileNo", "Mobile number already exists", "mobileNo");
+            }
+            if (msg.contains("email")) {
+                throw enrollmentConflict("error.msg.client.duplicate.email", "Email already exists", "email");
+            }
+            throw ErrorHandler.getMappable(dve, "error.msg.unknown.data.integrity.issue", "Unknown data integrity issue");
+        }
+    }
+
+    private AppUser resolveEnrollmentAuditUser(String auditUsername) {
+        try {
+            Long auditUserId = jdbcTemplate.queryForObject("SELECT id FROM m_appuser WHERE username = ?", Long.class, auditUsername);
+            if (auditUserId == null) {
+                throw new IllegalStateException(
+                        "Self-enrollment audit user '" + auditUsername + "' is configured but no matching m_appuser id was returned.");
+            }
+            return appUserRepository.findById(auditUserId).orElseThrow(
+                    () -> new IllegalStateException("Self-enrollment audit user '" + auditUsername
+                            + "' was found in m_appuser lookup but could not be loaded from the repository."));
+        } catch (EmptyResultDataAccessException e) {
+            throw new IllegalStateException("Configured self-enrollment audit user '" + auditUsername
+                    + "' does not exist. Set fineract.selfservice.enrollment.audit-user to a valid username.", e);
+        }
+    }
+
+    private void validateForDuplicateUsernameForEnrollment(String username) {
+        boolean isDuplicateUserName = this.appUserReadPlatformService.isUsernameExist(username);
+        if (isDuplicateUserName) {
+            throw enrollmentConflict("error.msg.user.duplicate.username", "Username already exists", "username");
+        }
+    }
+
+    private SelfServiceEnrollmentConflictException enrollmentConflict(String code, String message, String parameterName) {
+        return new SelfServiceEnrollmentConflictException(code, message, parameterName);
+    }
+
+    private RuntimeException translateEnrollmentConflict(PlatformDataIntegrityException exception) {
+        String code = exception.getGlobalisationMessageCode();
+        if ("error.msg.client.duplicate.mobileNo".equals(code)) {
+            return enrollmentConflict(code, exception.getDefaultUserMessage(), "mobileNo");
+        }
+        if ("error.msg.client.duplicate.email".equals(code)) {
+            return enrollmentConflict(code, exception.getDefaultUserMessage(), "email");
+        }
+        if ("error.msg.user.duplicate.username".equals(code)) {
+            return enrollmentConflict(code, exception.getDefaultUserMessage(), "username");
+        }
+        return exception;
+    }
+
+    private JsonObject normalizeSelfEnrollmentClientPayload(JsonObject originalJson) {
+        JsonObject sanitizedJson = new JsonObject();
+
+        copyFirstPresent(originalJson, sanitizedJson, SelfServiceApiConstants.firstnameParamName,
+                SelfServiceApiConstants.firstnameParamName, SelfServiceApiConstants.firstNameParamName);
+        copyFirstPresent(originalJson, sanitizedJson, SelfServiceApiConstants.middlenameParamName,
+                SelfServiceApiConstants.middlenameParamName, SelfServiceApiConstants.middleNameParamName);
+        copyFirstPresent(originalJson, sanitizedJson, SelfServiceApiConstants.lastnameParamName,
+                SelfServiceApiConstants.lastnameParamName, SelfServiceApiConstants.lastNameParamName);
+        copyIfPresent(originalJson, sanitizedJson, "mobileNo", SelfServiceApiConstants.mobileNumberParamName);
+        copyIfPresent(originalJson, sanitizedJson, "emailAddress", SelfServiceApiConstants.emailParamName);
+        copyIfPresent(originalJson, sanitizedJson, SelfServiceApiConstants.clientTypeIdParamName, SelfServiceApiConstants.clientTypeIdParamName);
+        copyIfPresent(originalJson, sanitizedJson, SelfServiceApiConstants.clientClassificationIdParamName,
+                SelfServiceApiConstants.clientClassificationIdParamName);
+        copyIfPresent(originalJson, sanitizedJson, SelfServiceApiConstants.dateOfBirthParamName, SelfServiceApiConstants.dateOfBirthParamName);
+        copyIfPresent(originalJson, sanitizedJson, SelfServiceApiConstants.genderIdParamName, SelfServiceApiConstants.genderIdParamName);
+        copyIfPresent(originalJson, sanitizedJson, SelfServiceApiConstants.addressParamName, SelfServiceApiConstants.addressParamName);
+        copyIfPresent(originalJson, sanitizedJson, SelfServiceApiConstants.datatablesParamName, SelfServiceApiConstants.datatablesParamName);
+        copyIfPresent(originalJson, sanitizedJson, SelfServiceApiConstants.familyMembersParamName, SelfServiceApiConstants.familyMembersParamName);
+        copyFirstPresent(originalJson, sanitizedJson, SelfServiceApiConstants.externalIdParamName,
+                SelfServiceApiConstants.externalIdParamName, SelfServiceApiConstants.externalIDParamName);
+
+        long officeId = Long.parseLong(env.getProperty("fineract.selfservice.enrollment.default-office-id", "1"));
+        sanitizedJson.addProperty(SelfServiceApiConstants.officeIdParamName, officeId);
+
+        int legalFormId = originalJson.has(SelfServiceApiConstants.legalFormIdParamName)
+                ? originalJson.get(SelfServiceApiConstants.legalFormIdParamName).getAsInt()
+                : Integer.parseInt(env.getProperty("fineract.selfservice.enrollment.default-legal-form-id", "1"));
+        sanitizedJson.addProperty(SelfServiceApiConstants.legalFormIdParamName, legalFormId);
+
+        String submittedOnDate = stringValueOrDefault(originalJson, SelfServiceApiConstants.submittedOnDateParamName, null);
+        String dateFormat = stringValueOrDefault(originalJson, SelfServiceApiConstants.dateFormatParamName, null);
+        if (StringUtils.isBlank(dateFormat)) {
+            if (looksIsoDate(submittedOnDate)) {
+                dateFormat = "yyyy-MM-dd";
+            } else {
+                dateFormat = env.getProperty("fineract.selfservice.enrollment.default-date-format", "yyyy-MM-dd");
+            }
+        }
+        sanitizedJson.addProperty(SelfServiceApiConstants.dateFormatParamName, dateFormat);
+
+        String locale = stringValueOrDefault(originalJson, SelfServiceApiConstants.localeParamName,
+                env.getProperty("fineract.selfservice.enrollment.default-locale", "en"));
+        sanitizedJson.addProperty(SelfServiceApiConstants.localeParamName, locale);
+
+        boolean isActive = Boolean.parseBoolean(env.getProperty("fineract.selfservice.enrollment.default-active", "false"));
+        sanitizedJson.addProperty(SelfServiceApiConstants.activeParamName, isActive);
+
+        String today = java.time.LocalDate.now(java.time.ZoneId.of("UTC")).toString();
+        sanitizedJson.addProperty(SelfServiceApiConstants.submittedOnDateParamName,
+                StringUtils.defaultIfBlank(submittedOnDate, today));
+        if (isActive) {
+            sanitizedJson.addProperty(SelfServiceApiConstants.activationDateParamName, today);
+        }
+
+        return sanitizedJson;
+    }
+
+    private void copyIfPresent(JsonObject source, JsonObject target, String targetKey, String sourceKey) {
+        if (source.has(sourceKey)) {
+            target.add(targetKey, source.get(sourceKey));
+        }
+    }
+
+    private void copyFirstPresent(JsonObject source, JsonObject target, String targetKey, String... sourceKeys) {
+        for (String sourceKey : sourceKeys) {
+            if (source.has(sourceKey)) {
+                target.add(targetKey, source.get(sourceKey));
+                return;
+            }
+        }
+    }
+
+    private String stringValueOrDefault(JsonObject json, String key, String defaultValue) {
+        if (json.has(key) && !json.get(key).isJsonNull()) {
+            return json.get(key).getAsString();
+        }
+        return defaultValue;
+    }
+
+    private boolean looksIsoDate(String value) {
+        return StringUtils.isNotBlank(value) && value.matches("\\d{4}-\\d{2}-\\d{2}");
     }
 
 }

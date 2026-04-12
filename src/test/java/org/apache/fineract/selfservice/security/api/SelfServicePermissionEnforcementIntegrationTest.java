@@ -78,7 +78,7 @@ public class SelfServicePermissionEnforcementIntegrationTest extends SelfService
     regBody.put("firstName", "Test");
     regBody.put("lastName", clientName);
     regBody.put("username", username);
-    regBody.put("password", "Password123!");
+    regBody.put("password", "Strong#Abc123");
     regBody.put("email", username + "@fineract.org");
     regBody.put("authenticationMode", "email");
 
