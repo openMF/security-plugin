@@ -18,4 +18,5 @@
   <include file="parts/006-grant-selfservice-savings-account-read-permissions.xml" relativeToChangelogFile="true"/>
   <include file="parts/007-grant-selfservice-beneficiary-tpt-permissions.xml" relativeToChangelogFile="true"/>
   <include file="parts/008-grant-selfservice-savings-account-create-transfer-permissions.xml" relativeToChangelogFile="true"/>  
+  <include file="parts/009-grant-selfservice-savings-account-read-charges-permissions.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>
