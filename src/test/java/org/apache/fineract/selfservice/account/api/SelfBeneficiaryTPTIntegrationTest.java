@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 /**
  * E2E tests for self-service beneficiary TPT operations (add, update, delete).
  */
-public class SelfBeneficiaryTPTIT extends SelfServiceIntegrationTestBase {
+public class SelfBeneficiaryTPTIntegrationTest extends SelfServiceIntegrationTestBase {
 
   private static final String BENEFICIARIES_PATH =
       SelfServiceTestUtils.CONTEXT_PATH + "/api/v1/self/beneficiaries/tpt";
