@@ -22,4 +22,33 @@ public interface SelfServiceRegistrationWritePlatformService {
     SelfServiceRegistration createRegistrationRequest(String apiRequestBodyAsJson);
 
     AppSelfServiceUser createSelfServiceUser(String apiRequestBodyAsJson);
+
+    /**
+     * Executes the legacy token-confirmation flow when {@code requestId} and
+     * {@code authenticationToken} are supplied; otherwise performs one-shot self-enrollment using
+     * client creation fields.
+     *
+     * @param apiRequestBodyAsJson JSON request body containing either legacy confirmation fields
+     *     ({@code requestId}, {@code authenticationToken}) or self-enrollment fields accepted by
+     *     the enrollment endpoint
+     * @return the created self-service user, including the generated identifier after persistence
+     * @throws org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException
+     *     if required fields are missing or invalid
+     * @throws org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException if a
+     *     duplicate user or other integrity issue is detected
+     * @throws org.apache.fineract.selfservice.registration.exception.SelfServiceEnrollmentConflictException
+     *     if enrollment fails with a conflict that maps to HTTP 409
+     *
+     * Side effects: persists registration or enrollment data, may create a client and a linked
+     * self-service user, and may trigger downstream notification or mapping writes.
+     */
+    AppSelfServiceUser createSelfServiceUserOrEnroll(String apiRequestBodyAsJson);
+
+    /**
+     * Executes atomic one-shot self-enrollment by provisioning a Client and User.
+     * 
+     * @param apiRequestBodyAsJson The incoming request containing enrollment data matching {@code SelfServiceEnrollmentRequest}.
+     * @return The freshly created AppSelfServiceUser object.
+     */
+    AppSelfServiceUser selfEnroll(String apiRequestBodyAsJson);
 }

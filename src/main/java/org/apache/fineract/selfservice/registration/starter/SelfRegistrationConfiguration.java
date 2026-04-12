@@ -35,6 +35,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import org.apache.fineract.useradministration.domain.AppUserRepository;
+import org.apache.fineract.portfolio.client.service.ClientWritePlatformService;
+import org.springframework.core.env.Environment;
+
 @Configuration
 public class SelfRegistrationConfiguration {
 
@@ -55,10 +59,13 @@ public class SelfRegistrationConfiguration {
             SmsMessageScheduledJobService smsMessageScheduledJobService,
             SmsCampaignDropdownReadPlatformService smsCampaignDropdownReadPlatformService,
             AppSelfServiceUserReadPlatformService appUserReadPlatformService, RoleRepository roleRepository,
-            AppSelfServiceUserClientMappingRepository appUserClientMappingRepository) {
+            AppSelfServiceUserClientMappingRepository appUserClientMappingRepository,
+            JdbcTemplate jdbcTemplate, AppUserRepository appUserRepository, 
+            ClientWritePlatformService clientWritePlatformService, Environment env) {
         return new SelfServiceRegistrationWritePlatformServiceImpl(selfServiceRegistrationRepository, fromApiJsonHelper,
                 selfServiceRegistrationReadPlatformService, clientRepository, passwordValidationPolicy, userDomainService,
                 gmailBackedPlatformEmailService, smsMessageRepository, smsMessageScheduledJobService,
-                 smsCampaignDropdownReadPlatformService, appUserReadPlatformService, roleRepository, appUserClientMappingRepository);
+                 smsCampaignDropdownReadPlatformService, appUserReadPlatformService, roleRepository, appUserClientMappingRepository,
+                 jdbcTemplate, appUserRepository, clientWritePlatformService, env);
     }
 }

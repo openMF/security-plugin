@@ -39,6 +39,10 @@ import org.apache.fineract.useradministration.domain.PasswordValidationPolicy;
 import org.apache.fineract.useradministration.domain.PasswordValidationPolicyRepository;
 import org.apache.fineract.useradministration.domain.Role;
 import org.apache.fineract.useradministration.domain.RoleRepository;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.apache.fineract.useradministration.domain.AppUserRepository;
+import org.apache.fineract.portfolio.client.service.ClientWritePlatformService;
+import org.springframework.core.env.Environment;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -62,6 +66,10 @@ class SelfServiceRegistrationWritePlatformServiceImplTest {
     @Mock private AppSelfServiceUserReadPlatformService appUserReadPlatformService;
     @Mock private RoleRepository roleRepository;
     @Mock private AppSelfServiceUserClientMappingRepository appUserClientMappingRepository;
+    @Mock private JdbcTemplate jdbcTemplate;
+    @Mock private AppUserRepository appUserRepository;
+    @Mock private ClientWritePlatformService clientWritePlatformService;
+    @Mock private Environment env;
 
     private SelfServiceRegistrationWritePlatformServiceImpl service;
 
@@ -80,7 +88,11 @@ class SelfServiceRegistrationWritePlatformServiceImplTest {
             smsCampaignDropdownReadPlatformService,
             appUserReadPlatformService,
             roleRepository,
-            appUserClientMappingRepository
+            appUserClientMappingRepository,
+            jdbcTemplate,
+            appUserRepository,
+            clientWritePlatformService,
+            env
         );
     }
 
@@ -102,7 +114,7 @@ class SelfServiceRegistrationWritePlatformServiceImplTest {
         when(fromApiJsonHelper.extractStringNamed(eq(SelfServiceApiConstants.middleNameParamName), any())).thenReturn(null);
         when(fromApiJsonHelper.extractStringNamed(eq(SelfServiceApiConstants.lastNameParamName), any())).thenReturn("Doe");
         when(fromApiJsonHelper.extractStringNamed(eq(SelfServiceApiConstants.usernameParamName), any())).thenReturn("jdoe");
-        when(fromApiJsonHelper.extractStringNamed(eq(SelfServiceApiConstants.passwordParamName), any())).thenReturn("Password123!");
+        when(fromApiJsonHelper.extractStringNamed(eq(SelfServiceApiConstants.passwordParamName), any())).thenReturn("Strong#Abc123");
         when(fromApiJsonHelper.extractStringNamed(eq(SelfServiceApiConstants.authenticationModeParamName), any())).thenReturn("email");
         when(fromApiJsonHelper.extractStringNamed(eq(SelfServiceApiConstants.emailParamName), any())).thenReturn("john@test.com");
 
@@ -123,7 +135,7 @@ class SelfServiceRegistrationWritePlatformServiceImplTest {
         when(fromApiJsonHelper.extractStringNamed(eq(SelfServiceApiConstants.middleNameParamName), any())).thenReturn(null);
         when(fromApiJsonHelper.extractStringNamed(eq(SelfServiceApiConstants.lastNameParamName), any())).thenReturn("Doe");
         when(fromApiJsonHelper.extractStringNamed(eq(SelfServiceApiConstants.usernameParamName), any())).thenReturn("jdoe");
-        when(fromApiJsonHelper.extractStringNamed(eq(SelfServiceApiConstants.passwordParamName), any())).thenReturn("Password123!");
+        when(fromApiJsonHelper.extractStringNamed(eq(SelfServiceApiConstants.passwordParamName), any())).thenReturn("Strong#Abc123");
         when(fromApiJsonHelper.extractStringNamed(eq(SelfServiceApiConstants.authenticationModeParamName), any())).thenReturn("email");
         when(fromApiJsonHelper.extractStringNamed(eq(SelfServiceApiConstants.emailParamName), any())).thenReturn("john@test.com");
 

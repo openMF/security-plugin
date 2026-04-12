@@ -27,15 +27,15 @@ class SelfServiceRegistrationIntegrationTest extends SelfServiceIntegrationTestB
   }
 
   @Test
-  @DisplayName("POST /v1/self/registration with invalid client logic returns 400")
-  void createRegistration_invalidClient_returns400() {
+  @DisplayName("POST /v1/self/registration with invalid client logic returns 404")
+  void createRegistration_invalidClient_returns404() {
     String payload = """
         {
           "accountNumber": "000000000",
           "firstName": "Inv",
           "lastName": "alid",
           "username": "invaliduser",
-          "password": "Password123!",
+          "password": "Strong#Abc123",
           "authenticationMode": "email",
           "email": "invalid@test.com"
         }
@@ -46,6 +46,6 @@ class SelfServiceRegistrationIntegrationTest extends SelfServiceIntegrationTestB
     .when()
         .post(SelfServiceTestUtils.SELF_REGISTRATION_PATH)
     .then()
-        .statusCode(400);
+        .statusCode(404);
   }
 }
