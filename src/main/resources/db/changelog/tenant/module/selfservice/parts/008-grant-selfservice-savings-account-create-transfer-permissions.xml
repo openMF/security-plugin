@@ -11,7 +11,7 @@
                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
     <!-- Give minimal grants for Savings Account to the Self Service Role-->
-    <changeSet author="fineract" id="ss-0006-1">
+    <changeSet author="fineract" id="ss-0008-1">
         <preConditions onFail="MARK_RAN">            
             <tableExists tableName="m_role_permission"/>
             <tableExists tableName="m_permission"/>
