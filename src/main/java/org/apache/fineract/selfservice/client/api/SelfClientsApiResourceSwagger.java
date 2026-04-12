@@ -51,7 +51,7 @@ final class SelfClientsApiResourceSwagger {
       public Long id;
 
       @Schema(example = "000000001")
-      public Long accountNo;
+      public String accountNo;
 
       public GetSelfClientsStatus status;
 
@@ -118,7 +118,7 @@ final class SelfClientsApiResourceSwagger {
     public Long id;
 
     @Schema(example = "000000027")
-    public Long accountNo;
+    public String accountNo;
 
     public GetSelfClientsResponse.GetSelfClientsPageItems.GetSelfClientsStatus status;
 
@@ -220,7 +220,7 @@ final class SelfClientsApiResourceSwagger {
       public Long id;
 
       @Schema(example = "000000001")
-      public Long accountNo;
+      public String accountNo;
 
       @Schema(example = "36efeb06-d835-48a1-99eb-09bd1d348c1e")
       public String externalId;
@@ -301,7 +301,7 @@ final class SelfClientsApiResourceSwagger {
       public Long id;
 
       @Schema(example = "000000007")
-      public Long accountNo;
+      public String accountNo;
 
       @Schema(example = "2")
       public Long productId;
