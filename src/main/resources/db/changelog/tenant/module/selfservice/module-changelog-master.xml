@@ -22,4 +22,5 @@
   <include file="parts/010-grant-selfservice-savings-account-create-account-permissions.xml" relativeToChangelogFile="true"/>  
   <include file="parts/011-grant-selfservice-savings-account-update-account-permissions.xml" relativeToChangelogFile="true"/>    
   <include file="parts/012-grant-selfservice-loan-account-read-permissions.xml" relativeToChangelogFile="true"/>      
+  <include file="parts/013-grant-selfservice-loan-account-create-account-permissions.xml" relativeToChangelogFile="true"/>      
 </databaseChangeLog>
