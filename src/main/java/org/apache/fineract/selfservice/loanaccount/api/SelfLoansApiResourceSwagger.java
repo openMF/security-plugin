@@ -255,7 +255,7 @@ final class SelfLoansApiResourceSwagger {
         public Integer id;
 
         @Schema(example = "000000001")
-        public Long accountNo;
+        public String accountNo;
       }
 
       static final class GetLoansLoanIdDisbursementDetails {
@@ -594,7 +594,7 @@ final class SelfLoansApiResourceSwagger {
     public Long id;
 
     @Schema(example = "000000001")
-    public Long accountNo;
+    public String accountNo;
 
     public GetLoansLoanIdStatus status;
 
