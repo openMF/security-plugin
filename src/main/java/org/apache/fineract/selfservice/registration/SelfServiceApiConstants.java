@@ -54,6 +54,11 @@ public final class SelfServiceApiConstants {
     
     public static final List<Object> SUPPORTED_AUTHENTICATION_MODE_PARAMETERS = List
             .copyOf(Arrays.asList(emailModeParamName, mobileModeParamName));
+            
+    public static final Set<String> SELF_ENROLLMENT_DATA_PARAMETERS = Collections
+            .unmodifiableSet(new HashSet<>(Arrays.asList(usernameParamName, passwordParamName, firstNameParamName,
+                    mobileNumberParamName, lastNameParamName, emailParamName, authenticationModeParamName, middleNameParamName,
+                    "legalFormId", "isStaff", "clientClassificationId", "clientTypeId", "externalId", "submittedOnDate", "active", "address", "datatables", "dateOfBirth", "genderId")));
     
     public static final String SELF_SERVICE_USER_ROLE = "Self Service User";
 

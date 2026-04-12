@@ -26,6 +26,12 @@ import org.apache.fineract.selfservice.registration.SelfServiceApiConstants;
 import org.apache.fineract.selfservice.registration.service.SelfServiceRegistrationWritePlatformService;
 import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
 import org.springframework.stereotype.Component;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 
 @Path("/v1/self/registration")
 @Component
@@ -48,6 +54,21 @@ public class SelfServiceRegistrationApiResource {
     @Produces({MediaType.APPLICATION_JSON})
     public String createSelfServiceUser(final String apiRequestBodyAsJson) {
         AppSelfServiceUser user = this.selfServiceRegistrationWritePlatformService.createSelfServiceUser(apiRequestBodyAsJson);
+        return this.toApiJsonSerializer.serialize(CommandProcessingResult.resourceResult(user.getId()));
+    }
+
+    @POST
+    @Path("client-user")
+    @Produces({MediaType.APPLICATION_JSON})
+    @Operation(summary = "Self Enrollment Flow", description = "Creates a Fineract Client and Self Service User in one shot.")
+    @RequestBody(required = true, content = @Content(schema = @Schema(implementation = SelfServiceEnrollmentRequest.class)))
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "OK"),
+        @ApiResponse(responseCode = "400", description = "Bad Request"),
+        @ApiResponse(responseCode = "409", description = "Conflict (Duplicate Username, Email, etc)")
+    })
+    public String selfEnroll(final String apiRequestBodyAsJson) {
+        AppSelfServiceUser user = this.selfServiceRegistrationWritePlatformService.selfEnroll(apiRequestBodyAsJson);
         return this.toApiJsonSerializer.serialize(CommandProcessingResult.resourceResult(user.getId()));
     }
 }

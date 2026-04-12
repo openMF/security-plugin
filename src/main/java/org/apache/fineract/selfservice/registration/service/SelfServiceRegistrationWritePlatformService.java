@@ -22,4 +22,6 @@ public interface SelfServiceRegistrationWritePlatformService {
     SelfServiceRegistration createRegistrationRequest(String apiRequestBodyAsJson);
 
     AppSelfServiceUser createSelfServiceUser(String apiRequestBodyAsJson);
+
+    AppSelfServiceUser selfEnroll(String apiRequestBodyAsJson);
 }

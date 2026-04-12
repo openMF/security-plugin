@@ -26,10 +26,10 @@ import org.apache.fineract.selfservice.registration.service.SelfServiceRegistrat
 import org.apache.fineract.selfservice.registration.service.SelfServiceRegistrationWritePlatformService;
 import org.apache.fineract.selfservice.registration.service.SelfServiceRegistrationWritePlatformServiceImpl;
 import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUserClientMappingRepository;
-import org.apache.fineract.useradministration.domain.PasswordValidationPolicyRepository;
-import org.apache.fineract.useradministration.domain.RoleRepository;
 import org.apache.fineract.selfservice.useradministration.domain.SelfServiceUserDomainService;
 import org.apache.fineract.selfservice.useradministration.service.AppSelfServiceUserReadPlatformService;
+import org.apache.fineract.useradministration.domain.PasswordValidationPolicyRepository;
+import org.apache.fineract.useradministration.domain.RoleRepository;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -39,33 +39,59 @@ import org.apache.fineract.useradministration.domain.AppUserRepository;
 import org.apache.fineract.portfolio.client.service.ClientWritePlatformService;
 import org.springframework.core.env.Environment;
 
+/**
+ * Self-service registration module wiring.
+ *
+ * Named distinctly to avoid bean-name collisions with core Fineract's self module when present.
+ */
 @Configuration
-public class SelfRegistrationConfiguration {
+public class SelfServiceRegistrationConfiguration {
 
-    @Bean
-    @ConditionalOnMissingBean(SelfServiceRegistrationReadPlatformService.class)
-    public SelfServiceRegistrationReadPlatformService selfServiceRegistrationReadPlatformService(JdbcTemplate jdbcTemplate) {
-        return new SelfServiceRegistrationReadPlatformServiceImpl(jdbcTemplate);
-    }
+  @Bean
+  @ConditionalOnMissingBean(SelfServiceRegistrationReadPlatformService.class)
+  public SelfServiceRegistrationReadPlatformService selfServiceRegistrationReadPlatformService(
+      JdbcTemplate jdbcTemplate) {
+    return new SelfServiceRegistrationReadPlatformServiceImpl(jdbcTemplate);
+  }
 
-    @Bean
-    @ConditionalOnMissingBean(SelfServiceRegistrationWritePlatformService.class)
-    public SelfServiceRegistrationWritePlatformService selfServiceRegistrationWritePlatformService(
-
-            SelfServiceRegistrationRepository selfServiceRegistrationRepository, FromJsonHelper fromApiJsonHelper,
-            SelfServiceRegistrationReadPlatformService selfServiceRegistrationReadPlatformService, ClientRepositoryWrapper clientRepository,
-            PasswordValidationPolicyRepository passwordValidationPolicy, SelfServiceUserDomainService userDomainService,
-            GmailBackedPlatformEmailService gmailBackedPlatformEmailService, SmsMessageRepository smsMessageRepository,
-            SmsMessageScheduledJobService smsMessageScheduledJobService,
-            SmsCampaignDropdownReadPlatformService smsCampaignDropdownReadPlatformService,
-            AppSelfServiceUserReadPlatformService appUserReadPlatformService, RoleRepository roleRepository,
-            AppSelfServiceUserClientMappingRepository appUserClientMappingRepository,
-            JdbcTemplate jdbcTemplate, AppUserRepository appUserRepository, 
-            ClientWritePlatformService clientWritePlatformService, Environment env) {
-        return new SelfServiceRegistrationWritePlatformServiceImpl(selfServiceRegistrationRepository, fromApiJsonHelper,
-                selfServiceRegistrationReadPlatformService, clientRepository, passwordValidationPolicy, userDomainService,
-                gmailBackedPlatformEmailService, smsMessageRepository, smsMessageScheduledJobService,
-                 smsCampaignDropdownReadPlatformService, appUserReadPlatformService, roleRepository, appUserClientMappingRepository,
-                 jdbcTemplate, appUserRepository, clientWritePlatformService, env);
-    }
+  @Bean
+  @ConditionalOnMissingBean(SelfServiceRegistrationWritePlatformService.class)
+  public SelfServiceRegistrationWritePlatformService selfServiceRegistrationWritePlatformService(
+      SelfServiceRegistrationRepository selfServiceRegistrationRepository,
+      FromJsonHelper fromApiJsonHelper,
+      SelfServiceRegistrationReadPlatformService selfServiceRegistrationReadPlatformService,
+      ClientRepositoryWrapper clientRepository,
+      PasswordValidationPolicyRepository passwordValidationPolicy,
+      SelfServiceUserDomainService userDomainService,
+      GmailBackedPlatformEmailService gmailBackedPlatformEmailService,
+      SmsMessageRepository smsMessageRepository,
+      SmsMessageScheduledJobService smsMessageScheduledJobService,
+      SmsCampaignDropdownReadPlatformService smsCampaignDropdownReadPlatformService,
+      AppSelfServiceUserReadPlatformService appUserReadPlatformService,
+      RoleRepository roleRepository,
+      AppSelfServiceUserClientMappingRepository appUserClientMappingRepository,
+      JdbcTemplate jdbcTemplate,
+      AppUserRepository appUserRepository,
+      ClientWritePlatformService clientWritePlatformService,
+      Environment env) {
+    return new SelfServiceRegistrationWritePlatformServiceImpl(
+        selfServiceRegistrationRepository,
+        fromApiJsonHelper,
+        selfServiceRegistrationReadPlatformService,
+        clientRepository,
+        passwordValidationPolicy,
+        userDomainService,
+        gmailBackedPlatformEmailService,
+        smsMessageRepository,
+        smsMessageScheduledJobService,
+        smsCampaignDropdownReadPlatformService,
+        appUserReadPlatformService,
+        roleRepository,
+        appUserClientMappingRepository,
+        jdbcTemplate,
+        appUserRepository,
+        clientWritePlatformService,
+        env);
+  }
 }
+

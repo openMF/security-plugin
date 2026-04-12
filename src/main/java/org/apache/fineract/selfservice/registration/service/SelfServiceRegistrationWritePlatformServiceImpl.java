@@ -72,12 +72,29 @@ import org.apache.fineract.selfservice.useradministration.service.AppSelfService
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.security.authentication.AuthenticationServiceException;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.apache.fineract.useradministration.domain.AppUser;
+import org.apache.fineract.useradministration.domain.AppUserRepository;
+import org.apache.fineract.portfolio.client.service.ClientWritePlatformService;
+import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
+import org.springframework.core.env.Environment;
+import org.springframework.beans.factory.SmartInitializingSingleton;
+import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import java.util.Collections;
 
 @Slf4j
 @RequiredArgsConstructor
-public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServiceRegistrationWritePlatformService {
+public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServiceRegistrationWritePlatformService, SmartInitializingSingleton {
 
     private final SelfServiceRegistrationRepository selfServiceRegistrationRepository;
     private final FromJsonHelper fromApiJsonHelper;
@@ -93,6 +110,23 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
     private final RoleRepository roleRepository;
     private static final SecureRandom secureRandom = new SecureRandom();
     private final AppSelfServiceUserClientMappingRepository appUserClientMappingRepository;
+    private final JdbcTemplate jdbcTemplate;
+    private final AppUserRepository appUserRepository;
+    private final ClientWritePlatformService clientWritePlatformService;
+    private final Environment env;
+
+    private Long cachedAuditUserId;
+
+    @Override
+    public void afterSingletonsInstantiated() {
+        String auditUsername = env.getProperty("fineract.selfservice.enrollment.audit-user", "system");
+        try {
+            this.cachedAuditUserId = jdbcTemplate.queryForObject("SELECT id FROM m_appuser WHERE username = ?", Long.class, auditUsername);
+            appUserRepository.findById(this.cachedAuditUserId).orElseThrow(() -> new EmptyResultDataAccessException(1));
+        } catch (EmptyResultDataAccessException e) {
+            throw new IllegalStateException("Self-enrollment audit user '" + auditUsername + "' does not exist. Please configure fineract.selfservice.enrollment.audit-user");
+        }
+    }
 
     @Override
     public SelfServiceRegistration createRegistrationRequest(String apiRequestBodyAsJson) {
@@ -298,6 +332,107 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
                     username);
         }
         throw ErrorHandler.getMappable(dve, "error.msg.unknown.data.integrity.issue", "Unknown data integrity issue with resource.");
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public AppSelfServiceUser selfEnroll(String apiRequestBodyAsJson) {
+        Gson gson = new Gson();
+        final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
+        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource("user");
+        this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, apiRequestBodyAsJson,
+                SelfServiceApiConstants.SELF_ENROLLMENT_DATA_PARAMETERS);
+        JsonElement element = gson.fromJson(apiRequestBodyAsJson.toString(), JsonElement.class);
+
+        String username = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.usernameParamName, element);
+        baseDataValidator.reset().parameter(SelfServiceApiConstants.usernameParamName).value(username).notBlank().notExceedingLengthOf(100);
+
+        String password = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.passwordParamName, element);
+        final PasswordValidationPolicy validationPolicy = this.passwordValidationPolicy.findActivePasswordValidationPolicy();
+        baseDataValidator.reset().parameter(SelfServiceApiConstants.passwordParamName).value(password)
+                .matchesRegularExpression(validationPolicy.getRegex(), validationPolicy.getDescription()).notExceedingLengthOf(100);
+
+        String authenticationMode = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.authenticationModeParamName, element);
+        baseDataValidator.reset().parameter(SelfServiceApiConstants.authenticationModeParamName).value(authenticationMode).notBlank()
+                .isOneOfTheseStringValues(SelfServiceApiConstants.emailModeParamName, SelfServiceApiConstants.mobileModeParamName);
+
+        String email = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.emailParamName, element);
+        baseDataValidator.reset().parameter(SelfServiceApiConstants.emailParamName).value(email).notExceedingLengthOf(100);
+
+        boolean isEmailAuthenticationMode = authenticationMode != null && authenticationMode.equalsIgnoreCase(SelfServiceApiConstants.emailModeParamName);
+        if (isEmailAuthenticationMode) {
+             baseDataValidator.reset().parameter(SelfServiceApiConstants.emailParamName).value(email).notBlank();
+        }
+
+        String mobileNumber = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.mobileNumberParamName, element);
+        if (!isEmailAuthenticationMode) {
+            baseDataValidator.reset().parameter(SelfServiceApiConstants.mobileNumberParamName).value(mobileNumber).notBlank()
+                    .validatePhoneNumber();
+        }
+
+        if (!dataValidationErrors.isEmpty()) {
+            throw new PlatformApiDataValidationException(dataValidationErrors);
+        }
+
+        validateForDuplicateUsername(username);
+
+        JsonObject jsonObject = JsonParser.parseString(apiRequestBodyAsJson).getAsJsonObject();
+        jsonObject.remove("officeId");
+        jsonObject.remove("familyMembers");
+        jsonObject.addProperty("officeId", env.getProperty("fineract.selfservice.enrollment.default-office-id", "1"));
+        JsonElement parsedSanitizedElement = jsonObject;
+
+        AppUser auditUser = appUserRepository.findById(this.cachedAuditUserId).orElseThrow();
+        Authentication auth = new UsernamePasswordAuthenticationToken(auditUser, null, auditUser.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(auth);
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                SecurityContextHolder.clearContext();
+            }
+        });
+
+        try {
+            JsonCommand command = JsonCommand.fromJsonElement(null, parsedSanitizedElement);
+            CommandProcessingResult result = clientWritePlatformService.createClient(command);
+            Long newClientId = result.getResourceId();
+
+            Client client = clientRepository.findOneWithNotFoundDetection(newClientId);
+            Role ssRole = roleRepository.getRoleByName(SelfServiceApiConstants.SELF_SERVICE_USER_ROLE);
+            if (ssRole == null) {
+                throw new RoleNotFoundException(SelfServiceApiConstants.SELF_SERVICE_USER_ROLE);
+            }
+            Collection<SimpleGrantedAuthority> authorities = new ArrayList<>();
+            authorities.add(new SimpleGrantedAuthority("DUMMY_ROLE_NOT_USED_OR_PERSISTED_TO_AVOID_EXCEPTION"));
+
+            User springConfigUser = new User(username, password, authorities);
+            AppSelfServiceUser appUser = new AppSelfServiceUser(
+                client.getOffice(), springConfigUser, Collections.singleton(ssRole),
+                email, client.getFirstname(), client.getLastname(), null,
+                true, true, Collections.singletonList(client), null
+            );
+
+            userDomainService.create(appUser, false);
+            appUserClientMappingRepository.saveClientUserMapping(appUser.getId(), client.getId());
+
+            log.info("Self-enrollment successful: clientId={} enrolledUsername={}", newClientId, username);
+            return appUser;
+
+        } catch (DataIntegrityViolationException dve) {
+            String msg = dve.getMostSpecificCause().getMessage().toLowerCase();
+            if (msg.contains("username") || msg.contains("username_org")) {
+                throw new PlatformDataIntegrityException("error.msg.user.duplicate.username", "Username already exists");
+            }
+            if (msg.contains("mobile_no") || msg.contains("mobileno")) {
+                throw new PlatformDataIntegrityException("error.msg.client.duplicate.mobileNo", "Mobile number already exists");
+            }
+            if (msg.contains("email")) {
+                throw new PlatformDataIntegrityException("error.msg.client.duplicate.email", "Email already exists");
+            }
+            throw ErrorHandler.getMappable(dve, "error.msg.unknown.data.integrity.issue", "Unknown data integrity issue");
+        }
     }
 
 }
