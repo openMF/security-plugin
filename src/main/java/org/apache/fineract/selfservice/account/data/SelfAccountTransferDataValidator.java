@@ -41,7 +41,6 @@ import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
-import org.apache.fineract.portfolio.account.data.request.AccountTransferRequest;
 import org.apache.fineract.selfservice.security.service.PlatformSelfServiceSecurityContext;
 import org.apache.fineract.selfservice.account.service.SelfAccountTransferReadService;
 import org.apache.fineract.selfservice.account.service.SelfBeneficiariesTPTReadPlatformService;
@@ -67,11 +66,11 @@ public class SelfAccountTransferDataValidator {
         this.tptBeneficiaryReadPlatformService = tptBeneficiaryReadPlatformService;
         this.fromApiJsonHelper = fromApiJsonHelper;
     }
-
+    
     public Map<String, Object> validateCreate(String type, String apiRequestBodyAsJson) {
-        if (apiRequestBodyAsJson == null) {
-          throw new InvalidJsonException();
-        }
+        if (StringUtils.isBlank(apiRequestBodyAsJson)) {
+            throw new InvalidJsonException();
+          }
 
         JsonElement element = this.fromApiJsonHelper.parse(apiRequestBodyAsJson);
 
