@@ -58,6 +58,11 @@ public class SelfRegistrationConfiguration {
         return new SelfServiceRegistrationReadPlatformServiceImpl(jdbcTemplate);
     }
 
+    /**
+     * Provides localized message bundles for registration notifications.
+     *
+     * @return configured registration message source
+     */
     @Bean
     @ConditionalOnMissingBean(SelfServiceAuthorizationTokenService.class)
     public SelfServiceAuthorizationTokenService selfServiceAuthorizationTokenService(Environment env) {
