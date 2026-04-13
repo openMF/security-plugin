@@ -9,13 +9,8 @@ package org.apache.fineract.selfservice.account.api;
 import static io.restassured.RestAssured.given;
 
 import io.restassured.response.Response;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 import java.util.UUID;
 import org.apache.fineract.selfservice.registration.SelfServiceApiConstants;
 import org.apache.fineract.selfservice.testing.support.SelfServiceIntegrationTestBase;
@@ -41,8 +36,7 @@ public class SelfBeneficiaryTPTIntegrationTest extends SelfServiceIntegrationTes
     
     Integer roleId = getSelfServiceRoleId();
     String username = insertSelfServiceUserDirectly(uniqueSuffix, clientId, roleId);
-    
-    authenticateSelfUser(username);
+
     return new SeedResult(username, accountNumber);
   }
 
@@ -148,86 +142,56 @@ public class SelfBeneficiaryTPTIntegrationTest extends SelfServiceIntegrationTes
   }
 
   private String insertSelfServiceUserDirectly(String uniqueSuffix, Integer clientId, Integer roleId) {
-    Properties props = new Properties();
-    props.setProperty("user", "postgres");
-    props.setProperty("password", "postgres");
-    String jdbcUrl = postgres.getJdbcUrl();
     String username = "ssuser_" + uniqueSuffix;
 
-    try (Connection conn = DriverManager.getConnection(jdbcUrl, props)) {
-      conn.setAutoCommit(false);
-      try {
-        try (PreparedStatement ps = conn.prepareStatement(
-            "SELECT setval(pg_get_serial_sequence('m_appuser', 'id'), "
-                + "GREATEST(COALESCE((SELECT MAX(id) FROM m_appuser), 0), COALESCE((SELECT MAX(id) FROM m_appselfservice_user), 0)))")) {
-          ps.execute();
-        }
+    executeSqlInPostgres("""
+        SELECT setval(
+            pg_get_serial_sequence('m_appuser', 'id'),
+            GREATEST(
+                COALESCE((SELECT MAX(id) FROM m_appuser), 0),
+                COALESCE((SELECT MAX(id) FROM m_appselfservice_user), 0)
+            )
+        );
 
-        long userId;
-        String insertAppUser = "INSERT INTO m_appuser(office_id, username, password, email, firstname, lastname, "
-            + "is_deleted, nonexpired, nonlocked, nonexpired_credentials, enabled, firsttime_login_remaining) "
-            + "VALUES (1, ?, (SELECT password FROM m_appuser WHERE username='mifos' LIMIT 1), ?, "
-            + "'Beneficiary', 'User', false, true, true, true, true, false) RETURNING id";
-        try (PreparedStatement ps = conn.prepareStatement(insertAppUser)) {
-          ps.setString(1, username);
-          ps.setString(2, username + "@fineract.org");
-          try (ResultSet rs = ps.executeQuery()) {
-            if (!rs.next()) {
-              throw new IllegalStateException("Could not insert self-service user");
-            }
-            userId = rs.getLong(1);
-          }
-        }
+        WITH new_appuser AS (
+            INSERT INTO m_appuser(
+                office_id, username, password, email, firstname, lastname, is_deleted,
+                nonexpired, nonlocked, nonexpired_credentials, enabled, firsttime_login_remaining
+            )
+            VALUES (
+                1, %s, (SELECT password FROM m_appuser WHERE username = 'mifos' LIMIT 1), %s,
+                'Beneficiary', 'User', false, true, true, true, true, false
+            )
+            RETURNING id
+        ), appuser_role AS (
+            INSERT INTO m_appuser_role(appuser_id, role_id)
+            SELECT id, %d FROM new_appuser
+        ), new_self_user AS (
+            INSERT INTO m_appselfservice_user(
+                id, office_id, username, password, email, firstname, lastname, is_deleted,
+                nonexpired, nonlocked, nonexpired_credentials, enabled, firsttime_login_remaining,
+                password_never_expires, is_self_service_user, password_reset_required
+            )
+            SELECT id, 1, %s, (SELECT password FROM m_appuser WHERE username = 'mifos' LIMIT 1), %s,
+                'Beneficiary', 'User', false, true, true, true, true, false, true, true, false
+            FROM new_appuser
+            RETURNING id
+        ), self_user_role AS (
+            INSERT INTO m_appselfservice_user_role(appuser_id, role_id)
+            SELECT id, %d FROM new_self_user
+        )
+        INSERT INTO m_selfservice_user_client_mapping(appuser_id, client_id)
+        SELECT id, %d FROM new_self_user;
 
-        try (PreparedStatement ps = conn.prepareStatement("INSERT INTO m_appuser_role(appuser_id, role_id) VALUES (?, ?)")) {
-          ps.setLong(1, userId);
-          ps.setInt(2, roleId);
-          ps.execute();
-        }
+        SELECT setval(
+            pg_get_serial_sequence('m_appselfservice_user', 'id'),
+            (SELECT MAX(id) FROM m_appselfservice_user)
+        );
+        """.formatted(
+            sqlLiteral(username), sqlLiteral(username + "@fineract.org"), roleId,
+            sqlLiteral(username), sqlLiteral(username + "@fineract.org"), roleId, clientId));
 
-        String insertSelfUser = "INSERT INTO m_appselfservice_user(id, office_id, username, password, email, firstname, lastname, "
-            + "nonexpired, nonlocked, nonexpired_credentials, enabled, firsttime_login_remaining, is_self_service_user, is_deleted, password_never_expires, password_reset_required) "
-            + "SELECT id, office_id, username, password, email, firstname, lastname, "
-            + "nonexpired, nonlocked, nonexpired_credentials, enabled, firsttime_login_remaining, true, false, false, false "
-            + "FROM m_appuser WHERE id = ?";
-        try (PreparedStatement ps = conn.prepareStatement(insertSelfUser)) {
-          ps.setLong(1, userId);
-          ps.execute();
-        }
-
-        try (PreparedStatement ps = conn.prepareStatement(
-            "SELECT setval(pg_get_serial_sequence('m_appselfservice_user', 'id'), (SELECT MAX(id) FROM m_appselfservice_user))")) {
-          ps.execute();
-        }
-
-        try (PreparedStatement ps = conn.prepareStatement("INSERT INTO m_appselfservice_user_role(appuser_id, role_id) VALUES (?, ?)")) {
-          ps.setLong(1, userId);
-          ps.setInt(2, roleId);
-          ps.execute();
-        }
-
-        try (PreparedStatement ps = conn.prepareStatement("INSERT INTO m_selfservice_user_client_mapping(appuser_id, client_id) VALUES (?, ?)")) {
-          ps.setLong(1, userId);
-          ps.setInt(2, clientId);
-          ps.execute();
-        }
-        conn.commit();
-      } catch (Exception e) {
-        conn.rollback();
-        throw e;
-      }
-    } catch (Exception e) {
-      throw new RuntimeException("Failed to seed self-service user for beneficiary IT", e);
-    }
     return username;
-  }
-
-  private void authenticateSelfUser(String username) {
-    given(SelfServiceTestUtils.requestSpec(getFineractPort()))
-        .body("{\"username\":\"" + username + "\",\"password\":\"password\"}")
-        .post(SelfServiceTestUtils.SELF_AUTH_PATH)
-        .then()
-        .statusCode(200);
   }
 
   /**

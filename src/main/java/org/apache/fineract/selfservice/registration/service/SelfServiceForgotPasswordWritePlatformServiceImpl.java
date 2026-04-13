@@ -300,6 +300,8 @@ public class SelfServiceForgotPasswordWritePlatformServiceImpl implements SelfSe
         } catch (RuntimeException e) {
             log.error("Failed to deliver self-service {} token for request {}", selfServiceRegistration.getRequestType(),
                     selfServiceRegistration.getId(), e);
+            // Swallowed intentionally: the request is persisted for audit/retry, and the API
+            // must always return 200 to avoid leaking user-existence information.
         }
     }
 

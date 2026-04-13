@@ -8,13 +8,8 @@ package org.apache.fineract.selfservice.runreport;
 
 import static io.restassured.RestAssured.given;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 import java.util.UUID;
 import org.apache.fineract.selfservice.testing.support.SelfServiceIntegrationTestBase;
 import org.apache.fineract.selfservice.testing.support.SelfServiceTestUtils;
@@ -65,70 +60,27 @@ public class SelfRunReportIntegrationTest extends SelfServiceIntegrationTestBase
           "Could not resolve role id for '" + SelfServiceApiConstants.SELF_SERVICE_USER_ROLE + "'");
     }
 
-    Properties props = new Properties();
-    props.setProperty("user", "postgres");
-    props.setProperty("password", "postgres");
-
-    String jdbcUrl = postgres.getJdbcUrl();
     String username = "user_" + UUID.randomUUID().toString().substring(0, 8);
 
-    try (Connection conn = DriverManager.getConnection(jdbcUrl, props)) {
-      String insertUser =
-          "INSERT INTO m_appuser(office_id, username, password, email, firstname, lastname, "
-              + "is_deleted, nonexpired, nonlocked, nonexpired_credentials, enabled, firsttime_login_remaining) "
-              + "VALUES (1, ?, (SELECT password FROM m_appuser WHERE username='mifos' LIMIT 1), ?, 'User', 'Test', false, true, true, true, true, false) RETURNING id";
-      long appUserId;
-      try (PreparedStatement psUser = conn.prepareStatement(insertUser)) {
-        psUser.setString(1, username);
-        psUser.setString(2, username + "@fineract.org");
-        try (ResultSet rs = psUser.executeQuery()) {
-          rs.next();
-          appUserId = rs.getLong(1);
-        }
-      }
-
-      try (PreparedStatement psUserRole = conn.prepareStatement("INSERT INTO m_appuser_role(appuser_id, role_id) VALUES (?, ?)")) {
-        psUserRole.setLong(1, appUserId);
-        psUserRole.setInt(2, roleId);
-        psUserRole.execute();
-      }
-
-      String insertSelfUser = "INSERT INTO m_appselfservice_user(id, office_id, username, password, email, firstname, lastname, "
-          + "nonexpired, nonlocked, nonexpired_credentials, enabled, firsttime_login_remaining, is_self_service_user, is_deleted) "
-          + "SELECT id, office_id, username, password, email, firstname, lastname, "
-          + "nonexpired, nonlocked, nonexpired_credentials, enabled, firsttime_login_remaining, true, false "
-          + "FROM m_appuser WHERE id = ?";
-      try (PreparedStatement psSelfUser = conn.prepareStatement(insertSelfUser)) {
-        psSelfUser.setLong(1, appUserId);
-        psSelfUser.execute();
-      }
-
-      try (PreparedStatement psSetVal = conn.prepareStatement(
-          "SELECT setval(pg_get_serial_sequence('m_appselfservice_user', 'id'), (SELECT MAX(id) FROM m_appselfservice_user))")) {
-        psSetVal.execute();
-      }
-
-      try (PreparedStatement psSelfUserRole = conn.prepareStatement("INSERT INTO m_appselfservice_user_role(appuser_id, role_id) VALUES (?, ?)")) {
-        psSelfUserRole.setLong(1, appUserId);
-        psSelfUserRole.setInt(2, roleId);
-        psSelfUserRole.execute();
-      }
-
-      try (PreparedStatement psClientMapping = conn.prepareStatement("INSERT INTO m_selfservice_user_client_mapping(appuser_id, client_id) VALUES (?, ?)")) {
-        psClientMapping.setLong(1, appUserId);
-        psClientMapping.setInt(2, clientId);
-        psClientMapping.execute();
-      }
-    } catch (Exception e) {
-      throw new RuntimeException("Failed to seed self-service user for runreport IT", e);
-    }
-
-    given(SelfServiceTestUtils.requestSpec(getFineractPort()))
-        .body("{\"username\":\"" + username + "\",\"password\":\"password\"}")
-    .when()
-        .post(SelfServiceTestUtils.SELF_AUTH_PATH)
-        .then()
-        .statusCode(200);
+    executeSqlInPostgres("""
+        WITH new_self_user AS (
+            INSERT INTO m_appselfservice_user(
+                office_id, username, password, email, firstname, lastname, is_deleted,
+                nonexpired, nonlocked, nonexpired_credentials, enabled, firsttime_login_remaining,
+                password_never_expires, is_self_service_user, password_reset_required
+            )
+            VALUES (
+                1, %s, (SELECT password FROM m_appuser WHERE username = 'mifos' LIMIT 1), %s,
+                'User', 'Test', false, true, true, true, true, false, true, true, false
+            )
+            RETURNING id
+        ), self_user_role AS (
+            INSERT INTO m_appselfservice_user_role(appuser_id, role_id)
+            SELECT id, %d FROM new_self_user
+        )
+        INSERT INTO m_selfservice_user_client_mapping(appuser_id, client_id)
+        SELECT id, %d FROM new_self_user;
+        """.formatted(sqlLiteral(username), sqlLiteral(username + "@fineract.org"), roleId, clientId));
 
     return username;
   }
