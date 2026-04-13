@@ -10,13 +10,8 @@ import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.restassured.response.Response;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.PreparedStatement;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 import java.util.UUID;
 import org.apache.fineract.selfservice.testing.support.SelfServiceIntegrationTestBase;
 import org.apache.fineract.selfservice.testing.support.SelfServiceTestUtils;
@@ -47,7 +42,7 @@ class SelfClientsApiIntegrationTest extends SelfServiceIntegrationTestBase {
 
   @Test
   @DisplayName("Verify ?fields=savingsAccounts preserves internal fields and strips unwanted wrappers")
-  void verifyFieldsParameterSerializationWorks() throws Exception {
+  void verifyFieldsParameterSerializationWorks() {
     
     // 1. Create Client
     String clientName = UUID.randomUUID().toString().substring(0, 8);
@@ -112,9 +107,6 @@ class SelfClientsApiIntegrationTest extends SelfServiceIntegrationTestBase {
 
     // 4. Create Self Service User directly in the self-service tables
     String selfUser = "user_" + clientName;
-    Properties props = new Properties();
-    props.setProperty("user", "postgres");
-    props.setProperty("password", "postgres");
 
     // Get the Fineract roleId for 'Self Service User'
     Integer roleId = given(SelfServiceTestUtils.requestSpecWithAuth(getFineractPort(), "mifos", "password"))
@@ -124,42 +116,25 @@ class SelfClientsApiIntegrationTest extends SelfServiceIntegrationTestBase {
     assertThat(roleId).as("Self Service User role must exist").isNotNull();
     assertThat(clientId).as("Created clientId must be present").isNotNull();
 
-    try (Connection conn = DriverManager.getConnection(postgres.getJdbcUrl(), props)) {
-        conn.setAutoCommit(false);
-        try {
-            try (PreparedStatement ps = conn.prepareStatement(
-                "INSERT INTO m_appselfservice_user(office_id, username, password, email, firstname, lastname, is_deleted, nonexpired, nonlocked, nonexpired_credentials, enabled, firsttime_login_remaining, password_never_expires, is_self_service_user, password_reset_required) "
-                        + "VALUES (1, ?, (SELECT password FROM m_appuser WHERE username='mifos' LIMIT 1), ?, 'Tomas', 'Test', false, true, true, true, true, false, true, true, false) RETURNING id")) {
-                ps.setString(1, selfUser);
-                ps.setString(2, selfUser + "@fineract.org");
-                long newUserId;
-                try (ResultSet rs = ps.executeQuery()) {
-                    rs.next();
-                    newUserId = rs.getLong(1);
-                }
-
-                try (PreparedStatement roleStatement = conn.prepareStatement(
-                    "INSERT INTO m_appselfservice_user_role(appuser_id, role_id) VALUES (?, ?)")) {
-                    roleStatement.setLong(1, newUserId);
-                    roleStatement.setLong(2, roleId.longValue());
-                    roleStatement.executeUpdate();
-                }
-
-                try (PreparedStatement mappingStatement = conn.prepareStatement(
-                    "INSERT INTO m_selfservice_user_client_mapping(appuser_id, client_id) VALUES (?, ?)")) {
-                    mappingStatement.setLong(1, newUserId);
-                    mappingStatement.setLong(2, clientId.longValue());
-                    mappingStatement.executeUpdate();
-                }
-            }
-            conn.commit();
-        } catch (Exception e) {
-            conn.rollback();
-            throw e;
-        } finally {
-            conn.setAutoCommit(true);
-        }
-    }
+    executeSqlInPostgres("""
+        WITH new_self_user AS (
+            INSERT INTO m_appselfservice_user(
+                office_id, username, password, email, firstname, lastname, is_deleted,
+                nonexpired, nonlocked, nonexpired_credentials, enabled, firsttime_login_remaining,
+                password_never_expires, is_self_service_user, password_reset_required
+            )
+            VALUES (
+                1, %s, (SELECT password FROM m_appuser WHERE username = 'mifos' LIMIT 1), %s,
+                'Tomas', 'Test', false, true, true, true, true, false, true, true, false
+            )
+            RETURNING id
+        ), self_user_role AS (
+            INSERT INTO m_appselfservice_user_role(appuser_id, role_id)
+            SELECT id, %d FROM new_self_user
+        )
+        INSERT INTO m_selfservice_user_client_mapping(appuser_id, client_id)
+        SELECT id, %d FROM new_self_user;
+        """.formatted(sqlLiteral(selfUser), sqlLiteral(selfUser + "@fineract.org"), roleId, clientId));
 
     // 5. Test Serialization Logic!
     Response response = given(SelfServiceTestUtils.requestSpecWithAuth(getFineractPort(), selfUser, "password"))

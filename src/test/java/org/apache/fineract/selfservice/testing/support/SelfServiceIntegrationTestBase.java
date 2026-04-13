@@ -7,6 +7,9 @@
 package org.apache.fineract.selfservice.testing.support;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -117,5 +120,65 @@ public abstract class SelfServiceIntegrationTestBase {
 
     protected static int getFineractPort() {
         return fineract.getMappedPort(8443);
+    }
+
+    /**
+     * Executes a SQL statement inside the Postgres test container using {@code psql}.
+     * Uses {@code ON_ERROR_STOP=1} so that any SQL error causes the execution to fail
+     * immediately, preventing partial state corruption.
+     */
+    protected static void executeSqlInPostgres(String sql) {
+        Container.ExecResult result = execPsql("""
+                BEGIN;
+                %s
+                COMMIT;
+                """.formatted(sql), false);
+        if (result.getExitCode() != 0) {
+            throw new RuntimeException("Failed to execute SQL in test database: " + result.getStderr());
+        }
+    }
+
+    /**
+     * Queries a single scalar value from the Postgres test container using {@code psql -tA}.
+     */
+    protected static String querySingleValueInPostgres(String sql) {
+        Container.ExecResult result = execPsql(sql, true);
+        if (result.getExitCode() != 0) {
+            throw new RuntimeException("Failed to query test database: " + result.getStderr());
+        }
+        return result.getStdout().lines().map(String::trim).filter(line -> !line.isEmpty()).findFirst().orElse("");
+    }
+
+    /**
+     * Wraps a Java string value as a SQL literal, escaping single quotes.
+     * Returns the string {@code NULL} for null input.
+     */
+    protected static String sqlLiteral(String value) {
+        if (value == null) {
+            return "NULL";
+        }
+        return "'" + value.replace("'", "''") + "'";
+    }
+
+    private static Container.ExecResult execPsql(String sql, boolean tuplesOnly) {
+        List<String> command = new ArrayList<>();
+        command.add("psql");
+        command.add("-v");
+        command.add("ON_ERROR_STOP=1");
+        command.add("-U");
+        command.add(postgres.getUsername());
+        command.add("-d");
+        command.add(postgres.getDatabaseName());
+        if (tuplesOnly) {
+            command.add("-t");
+            command.add("-A");
+        }
+        command.add("-c");
+        command.add(sql);
+        try {
+            return postgres.execInContainer(command.toArray(String[]::new));
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to execute SQL in Postgres test container", e);
+        }
     }
 }
