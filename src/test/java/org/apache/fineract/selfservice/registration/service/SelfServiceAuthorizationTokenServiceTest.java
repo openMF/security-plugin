@@ -32,7 +32,7 @@ class SelfServiceAuthorizationTokenServiceTest {
 
         String token = service.generateToken();
 
-        assertTrue(token.matches("\\d{8}"));
+        assertTrue(token.matches("\\d{6}"));
     }
 
     @Test
