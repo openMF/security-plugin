@@ -6,10 +6,11 @@
  */
 package org.apache.fineract.selfservice.products.api;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -50,6 +51,11 @@ class SelfSavingsProductsApiResourceTest {
 
   private static final Long PRODUCT_ID = 1L;
 
+  private static SavingsProductData defaultSavingsProductData() {
+    return SavingsProductData.template(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null);
+  }
+
   @BeforeEach
   void setUp() {
     resource =
@@ -67,15 +73,16 @@ class SelfSavingsProductsApiResourceTest {
 
   @Test
   void retrieveAll_authorized_callsReadService() {
-    Collection<SavingsProductData> products = List.of(mock(SavingsProductData.class));
+    Collection<SavingsProductData> products = List.of(defaultSavingsProductData());
     when(savingsProductReadPlatformService.retrieveAll()).thenReturn(products);
     when(toApiJsonSerializer.serialize(any(), any(Collection.class))).thenReturn("[]");
 
     String result = resource.retrieveAll(uriInfo);
 
-    assertNotNull(result);
+    assertEquals("[]", result);
     verify(securityContext).validateHasReadPermission("SAVINGSPRODUCT");
     verify(savingsProductReadPlatformService).retrieveAll();
+    verify(toApiJsonSerializer).serialize(any(), eq(products));
   }
 
   @Test
@@ -90,15 +97,16 @@ class SelfSavingsProductsApiResourceTest {
 
   @Test
   void retrieveOne_authorized_callsReadService() {
-    SavingsProductData product = mock(SavingsProductData.class);
+    SavingsProductData product = defaultSavingsProductData();
     when(savingsProductReadPlatformService.retrieveOne(PRODUCT_ID)).thenReturn(product);
     when(toApiJsonSerializer.serialize(any(), any(SavingsProductData.class))).thenReturn("{}");
 
     String result = resource.retrieveOne(PRODUCT_ID, uriInfo);
 
-    assertNotNull(result);
+    assertEquals("{}", result);
     verify(securityContext).validateHasReadPermission("SAVINGSPRODUCT");
     verify(savingsProductReadPlatformService).retrieveOne(PRODUCT_ID);
+    verify(toApiJsonSerializer).serialize(any(), eq(product));
   }
 
   @Test

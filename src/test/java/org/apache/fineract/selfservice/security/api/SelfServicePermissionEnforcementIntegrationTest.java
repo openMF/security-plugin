@@ -7,10 +7,12 @@
 package org.apache.fineract.selfservice.security.api;
 
 import static io.restassured.RestAssured.given;
+
 import io.restassured.response.Response;
-import java.util.UUID;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
+import java.util.UUID;
 import org.apache.fineract.selfservice.testing.support.SelfServiceIntegrationTestBase;
 import org.apache.fineract.selfservice.testing.support.SelfServiceTestUtils;
 import org.junit.jupiter.api.DisplayName;
@@ -87,40 +89,82 @@ public class SelfServicePermissionEnforcementIntegrationTest extends SelfService
     // So actually, let's mock or use the AppUser route... wait, if the transaction rolls back, we can't extract the token!
     // BUT we CAN just INSERT the AppSelfServiceUser directly using JDBC!
 
-    java.util.Properties props = new java.util.Properties();
+    Properties props = new Properties();
     props.setProperty("user", "postgres");
     props.setProperty("password", "postgres");
 
     String jdbcUrl = postgres.getJdbcUrl();
 
     try (java.sql.Connection conn = java.sql.DriverManager.getConnection(jdbcUrl, props)) {
-        // Find the generated hashed password from 'mifos' to copy it
-        try (java.sql.Statement st = conn.createStatement()) {
-            // Insert into m_appuser
-            String insertUser = "INSERT INTO m_appuser(office_id, username, password, email, firstname, lastname, is_deleted, nonexpired, nonlocked, nonexpired_credentials, enabled, firsttime_login_remaining) " +
-                                "VALUES (1, 'tomas', (SELECT password FROM m_appuser WHERE username='mifos' LIMIT 1), 'tomas@fineract.org', 'Tomas', 'Test', false, true, true, true, true, false) RETURNING id";
-            
-            java.sql.ResultSet rs = st.executeQuery(insertUser);
-            rs.next();
-            long newUserId = rs.getLong(1);
-            
-            // Map AppUser to Role
-            st.execute("INSERT INTO m_appuser_role(appuser_id, role_id) VALUES (" + newUserId + ", " + roleId + ")");
-            
-            // Insert into plugin m_appselfservice_user
-            st.execute("INSERT INTO m_appselfservice_user(id, office_id, username, password, email, firstname, lastname, nonexpired, nonlocked, nonexpired_credentials, enabled, firsttime_login_remaining) " +
-                       "SELECT id, office_id, username, password, email, firstname, lastname, nonexpired, nonlocked, nonexpired_credentials, enabled, firsttime_login_remaining FROM m_appuser WHERE id = " + newUserId);
-            
-            // Map SelfService User to Role
-            st.execute("INSERT INTO m_appselfservice_user_role(appuser_id, role_id) VALUES (" + newUserId + ", " + roleId + ")");
-            
-            // Map SelfService User to Client
-            st.execute("INSERT INTO m_selfservice_user_client_mapping(appuser_id, client_id) VALUES (" + newUserId + ", " + clientId + ")");
+        conn.setAutoCommit(false);
+        try {
+            long userId;
+            try (java.sql.PreparedStatement ps = conn.prepareStatement(
+                    "SELECT setval(pg_get_serial_sequence('m_appuser', 'id'), "
+                            + "GREATEST(COALESCE((SELECT MAX(id) FROM m_appuser), 0), COALESCE((SELECT MAX(id) FROM m_appselfservice_user), 0)))")) {
+                ps.execute();
+            }
+
+            try (java.sql.PreparedStatement ps = conn.prepareStatement(
+                    "INSERT INTO m_appuser(office_id, username, password, email, firstname, lastname, is_deleted, nonexpired, nonlocked, nonexpired_credentials, enabled, firsttime_login_remaining) "
+                            + "VALUES (1, ?, (SELECT password FROM m_appuser WHERE username='mifos' LIMIT 1), ?, 'Tomas', 'Test', false, true, true, true, true, false) RETURNING id")) {
+                ps.setString(1, username);
+                ps.setString(2, username + "@fineract.org");
+                try (java.sql.ResultSet rs = ps.executeQuery()) {
+                    rs.next();
+                    userId = rs.getLong(1);
+                }
+            }
+
+            try (java.sql.PreparedStatement ps = conn.prepareStatement(
+                    "INSERT INTO m_appuser_role(appuser_id, role_id) VALUES (?, ?)")) {
+                ps.setLong(1, userId);
+                ps.setInt(2, roleId);
+                ps.executeUpdate();
+            }
+
+            try (java.sql.PreparedStatement ps = conn.prepareStatement(
+                    "INSERT INTO m_appselfservice_user(id, office_id, username, password, email, firstname, lastname, nonexpired, nonlocked, nonexpired_credentials, enabled, firsttime_login_remaining, password_never_expires, is_self_service_user, password_reset_required) "
+                            + "SELECT id, office_id, username, password, email, firstname, lastname, nonexpired, nonlocked, nonexpired_credentials, enabled, firsttime_login_remaining, true, true, false FROM m_appuser WHERE id = ?")) {
+                ps.setLong(1, userId);
+                ps.executeUpdate();
+            }
+
+            try (java.sql.PreparedStatement ps = conn.prepareStatement(
+                    "SELECT setval(pg_get_serial_sequence('m_appuser', 'id'), (SELECT MAX(id) FROM m_appuser))")) {
+                ps.execute();
+            }
+
+            try (java.sql.PreparedStatement ps = conn.prepareStatement(
+                    "SELECT setval(pg_get_serial_sequence('m_appselfservice_user', 'id'), (SELECT MAX(id) FROM m_appselfservice_user))")) {
+                ps.execute();
+            }
+
+            try (java.sql.PreparedStatement ps = conn.prepareStatement(
+                    "INSERT INTO m_appselfservice_user_role(appuser_id, role_id) VALUES (?, ?)")) {
+                ps.setLong(1, userId);
+                ps.setInt(2, roleId);
+                ps.executeUpdate();
+            }
+
+            try (java.sql.PreparedStatement ps = conn.prepareStatement(
+                    "INSERT INTO m_selfservice_user_client_mapping(appuser_id, client_id) VALUES (?, ?)")) {
+                ps.setLong(1, userId);
+                ps.setInt(2, clientId);
+                ps.executeUpdate();
+            }
+
+            conn.commit();
+        } catch (Exception e) {
+            conn.rollback();
+            throw e;
+        } finally {
+            conn.setAutoCommit(true);
         }
     }
 
     // 4. Test the API without the permission: Expect 403
-    given(SelfServiceTestUtils.requestSpecWithAuth(getFineractPort(), "tomas", "password"))
+    given(SelfServiceTestUtils.requestSpecWithAuth(getFineractPort(), username, "password"))
         .when()
         .get(SelfServiceTestUtils.CONTEXT_PATH + "/api/v1/self/savingsproducts")
         .then()
@@ -139,7 +183,7 @@ public class SelfServicePermissionEnforcementIntegrationTest extends SelfService
         .then()
         .statusCode(200);
 
-    given(SelfServiceTestUtils.requestSpecWithAuth(getFineractPort(), "tomas", "password"))
+    given(SelfServiceTestUtils.requestSpecWithAuth(getFineractPort(), username, "password"))
         .when()
         .get(SelfServiceTestUtils.CONTEXT_PATH + "/api/v1/self/savingsproducts")
         .then()
@@ -157,7 +201,7 @@ public class SelfServicePermissionEnforcementIntegrationTest extends SelfService
         .statusCode(200);
 
     // 6. Test the API with the permission: Expect 200
-    given(SelfServiceTestUtils.requestSpecWithAuth(getFineractPort(), "tomas", "password"))
+    given(SelfServiceTestUtils.requestSpecWithAuth(getFineractPort(), username, "password"))
         .when()
         .get(SelfServiceTestUtils.CONTEXT_PATH + "/api/v1/self/savingsproducts")
         .then()
@@ -174,7 +218,7 @@ public class SelfServicePermissionEnforcementIntegrationTest extends SelfService
         .statusCode(200);
 
     // 8. Test the API without the permission: Expect 403 immediately
-    given(SelfServiceTestUtils.requestSpecWithAuth(getFineractPort(), "tomas", "password"))
+    given(SelfServiceTestUtils.requestSpecWithAuth(getFineractPort(), username, "password"))
         .when()
         .get(SelfServiceTestUtils.CONTEXT_PATH + "/api/v1/self/savingsproducts")
         .then()

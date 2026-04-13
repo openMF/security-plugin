@@ -25,9 +25,34 @@ public interface SelfServiceRegistrationRepository
 
   String FIND_BY_REQUEST_AND_AUTHENTICATION_TOKEN =
       "select request from SelfServiceRegistration request where request.id = :id and "
-          + "request.authenticationToken = :authenticationToken";
+          + "request.authenticationToken = :authenticationToken and request.requestType = :requestType";
 
+  String FIND_BY_EXTERNAL_AUTHORIZATION_TOKEN =
+      "select request from SelfServiceRegistration request where request.externalAuthorizationToken = :externalAuthorizationToken "
+          + "and request.requestType = :requestType";
+
+  /**
+   * Looks up a self-service request by its legacy identifier pair and request type.
+   *
+   * @param id persisted request identifier
+   * @param authenticationToken persisted legacy authentication token
+   * @param requestType expected request type scope
+   * @return matching request, or {@code null} when no request matches
+   */
   @Query(FIND_BY_REQUEST_AND_AUTHENTICATION_TOKEN)
   SelfServiceRegistration getRequestByIdAndAuthenticationToken(
-      @Param("id") Long id, @Param("authenticationToken") String authenticationToken);
+      @Param("id") Long id, @Param("authenticationToken") String authenticationToken,
+      @Param("requestType") SelfServiceRequestType requestType);
+
+  /**
+   * Looks up a self-service request by its external authorization token and request type.
+   *
+   * @param externalAuthorizationToken external one-shot token presented by the caller
+   * @param requestType expected request type scope
+   * @return matching request, or {@code null} when no request matches
+   */
+  @Query(FIND_BY_EXTERNAL_AUTHORIZATION_TOKEN)
+  SelfServiceRegistration getRequestByExternalAuthorizationToken(
+      @Param("externalAuthorizationToken") String externalAuthorizationToken,
+      @Param("requestType") SelfServiceRequestType requestType);
 }

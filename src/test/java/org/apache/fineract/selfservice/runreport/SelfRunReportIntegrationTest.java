@@ -103,6 +103,11 @@ public class SelfRunReportIntegrationTest extends SelfServiceIntegrationTestBase
         psSelfUser.execute();
       }
 
+      try (PreparedStatement psSetVal = conn.prepareStatement(
+          "SELECT setval(pg_get_serial_sequence('m_appselfservice_user', 'id'), (SELECT MAX(id) FROM m_appselfservice_user))")) {
+        psSetVal.execute();
+      }
+
       try (PreparedStatement psSelfUserRole = conn.prepareStatement("INSERT INTO m_appselfservice_user_role(appuser_id, role_id) VALUES (?, ?)")) {
         psSelfUserRole.setLong(1, appUserId);
         psSelfUserRole.setInt(2, roleId);

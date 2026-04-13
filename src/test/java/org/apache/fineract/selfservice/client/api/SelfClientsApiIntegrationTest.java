@@ -13,7 +13,7 @@ import io.restassured.response.Response;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
-import java.sql.Statement;
+import java.sql.PreparedStatement;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -110,7 +110,7 @@ class SelfClientsApiIntegrationTest extends SelfServiceIntegrationTestBase {
         .extract()
         .path("savingsId");
 
-    // 4. Create Self Service User (via JDBC directly to bypass email constraints/setup if any)
+    // 4. Create Self Service User directly in the self-service tables
     String selfUser = "user_" + clientName;
     Properties props = new Properties();
     props.setProperty("user", "postgres");
@@ -121,19 +121,43 @@ class SelfClientsApiIntegrationTest extends SelfServiceIntegrationTestBase {
         .get(SelfServiceTestUtils.CONTEXT_PATH + "/api/v1/roles")
         .jsonPath().getInt("find { it.name == 'Self Service User' }.id");
 
+    assertThat(roleId).as("Self Service User role must exist").isNotNull();
+    assertThat(clientId).as("Created clientId must be present").isNotNull();
+
     try (Connection conn = DriverManager.getConnection(postgres.getJdbcUrl(), props)) {
-        try (Statement st = conn.createStatement()) {
-            String insertUser = "INSERT INTO m_appuser(office_id, username, password, email, firstname, lastname, is_deleted, nonexpired, nonlocked, nonexpired_credentials, enabled, firsttime_login_remaining) " +
-                                "VALUES (1, '" + selfUser + "', (SELECT password FROM m_appuser WHERE username='mifos' LIMIT 1), '" + selfUser + "@fineract.org', 'Tomas', 'Test', false, true, true, true, true, false) RETURNING id";
-            ResultSet rs = st.executeQuery(insertUser);
-            rs.next();
-            long newUserId = rs.getLong(1);
-            
-            st.execute("INSERT INTO m_appuser_role(appuser_id, role_id) VALUES (" + newUserId + ", " + roleId + ")");
-            st.execute("INSERT INTO m_appselfservice_user(id, office_id, username, password, email, firstname, lastname, nonexpired, nonlocked, nonexpired_credentials, enabled, firsttime_login_remaining) " +
-                       "SELECT id, office_id, username, password, email, firstname, lastname, nonexpired, nonlocked, nonexpired_credentials, enabled, firsttime_login_remaining FROM m_appuser WHERE id = " + newUserId);
-            st.execute("INSERT INTO m_appselfservice_user_role(appuser_id, role_id) VALUES (" + newUserId + ", " + roleId + ")");
-            st.execute("INSERT INTO m_selfservice_user_client_mapping(appuser_id, client_id) VALUES (" + newUserId + ", " + clientId + ")");
+        conn.setAutoCommit(false);
+        try {
+            try (PreparedStatement ps = conn.prepareStatement(
+                "INSERT INTO m_appselfservice_user(office_id, username, password, email, firstname, lastname, is_deleted, nonexpired, nonlocked, nonexpired_credentials, enabled, firsttime_login_remaining, password_never_expires, is_self_service_user, password_reset_required) "
+                        + "VALUES (1, ?, (SELECT password FROM m_appuser WHERE username='mifos' LIMIT 1), ?, 'Tomas', 'Test', false, true, true, true, true, false, true, true, false) RETURNING id")) {
+                ps.setString(1, selfUser);
+                ps.setString(2, selfUser + "@fineract.org");
+                long newUserId;
+                try (ResultSet rs = ps.executeQuery()) {
+                    rs.next();
+                    newUserId = rs.getLong(1);
+                }
+
+                try (PreparedStatement roleStatement = conn.prepareStatement(
+                    "INSERT INTO m_appselfservice_user_role(appuser_id, role_id) VALUES (?, ?)")) {
+                    roleStatement.setLong(1, newUserId);
+                    roleStatement.setLong(2, roleId.longValue());
+                    roleStatement.executeUpdate();
+                }
+
+                try (PreparedStatement mappingStatement = conn.prepareStatement(
+                    "INSERT INTO m_selfservice_user_client_mapping(appuser_id, client_id) VALUES (?, ?)")) {
+                    mappingStatement.setLong(1, newUserId);
+                    mappingStatement.setLong(2, clientId.longValue());
+                    mappingStatement.executeUpdate();
+                }
+            }
+            conn.commit();
+        } catch (Exception e) {
+            conn.rollback();
+            throw e;
+        } finally {
+            conn.setAutoCommit(true);
         }
     }
 
