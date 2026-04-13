@@ -77,7 +77,7 @@ public class SelfServiceAuthorizationTokenService {
     private int resolveTokenLength() {
         Integer configuredLength = env.getProperty("mifos.self.service.token.length", Integer.class);
         if (configuredLength == null) {
-            configuredLength = env.getProperty("mifos.self.service.token.lenght", Integer.class, DEFAULT_NUMERIC_LENGTH);
+            configuredLength = env.getProperty("mifos.self.service.token.length", Integer.class, DEFAULT_NUMERIC_LENGTH);
         }
         int length = configuredLength == null ? DEFAULT_NUMERIC_LENGTH : configuredLength;
         length = Math.min(length, MAX_TOKEN_LENGTH);
