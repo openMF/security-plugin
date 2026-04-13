@@ -129,6 +129,14 @@ public class SelfServiceSecurityConfiguration {
                 // Self authentication (login)
                 .requestMatchers(HttpMethod.POST, "/api/v1/self/authentication").permitAll()
                 .requestMatchers(HttpMethod.POST, "/v1/self/authentication").permitAll()
+                    
+                // Password Reset
+                .requestMatchers(HttpMethod.POST, "/api/v1/self/password").permitAll()
+                .requestMatchers(HttpMethod.POST, "/v1/self/password").permitAll()    
+                .requestMatchers(HttpMethod.POST, "/api/v1/self/password/request").permitAll()
+                .requestMatchers(HttpMethod.POST, "/v1/self/password/request").permitAll()    
+                .requestMatchers(HttpMethod.POST, "/api/v1/self/password/renew").permitAll()
+                .requestMatchers(HttpMethod.POST, "/v1/self/password/renew").permitAll()        
 
                 // All other self-service endpoints require self-service authentication and must
                 // pass the self-service authorization manager (guards self vs non-self traffic).

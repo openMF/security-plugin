@@ -66,10 +66,14 @@ public final class SelfServiceApiConstants {
     public static final String middlenameParamName = "middlename";
     public static final String lastnameParamName = "lastname";
     public static final String createRequestSuccessMessage = "Self service request created.";
+    public static final String createForgotPasswordRequestSuccessMessage = "Self service forgot password request created.";
     
     public static final Set<String> REGISTRATION_REQUEST_DATA_PARAMETERS = Collections
             .unmodifiableSet(new HashSet<>(Arrays.asList(usernameParamName, accountNumberParamName, passwordParamName, firstNameParamName,
                     mobileNumberParamName, lastNameParamName, emailParamName, authenticationModeParamName,middleNameParamName)));
+    
+    public static final Set<String> FORGOT_PASSWORD_REQUEST_DATA_PARAMETERS = Collections
+            .unmodifiableSet(new HashSet<>(Arrays.asList(usernameParamName, authenticationModeParamName)));
     
     public static final Set<String> CREATE_USER_REQUEST_DATA_PARAMETERS = Collections
             .unmodifiableSet(new HashSet<>(Arrays.asList(requestIdParamName, authenticationTokenParamName)));
