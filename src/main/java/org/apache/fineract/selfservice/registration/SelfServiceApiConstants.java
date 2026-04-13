@@ -39,10 +39,12 @@ public final class SelfServiceApiConstants {
     public static final String emailParamName = "email";
     public static final String usernameParamName = "username";
     public static final String authenticationTokenParamName = "authenticationToken";
+    public static final String externalAuthenticationTokenParamName = "externalAuthenticationToken";
     public static final String authenticationModeParamName = "authenticationMode";
     public static final String emailModeParamName = "email";
     public static final String mobileModeParamName = "mobile";
     public static final String requestIdParamName = "requestId";
+    public static final String repeatPasswordParamName = "repeatPassword";
     public static final String legalFormIdParamName = "legalFormId";
     public static final String isStaffParamName = "isStaff";
     public static final String officeIdParamName = "officeId";
@@ -73,10 +75,16 @@ public final class SelfServiceApiConstants {
                     mobileNumberParamName, lastNameParamName, emailParamName, authenticationModeParamName,middleNameParamName)));
     
     public static final Set<String> FORGOT_PASSWORD_REQUEST_DATA_PARAMETERS = Collections
-            .unmodifiableSet(new HashSet<>(Arrays.asList(usernameParamName, authenticationModeParamName)));
+            .unmodifiableSet(new HashSet<>(Arrays.asList(usernameParamName, externalIdParamName, externalIDParamName,
+                    authenticationModeParamName)));
     
     public static final Set<String> CREATE_USER_REQUEST_DATA_PARAMETERS = Collections
-            .unmodifiableSet(new HashSet<>(Arrays.asList(requestIdParamName, authenticationTokenParamName)));
+            .unmodifiableSet(new HashSet<>(Arrays.asList(requestIdParamName, authenticationTokenParamName,
+                    externalAuthenticationTokenParamName)));
+
+    public static final Set<String> FORGOT_PASSWORD_RENEW_DATA_PARAMETERS = Collections
+            .unmodifiableSet(new HashSet<>(Arrays.asList(requestIdParamName, authenticationTokenParamName,
+                    externalAuthenticationTokenParamName, passwordParamName, repeatPasswordParamName)));
     
     public static final List<Object> SUPPORTED_AUTHENTICATION_MODE_PARAMETERS = List
             .copyOf(Arrays.asList(emailModeParamName, mobileModeParamName));
@@ -90,5 +98,4 @@ public final class SelfServiceApiConstants {
                     datatablesParamName, familyMembersParamName, dateOfBirthParamName, genderIdParamName)));
     
     public static final String SELF_SERVICE_USER_ROLE = "Self Service User";
-
 }

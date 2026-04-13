@@ -29,6 +29,8 @@ public final class SelfServiceTestUtils {
   /** API path constants used across integration test classes. */
   public static final String SELF_AUTH_PATH = CONTEXT_PATH + "/api/v1/self/authentication";
   public static final String SELF_REGISTRATION_PATH = CONTEXT_PATH + "/api/v1/self/registration";
+  public static final String SELF_PASSWORD_REQUEST_PATH = CONTEXT_PATH + "/api/v1/self/password/request";
+  public static final String SELF_PASSWORD_RENEW_PATH = CONTEXT_PATH + "/api/v1/self/password/renew";
   public static final String SELF_CLIENTS_PATH = CONTEXT_PATH + "/api/v1/self/clients";
   public static final String SELF_SAVINGS_PATH = CONTEXT_PATH + "/api/v1/self/savingsaccounts";
   public static final String SELF_LOANS_PATH = CONTEXT_PATH + "/api/v1/self/loans";

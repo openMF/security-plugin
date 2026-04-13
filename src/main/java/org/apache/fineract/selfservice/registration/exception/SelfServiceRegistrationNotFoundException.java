@@ -22,9 +22,12 @@ public class SelfServiceRegistrationNotFoundException
   public SelfServiceRegistrationNotFoundException(Long requestId, String authenticationToken) {
     super(
         "error.msg.self.service.registration.not.found",
-        "Self service registration not found with request id : "
-            + requestId
-            + " and authentication token :"
-            + authenticationToken);
+        "Self service request not found for provided request id and authentication token");
+  }
+
+  public SelfServiceRegistrationNotFoundException(String externalAuthenticationToken) {
+    super(
+        "error.msg.self.service.registration.not.found",
+        "Self service request not found for provided external authentication token");
   }
 }

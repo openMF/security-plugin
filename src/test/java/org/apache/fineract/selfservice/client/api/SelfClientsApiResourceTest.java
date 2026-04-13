@@ -162,12 +162,12 @@ class SelfClientsApiResourceTest {
 
   // --- retrieveOne ---
 
-  @Test
-  void retrieveOne_checksPermission() {
-    mockClientMapped();
-    ClientData clientData = mock(ClientData.class);
-    when(selfServiceClientReadPlatformService.retrieveOne(CLIENT_ID)).thenReturn(clientData);
-    when(clientSerializer.serialize(any(), eq(clientData))).thenReturn("{\"id\":5}");
+    @Test
+    void retrieveOne_checksPermission() {
+        mockClientMapped();
+        ClientData clientData = ClientData.emptyInstance(CLIENT_ID);
+        when(selfServiceClientReadPlatformService.retrieveOne(CLIENT_ID)).thenReturn(clientData);
+        when(clientSerializer.serialize(any(), eq(clientData))).thenReturn("{\"id\":5}");
 
     resource.retrieveOne(CLIENT_ID, uriInfo);
 

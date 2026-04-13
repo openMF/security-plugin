@@ -9,7 +9,9 @@ package org.apache.fineract.selfservice.registration.domain;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 
+import java.time.LocalDateTime;
 import org.apache.fineract.portfolio.client.domain.Client;
+import org.apache.fineract.selfservice.registration.domain.SelfServiceRequestType;
 import org.junit.jupiter.api.Test;
 
 class SelfServiceRegistrationTest {
@@ -27,8 +29,11 @@ class SelfServiceRegistrationTest {
             "5522649498",
             "pedro@test.com",
             "1234",
+            "external-token",
             "pedro.marmol",
-            "SecurePass123#");
+            "SecurePass123#",
+            SelfServiceRequestType.REGISTRATION,
+            LocalDateTime.now().plusSeconds(30));
 
     assertEquals(client, reg.getClient());
     assertEquals("000000001", reg.getAccountNumber());
@@ -38,8 +43,12 @@ class SelfServiceRegistrationTest {
     assertEquals("5522649498", reg.getMobileNumber());
     assertEquals("pedro@test.com", reg.getEmail());
     assertEquals("1234", reg.getAuthenticationToken());
+    assertEquals("external-token", reg.getExternalAuthorizationToken());
     assertEquals("pedro.marmol", reg.getUsername());
     assertEquals("SecurePass123#", reg.getPassword());
+    assertEquals(SelfServiceRequestType.REGISTRATION, reg.getRequestType());
+    assertFalse(reg.isConsumed());
+    assertNotNull(reg.getExpiresAt());
     assertNotNull(reg.getCreatedDate());
   }
 
@@ -56,8 +65,11 @@ class SelfServiceRegistrationTest {
             null,
             "john@test.com",
             "5678",
+            "other-token",
             "john.doe",
-            "Pass456#");
+            "Pass456#",
+            SelfServiceRequestType.PASSWORD_RESET,
+            LocalDateTime.now().plusSeconds(30));
 
     assertNull(reg.getMiddleName());
     assertNull(reg.getMobileNumber());

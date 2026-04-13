@@ -18,6 +18,7 @@ import org.apache.fineract.infrastructure.core.domain.FineractRequestContextHold
 import org.apache.fineract.infrastructure.core.filters.IdempotencyStoreHelper;
 import org.apache.fineract.infrastructure.core.serialization.ToApiJsonSerializer;
 import org.apache.fineract.infrastructure.core.service.MDCWrapper;
+import org.apache.fineract.infrastructure.jobs.filter.ProgressiveLoanModelCheckerHelper;
 import org.apache.fineract.infrastructure.jobs.filter.ProgressiveLoanModelCheckerFilter;
 import org.apache.fineract.infrastructure.security.data.PlatformRequestLog;
 import org.apache.fineract.infrastructure.security.domain.PlatformUserRepository;
@@ -29,6 +30,8 @@ import org.apache.fineract.selfservice.security.domain.PlatformSelfServiceUserRe
 import org.apache.fineract.selfservice.useradministration.service.SelfServiceRoleReadPlatformService;
 import org.apache.fineract.selfservice.security.service.TenantAwareJpaPlatformSelfServiceUserDetailsService;
 import org.apache.fineract.selfservice.security.starter.SelfServiceSecurityConfiguration;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanRepository;
+import org.apache.fineract.portfolio.loanaccount.service.ProgressiveLoanModelProcessingService;
 import org.springframework.boot.autoconfigure.web.ServerProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -102,7 +105,7 @@ public class SelfServiceSecurityTestConfig {
 
     @Bean
     public FineractRequestContextHolder fineractRequestContextHolder() {
-        return mock(FineractRequestContextHolder.class);
+        return new FineractRequestContextHolder();
     }
 
     @Bean
@@ -116,8 +119,26 @@ public class SelfServiceSecurityTestConfig {
     }
 
     @Bean
-    public ProgressiveLoanModelCheckerFilter progressiveLoanModelCheckerFilter() {
-        return mock(ProgressiveLoanModelCheckerFilter.class);
+    public ProgressiveLoanModelCheckerFilter progressiveLoanModelCheckerFilter(LoanRepository loanRepository,
+            ProgressiveLoanModelProcessingService progressiveLoanModelProcessingService,
+            ProgressiveLoanModelCheckerHelper progressiveLoanModelCheckerHelper) {
+        return new ProgressiveLoanModelCheckerFilter(loanRepository, progressiveLoanModelProcessingService,
+                progressiveLoanModelCheckerHelper);
+    }
+
+    @Bean
+    public LoanRepository loanRepository() {
+        return mock(LoanRepository.class);
+    }
+
+    @Bean
+    public ProgressiveLoanModelProcessingService progressiveLoanModelProcessingService() {
+        return mock(ProgressiveLoanModelProcessingService.class);
+    }
+
+    @Bean
+    public ProgressiveLoanModelCheckerHelper progressiveLoanModelCheckerHelper() {
+        return mock(ProgressiveLoanModelCheckerHelper.class);
     }
 
     @Bean

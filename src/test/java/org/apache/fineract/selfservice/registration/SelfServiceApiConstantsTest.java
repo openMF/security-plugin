@@ -40,7 +40,10 @@ class SelfServiceApiConstantsTest {
     assertTrue(
         SelfServiceApiConstants.CREATE_USER_REQUEST_DATA_PARAMETERS.contains(
             "authenticationToken"));
-    assertEquals(2, SelfServiceApiConstants.CREATE_USER_REQUEST_DATA_PARAMETERS.size());
+    assertTrue(
+        SelfServiceApiConstants.CREATE_USER_REQUEST_DATA_PARAMETERS.contains(
+            "externalAuthenticationToken"));
+    assertEquals(3, SelfServiceApiConstants.CREATE_USER_REQUEST_DATA_PARAMETERS.size());
   }
 
   @Test
@@ -53,6 +56,23 @@ class SelfServiceApiConstantsTest {
   @Test
   void selfServiceUserRole_shouldBeCorrect() {
     assertEquals("Self Service User", SelfServiceApiConstants.SELF_SERVICE_USER_ROLE);
+  }
+
+  @Test
+  void forgotPasswordRenewDataParameters_shouldContainRequiredFields() {
+    assertTrue(SelfServiceApiConstants.FORGOT_PASSWORD_RENEW_DATA_PARAMETERS.contains("requestId"));
+    assertTrue(SelfServiceApiConstants.FORGOT_PASSWORD_RENEW_DATA_PARAMETERS.contains("authenticationToken"));
+    assertTrue(SelfServiceApiConstants.FORGOT_PASSWORD_RENEW_DATA_PARAMETERS.contains("externalAuthenticationToken"));
+    assertTrue(SelfServiceApiConstants.FORGOT_PASSWORD_RENEW_DATA_PARAMETERS.contains("password"));
+    assertTrue(SelfServiceApiConstants.FORGOT_PASSWORD_RENEW_DATA_PARAMETERS.contains("repeatPassword"));
+    assertEquals(5, SelfServiceApiConstants.FORGOT_PASSWORD_RENEW_DATA_PARAMETERS.size());
+  }
+
+  @Test
+  void forgotPasswordRenewDataParameters_shouldBeImmutable() {
+    assertThrows(
+        UnsupportedOperationException.class,
+        () -> SelfServiceApiConstants.FORGOT_PASSWORD_RENEW_DATA_PARAMETERS.add("illegal"));
   }
 
   @Test
