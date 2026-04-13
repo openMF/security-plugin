@@ -461,6 +461,13 @@ public class AppSelfServiceUser extends AbstractPersistableCustom<Long> implemen
         return this.credentialsNonExpired;
     }
 
+    /**
+     * Activates a previously disabled self-service user after enrollment confirmation.
+     */
+    public void enable() {
+        this.enabled = true;
+    }
+
     @Override
     public boolean isEnabled() {
         return this.enabled;
