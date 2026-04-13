@@ -20,6 +20,7 @@ import org.apache.fineract.infrastructure.core.service.GmailBackedPlatformEmailS
 import org.apache.fineract.infrastructure.sms.domain.SmsMessageRepository;
 import org.apache.fineract.infrastructure.sms.scheduler.SmsMessageScheduledJobService;
 import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
+import org.apache.fineract.portfolio.client.service.ClientWritePlatformService;
 import org.apache.fineract.selfservice.registration.domain.SelfServiceRegistrationRepository;
 import org.apache.fineract.selfservice.registration.service.SelfServiceRegistrationReadPlatformService;
 import org.apache.fineract.selfservice.registration.service.SelfServiceRegistrationReadPlatformServiceImpl;
@@ -28,17 +29,19 @@ import org.apache.fineract.selfservice.registration.service.SelfServiceRegistrat
 import org.apache.fineract.selfservice.registration.service.SelfServiceForgotPassworWritePlatformService;
 import org.apache.fineract.selfservice.registration.service.SelfServiceForgotPasswordWritePlatformServiceImpl;
 import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUserClientMappingRepository;
+import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUserRepository;
 import org.apache.fineract.useradministration.domain.PasswordValidationPolicyRepository;
 import org.apache.fineract.useradministration.domain.RoleRepository;
 import org.apache.fineract.selfservice.useradministration.domain.SelfServiceUserDomainService;
 import org.apache.fineract.selfservice.useradministration.service.AppSelfServiceUserReadPlatformService;
+import org.apache.fineract.infrastructure.security.service.PlatformPasswordEncoder;
+import org.apache.fineract.selfservice.registration.service.SelfServiceAuthorizationTokenService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import org.apache.fineract.useradministration.domain.AppUserRepository;
-import org.apache.fineract.portfolio.client.service.ClientWritePlatformService;
 import org.springframework.core.env.Environment;
 
 @Configuration
@@ -48,6 +51,12 @@ public class SelfRegistrationConfiguration {
     @ConditionalOnMissingBean(SelfServiceRegistrationReadPlatformService.class)
     public SelfServiceRegistrationReadPlatformService selfServiceRegistrationReadPlatformService(JdbcTemplate jdbcTemplate) {
         return new SelfServiceRegistrationReadPlatformServiceImpl(jdbcTemplate);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(SelfServiceAuthorizationTokenService.class)
+    public SelfServiceAuthorizationTokenService selfServiceAuthorizationTokenService(Environment env) {
+        return new SelfServiceAuthorizationTokenService(env);
     }
 
     @Bean
@@ -63,12 +72,15 @@ public class SelfRegistrationConfiguration {
             AppSelfServiceUserReadPlatformService appUserReadPlatformService, RoleRepository roleRepository,
             AppSelfServiceUserClientMappingRepository appUserClientMappingRepository,
             JdbcTemplate jdbcTemplate, AppUserRepository appUserRepository, 
-            ClientWritePlatformService clientWritePlatformService, Environment env) {
+            ClientWritePlatformService clientWritePlatformService, Environment env,
+            PlatformPasswordEncoder platformPasswordEncoder, AppSelfServiceUserRepository appSelfServiceUserRepository,
+            SelfServiceAuthorizationTokenService selfServiceAuthorizationTokenService) {
         return new SelfServiceRegistrationWritePlatformServiceImpl(selfServiceRegistrationRepository, fromApiJsonHelper,
                 selfServiceRegistrationReadPlatformService, clientRepository, passwordValidationPolicy, userDomainService,
                 gmailBackedPlatformEmailService, smsMessageRepository, smsMessageScheduledJobService,
                  smsCampaignDropdownReadPlatformService, appUserReadPlatformService, roleRepository, appUserClientMappingRepository,
-                 jdbcTemplate, appUserRepository, clientWritePlatformService, env);
+                 jdbcTemplate, appUserRepository, clientWritePlatformService, env, platformPasswordEncoder, appSelfServiceUserRepository,
+                 selfServiceAuthorizationTokenService);
     }
     
      @Bean
@@ -84,11 +96,14 @@ public class SelfRegistrationConfiguration {
             AppSelfServiceUserReadPlatformService appUserReadPlatformService, RoleRepository roleRepository,
             AppSelfServiceUserClientMappingRepository appUserClientMappingRepository,
             JdbcTemplate jdbcTemplate, AppUserRepository appUserRepository, 
-            ClientWritePlatformService clientWritePlatformService, Environment env) {
+            Environment env,
+            PlatformPasswordEncoder platformPasswordEncoder, AppSelfServiceUserRepository appSelfServiceUserRepository,
+            SelfServiceAuthorizationTokenService selfServiceAuthorizationTokenService) {
         return new SelfServiceForgotPasswordWritePlatformServiceImpl(selfServiceRegistrationRepository, fromApiJsonHelper,
                 selfServiceRegistrationReadPlatformService, clientRepository, passwordValidationPolicy, userDomainService,
                 gmailBackedPlatformEmailService, smsMessageRepository, smsMessageScheduledJobService,
                  smsCampaignDropdownReadPlatformService, appUserReadPlatformService, roleRepository, appUserClientMappingRepository,
-                 jdbcTemplate, appUserRepository, clientWritePlatformService, env);
+                 jdbcTemplate, appUserRepository, env, platformPasswordEncoder, appSelfServiceUserRepository,
+                 selfServiceAuthorizationTokenService);
     }
 }

@@ -14,11 +14,24 @@
  */
 package org.apache.fineract.selfservice.registration.service;
 
+import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.selfservice.registration.domain.SelfServiceRegistration;
 
 public interface SelfServiceForgotPassworWritePlatformService {
 
     SelfServiceRegistration createForgotPasswordRequest(String apiRequestBodyAsJson);
 
-    
+    /**
+     * Renews a self-service password using either the legacy {@code requestId +
+     * authenticationToken} pair or the newer {@code externalAuthenticationToken}.
+     *
+     * <p>The payload must include {@code password} and {@code repeatPassword}; the token must be
+     * valid, unexpired, and unused. The returned {@link CommandProcessingResult} identifies the
+     * updated self-service user. Validation errors, missing identifiers, expired tokens, and
+     * invalid tokens are reported as platform exceptions.
+     *
+     * @param apiRequestBodyAsJson request payload containing token fields and the new password
+     * @return command result for the updated self-service user
+     */
+    CommandProcessingResult renewPassword(String apiRequestBodyAsJson);
 }

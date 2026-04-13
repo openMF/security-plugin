@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">    
+    <changeSet author="fineract" id="ss-0016-1">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="request_audit_table" columnName="external_authorization_token"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="request_audit_table">
+            <column name="external_authorization_token" type="VARCHAR(100)">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet author="fineract" id="ss-0016-2">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="request_audit_table" columnName="request_type"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="request_audit_table">
+            <column name="request_type" type="VARCHAR(30)" defaultValue="REGISTRATION">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet author="fineract" id="ss-0016-3">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="request_audit_table" columnName="expires_at"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="request_audit_table">
+            <column name="expires_at" type="TIMESTAMP">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet author="fineract" id="ss-0016-4">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="request_audit_table" columnName="consumed"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="request_audit_table">
+            <column name="consumed" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet author="fineract" id="ss-0016-5">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists tableName="request_audit_table" indexName="idx_request_audit_ext_token_type_unique"/>
+            </not>
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM (
+                    SELECT external_authorization_token, request_type
+                    FROM request_audit_table
+                    WHERE external_authorization_token IS NOT NULL
+                    GROUP BY external_authorization_token, request_type
+                    HAVING COUNT(*) &gt; 1
+                ) duplicates
+            </sqlCheck>
+        </preConditions>
+        <createIndex tableName="request_audit_table" indexName="idx_request_audit_ext_token_type_unique" unique="true">
+            <column name="external_authorization_token"/>
+            <column name="request_type"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet author="fineract" id="ss-0016-6">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="request_audit_table" columnName="version"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="request_audit_table">
+            <column name="version" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+</databaseChangeLog>

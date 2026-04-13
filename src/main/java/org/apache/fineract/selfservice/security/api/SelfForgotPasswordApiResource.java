@@ -10,6 +10,8 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import lombok.RequiredArgsConstructor;
+import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
+import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
 import org.apache.fineract.selfservice.registration.SelfServiceApiConstants;
 import org.apache.fineract.selfservice.registration.service.SelfServiceForgotPassworWritePlatformService;
 
@@ -20,8 +22,7 @@ import org.apache.fineract.selfservice.registration.service.SelfServiceForgotPas
 @RequiredArgsConstructor
 public class SelfForgotPasswordApiResource {
 
-    private final SelfUserApiResource selfUserApiResource;
-    
+    private final DefaultToApiJsonSerializer<CommandProcessingResult> toApiJsonSerializer;
     private final SelfServiceForgotPassworWritePlatformService selfServiceForgotPassworWritePlatformService;
 
     
@@ -37,7 +38,8 @@ public class SelfForgotPasswordApiResource {
     @Path("/renew")
     @Produces({ MediaType.APPLICATION_JSON })
     public String renewPassword(@Parameter(hidden = true) final String apiRequestBodyAsJson) {   
-        return this.selfUserApiResource.update(apiRequestBodyAsJson);             
+        CommandProcessingResult result = this.selfServiceForgotPassworWritePlatformService.renewPassword(apiRequestBodyAsJson);
+        return this.toApiJsonSerializer.serialize(result);
     }
 
 }

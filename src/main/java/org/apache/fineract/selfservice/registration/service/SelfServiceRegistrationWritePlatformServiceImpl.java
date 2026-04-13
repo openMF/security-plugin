@@ -20,19 +20,23 @@ package org.apache.fineract.selfservice.registration.service;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import jakarta.persistence.PersistenceException;
 import java.lang.reflect.Type;
-import java.security.SecureRandom;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.fineract.infrastructure.campaigns.sms.data.SmsProviderData;
 import org.apache.fineract.infrastructure.campaigns.sms.domain.SmsCampaign;
@@ -45,7 +49,9 @@ import org.apache.fineract.infrastructure.core.exception.ErrorHandler;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.core.service.GmailBackedPlatformEmailService;
+import org.apache.fineract.infrastructure.security.service.PlatformPasswordEncoder;
 import org.apache.fineract.infrastructure.sms.domain.SmsMessage;
 import org.apache.fineract.infrastructure.sms.domain.SmsMessageRepository;
 import org.apache.fineract.infrastructure.sms.domain.SmsMessageStatusType;
@@ -58,40 +64,37 @@ import org.apache.fineract.portfolio.group.domain.Group;
 import org.apache.fineract.selfservice.registration.SelfServiceApiConstants;
 import org.apache.fineract.selfservice.registration.domain.SelfServiceRegistration;
 import org.apache.fineract.selfservice.registration.domain.SelfServiceRegistrationRepository;
+import org.apache.fineract.selfservice.registration.domain.SelfServiceRequestType;
 import org.apache.fineract.selfservice.registration.exception.SelfServiceEnrollmentConflictException;
 import org.apache.fineract.selfservice.registration.exception.SelfServiceRegistrationNotFoundException;
 import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
-import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUserClientMapping;
 import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUserClientMappingRepository;
+import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUserRepository;
+import org.apache.fineract.selfservice.useradministration.domain.SelfServiceUserDomainService;
+import org.apache.fineract.selfservice.useradministration.service.AppSelfServiceUserReadPlatformService;
+import org.apache.fineract.useradministration.domain.AppUser;
+import org.apache.fineract.useradministration.domain.AppUserRepository;
 import org.apache.fineract.useradministration.domain.PasswordValidationPolicy;
 import org.apache.fineract.useradministration.domain.PasswordValidationPolicyRepository;
 import org.apache.fineract.useradministration.domain.Role;
 import org.apache.fineract.useradministration.domain.RoleRepository;
-import org.apache.fineract.selfservice.useradministration.domain.SelfServiceUserDomainService;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.apache.fineract.useradministration.exception.RoleNotFoundException;
-import org.apache.fineract.selfservice.useradministration.service.AppSelfServiceUserReadPlatformService;
+import org.springframework.core.env.Environment;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.orm.jpa.JpaSystemException;
-import org.springframework.security.authentication.AuthenticationServiceException;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.apache.fineract.useradministration.domain.AppUser;
-import org.apache.fineract.useradministration.domain.AppUserRepository;
-import org.apache.fineract.portfolio.client.service.ClientWritePlatformService;
-import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
-import org.springframework.core.env.Environment;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import java.util.Collections;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.fineract.portfolio.client.service.ClientWritePlatformService;
+import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -109,12 +112,14 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
     private final SmsCampaignDropdownReadPlatformService smsCampaignDropdownReadPlatformService;
     private final AppSelfServiceUserReadPlatformService appUserReadPlatformService;
     private final RoleRepository roleRepository;
-    private static final SecureRandom secureRandom = new SecureRandom();
     private final AppSelfServiceUserClientMappingRepository appUserClientMappingRepository;
     private final JdbcTemplate jdbcTemplate;
     private final AppUserRepository appUserRepository;
     private final ClientWritePlatformService clientWritePlatformService;
     private final Environment env;
+    private final PlatformPasswordEncoder platformPasswordEncoder;
+    private final AppSelfServiceUserRepository appSelfServiceUserRepository;
+    private final SelfServiceAuthorizationTokenService selfServiceAuthorizationTokenService;
 
     @Override
     public SelfServiceRegistration createRegistrationRequest(String apiRequestBodyAsJson) {
@@ -171,10 +176,12 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
 
         throwExceptionIfValidationError(dataValidationErrors, accountNumber, firstName, middleName, lastName, mobileNumber, isEmailAuthenticationMode);
 
-        String authenticationToken = randomAuthorizationTokenGeneration();
+        String authenticationToken = selfServiceAuthorizationTokenService.generateToken();
+        LocalDateTime createdAt = DateUtils.getLocalDateTimeOfSystem();
         Client client = this.clientRepository.getClientByAccountNumber(accountNumber);
         SelfServiceRegistration selfServiceRegistration = SelfServiceRegistration.instance(client, accountNumber, firstName, middleName, lastName,
-                mobileNumber, email, authenticationToken, username, password);
+                mobileNumber, email, authenticationToken, authenticationToken, username, encodePassword(password),
+                SelfServiceRequestType.REGISTRATION, selfServiceAuthorizationTokenService.calculateExpiry(createdAt));
         this.selfServiceRegistrationRepository.saveAndFlush(selfServiceRegistration);
         sendAuthorizationToken(selfServiceRegistration, isEmailAuthenticationMode);
         return selfServiceRegistration;
@@ -199,6 +206,9 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
         }
     }
 
+
+
+
     private void sendAuthorizationMessage(SelfServiceRegistration selfServiceRegistration) {
         Collection<SmsProviderData> smsProviders = this.smsCampaignDropdownReadPlatformService.retrieveSmsProviders();
         if (smsProviders.isEmpty()) {
@@ -207,8 +217,7 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
         }
         Long providerId = new ArrayList<>(smsProviders).get(0).getId();
         final String message = "Hola  " + selfServiceRegistration.getFirstName() + "," + "\n\n"
-                + "Para crear un usuario, utilice los siguientes datos \n" + "\nId de Petición : " + selfServiceRegistration.getId()
-                + "\n Código de Autorización : " + selfServiceRegistration.getAuthenticationToken();
+                + "Código de Autorización : " + selfServiceRegistration.getExternalAuthorizationToken();
         String externalId = null;
         Group group = null;
         Staff staff = null;
@@ -222,9 +231,8 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
 
     private void sendAuthorizationMail(SelfServiceRegistration selfServiceRegistration) {
         final String subject = "Código de Autorización ";
-        final String body = "Hola  " + selfServiceRegistration.getFirstName() + "," + "\n" + "Para crear un usuario, utilice los siguientes datos\n\n"
-                + "\nId de Petición: " + selfServiceRegistration.getId() + "\nCódigo de Autorización : "
-                + selfServiceRegistration.getAuthenticationToken();
+        final String body = "Hola  " + selfServiceRegistration.getFirstName() + "," + "\nCódigo de Autorización : "
+                + selfServiceRegistration.getExternalAuthorizationToken();
 
         final EmailDetail emailDetail = new EmailDetail(subject, body, selfServiceRegistration.getEmail(),
                 selfServiceRegistration.getFirstName());
@@ -243,11 +251,7 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
         }
     }
 
-    public static String randomAuthorizationTokenGeneration() {
-        Integer randomPIN = (int) (secureRandom.nextDouble() * 9000) + 1000;
-        return randomPIN.toString();
-    }
-
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public AppSelfServiceUser createSelfServiceUser(String apiRequestBodyAsJson) {
         JsonCommand command = null;
@@ -261,23 +265,12 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
                     SelfServiceApiConstants.CREATE_USER_REQUEST_DATA_PARAMETERS);
             JsonElement element = gson.fromJson(apiRequestBodyAsJson.toString(), JsonElement.class);
 
-            Long id = this.fromApiJsonHelper.extractLongNamed(SelfServiceApiConstants.requestIdParamName, element);
-            baseDataValidator.reset().parameter(SelfServiceApiConstants.requestIdParamName).value(id).notNull().integerGreaterThanZero();
-            command = JsonCommand.fromJsonElement(id, element);
-            String authenticationToken = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.authenticationTokenParamName,
-                    element);
-            baseDataValidator.reset().parameter(SelfServiceApiConstants.authenticationTokenParamName).value(authenticationToken).notBlank()
-                    .notNull().notExceedingLengthOf(100);
-
+            SelfServiceRegistration selfServiceRegistration = resolveRegistrationRequest(element, baseDataValidator, dataValidationErrors);
             if (!dataValidationErrors.isEmpty()) {
                 throw new PlatformApiDataValidationException(dataValidationErrors);
             }
 
-            SelfServiceRegistration selfServiceRegistration = this.selfServiceRegistrationRepository
-                    .getRequestByIdAndAuthenticationToken(id, authenticationToken);
-            if (selfServiceRegistration == null) {
-                throw new SelfServiceRegistrationNotFoundException(id, authenticationToken);
-            }
+            command = JsonCommand.fromJsonElement(selfServiceRegistration.getId(), element);
             username = selfServiceRegistration.getUsername();
             Client client = selfServiceRegistration.getClient();
             final boolean passwordNeverExpire = true;
@@ -295,18 +288,19 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
             User user = new User(selfServiceRegistration.getUsername(), selfServiceRegistration.getPassword(), authorities);
             AppSelfServiceUser appUser = new AppSelfServiceUser(client.getOffice(), user, allRoles, selfServiceRegistration.getEmail(), client.getFirstname(),
                     client.getLastname(), null, passwordNeverExpire, isSelfServiceUser, clients, null);
-            AppSelfServiceUserClientMapping appUserClientMapping = this.appUserClientMappingRepository.fetchByClientId(client.getId());
-            this.userDomainService.create(appUser, true);
-            appUserClientMapping = new AppSelfServiceUserClientMapping(appUser,client);
+            appUser.updatePassword(selfServiceRegistration.getPassword());
+            this.appSelfServiceUserRepository.saveAndFlush(appUser);
             this.appUserClientMappingRepository.saveClientUserMapping(appUser.getId(),client.getId());
+            selfServiceRegistration.markConsumed();
+            this.selfServiceRegistrationRepository.saveAndFlush(selfServiceRegistration);
             return appUser;
 
         } catch (final JpaSystemException | DataIntegrityViolationException dve) {
             handleDataIntegrityIssues(command, dve.getMostSpecificCause(), dve, username);
             return null;
         } catch (final PersistenceException | AuthenticationServiceException dve) {
-            Throwable throwable = ExceptionUtils.getRootCause(dve.getCause());
-            handleDataIntegrityIssues(command, throwable, dve, username);
+            Throwable throwable = ExceptionUtils.getRootCause(dve);
+            handleDataIntegrityIssues(command, throwable != null ? throwable : dve, dve, username);
             return null;
         }
 
@@ -324,7 +318,8 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
     @Override
     public AppSelfServiceUser createSelfServiceUserOrEnroll(String apiRequestBodyAsJson) {
         JsonObject json = JsonParser.parseString(apiRequestBodyAsJson).getAsJsonObject();
-        if (json.has(SelfServiceApiConstants.requestIdParamName) || json.has(SelfServiceApiConstants.authenticationTokenParamName)) {
+        if (json.has(SelfServiceApiConstants.requestIdParamName) || json.has(SelfServiceApiConstants.authenticationTokenParamName)
+                || json.has(SelfServiceApiConstants.externalAuthenticationTokenParamName)) {
             return createSelfServiceUser(apiRequestBodyAsJson);
         }
         return selfEnroll(apiRequestBodyAsJson);
@@ -446,17 +441,9 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
         } catch (PlatformDataIntegrityException pde) {
             throw translateEnrollmentConflict(pde);
         } catch (DataIntegrityViolationException dve) {
-            String msg = dve.getMostSpecificCause().getMessage().toLowerCase();
-            if (msg.contains("username") || msg.contains("username_org")) {
-                throw enrollmentConflict("error.msg.user.duplicate.username", "Username already exists", "username");
-            }
-            if (msg.contains("mobile_no") || msg.contains("mobileno")) {
-                throw enrollmentConflict("error.msg.client.duplicate.mobileNo", "Mobile number already exists", "mobileNo");
-            }
-            if (msg.contains("email")) {
-                throw enrollmentConflict("error.msg.client.duplicate.email", "Email already exists", "email");
-            }
-            throw ErrorHandler.getMappable(dve, "error.msg.unknown.data.integrity.issue", "Unknown data integrity issue");
+            throw translateEnrollmentFailure(dve);
+        } catch (PersistenceException dve) {
+            throw translateEnrollmentFailure(dve);
         }
     }
 
@@ -499,6 +486,28 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
             return enrollmentConflict(code, exception.getDefaultUserMessage(), "username");
         }
         return exception;
+    }
+
+    private RuntimeException translateEnrollmentFailure(Exception exception) {
+        Throwable rootCause = ExceptionUtils.getRootCause(exception);
+        Throwable mostSpecificCause = rootCause != null ? rootCause : exception;
+        String message = mostSpecificCause.getMessage();
+        if (message == null) {
+            return ErrorHandler.getMappable(exception, "error.msg.unknown.data.integrity.issue", "Unknown data integrity issue");
+        }
+
+        String normalized = message.toLowerCase();
+        if (normalized.contains("username") || normalized.contains("username_org")) {
+            return enrollmentConflict("error.msg.user.duplicate.username", "Username already exists", "username");
+        }
+        if (normalized.contains("mobile_no") || normalized.contains("mobileno")) {
+            return enrollmentConflict("error.msg.client.duplicate.mobileNo", "Mobile number already exists", "mobileNo");
+        }
+        if (normalized.contains("email")) {
+            return enrollmentConflict("error.msg.client.duplicate.email", "Email already exists", "email");
+        }
+
+        return ErrorHandler.getMappable(exception, "error.msg.unknown.data.integrity.issue", "Unknown data integrity issue");
     }
 
     private JsonObject normalizeSelfEnrollmentClientPayload(JsonObject originalJson) {
@@ -585,4 +594,59 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
         return StringUtils.isNotBlank(value) && value.matches("\\d{4}-\\d{2}-\\d{2}");
     }
 
+    private SelfServiceRegistration resolveRegistrationRequest(JsonElement element, DataValidatorBuilder baseDataValidator,
+            List<ApiParameterError> dataValidationErrors) {
+        String externalToken = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.externalAuthenticationTokenParamName, element);
+        if (externalToken != null) {
+            baseDataValidator.reset().parameter(SelfServiceApiConstants.externalAuthenticationTokenParamName).value(externalToken).notBlank()
+                    .notExceedingLengthOf(100);
+            if (!dataValidationErrors.isEmpty()) {
+                return null;
+            }
+            SelfServiceRegistration request = this.selfServiceRegistrationRepository.getRequestByExternalAuthorizationToken(externalToken,
+                    SelfServiceRequestType.REGISTRATION);
+            validateRequestState(request, externalToken);
+            return request;
+        }
+
+        Long id = this.fromApiJsonHelper.extractLongNamed(SelfServiceApiConstants.requestIdParamName, element);
+        baseDataValidator.reset().parameter(SelfServiceApiConstants.requestIdParamName).value(id).notNull().integerGreaterThanZero();
+        String authenticationToken = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.authenticationTokenParamName, element);
+        baseDataValidator.reset().parameter(SelfServiceApiConstants.authenticationTokenParamName).value(authenticationToken).notBlank()
+                .notNull().notExceedingLengthOf(100);
+        if (!dataValidationErrors.isEmpty()) {
+            return null;
+        }
+
+        SelfServiceRegistration request = this.selfServiceRegistrationRepository.getRequestByIdAndAuthenticationToken(id, authenticationToken,
+                SelfServiceRequestType.REGISTRATION);
+        validateRequestState(request, id, authenticationToken);
+        return request;
+    }
+
+    private void validateRequestState(SelfServiceRegistration request, String externalToken) {
+        if (request == null) {
+            throw new SelfServiceRegistrationNotFoundException(externalToken);
+        }
+        if (request.isConsumed() || request.isExpired(DateUtils.getLocalDateTimeOfSystem())) {
+            throw new PlatformDataIntegrityException("error.msg.self.service.request.token.invalid",
+                    "The supplied self-service token is expired or already used.", SelfServiceApiConstants.externalAuthenticationTokenParamName,
+                    externalToken);
+        }
+    }
+
+    private void validateRequestState(SelfServiceRegistration request, Long requestId, String authenticationToken) {
+        if (request == null) {
+            throw new SelfServiceRegistrationNotFoundException(requestId, authenticationToken);
+        }
+        if (request.isConsumed() || request.isExpired(DateUtils.getLocalDateTimeOfSystem())) {
+            throw new PlatformDataIntegrityException("error.msg.self.service.request.token.invalid",
+                    "The supplied self-service token is expired or already used.", SelfServiceApiConstants.authenticationTokenParamName,
+                    authenticationToken);
+        }
+    }
+
+    private String encodePassword(String rawPassword) {
+        return platformPasswordEncoder.encode(new RawPlatformUser(rawPassword));
+    }
 }

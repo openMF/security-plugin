@@ -17,12 +17,16 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import jakarta.ws.rs.core.UriInfo;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.HashMap;
+import java.util.List;
 import org.apache.fineract.portfolio.client.exception.ClientNotFoundException;
 import org.apache.fineract.portfolio.savings.api.SavingsAccountChargesApiResource;
 import org.apache.fineract.portfolio.savings.api.SavingsAccountTransactionsApiResource;
 import org.apache.fineract.portfolio.savings.api.SavingsAccountsApiResource;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountData;
+import org.apache.fineract.portfolio.savings.data.SavingsAccountChargeData;
 import org.apache.fineract.portfolio.savings.exception.SavingsAccountNotFoundException;
 import org.apache.fineract.selfservice.client.service.AppSelfServiceUserClientMapperReadService;
 import org.apache.fineract.selfservice.savings.data.SelfSavingsAccountConstants;
@@ -54,6 +58,12 @@ class SelfSavingsAccountApiResourceTest {
     private static final Long USER_ID = 10L;
     private static final Long ACCOUNT_ID = 5L;
     private static final Long CLIENT_ID = 7L;
+
+    private static SavingsAccountData createDefaultSavingsAccountData() {
+        return SavingsAccountData.importInstanceIndividual(CLIENT_ID, 12L, null, LocalDate.of(2026, 1, 1), BigDecimal.ONE, null, null,
+                null, null, null, null, null, false, null, null, java.util.List.<org.apache.fineract.portfolio.savings.data.SavingsAccountChargeData>of(),
+                false, null, null, null);
+    }
 
     @BeforeEach
     void setUp() {
@@ -99,7 +109,7 @@ class SelfSavingsAccountApiResourceTest {
     @Test
     void retrieveSavings_mappedAccount_returnsData() {
         mockSavingsMapped();
-        SavingsAccountData data = mock(SavingsAccountData.class);
+        SavingsAccountData data = createDefaultSavingsAccountData();
         when(savingsAccountsApiResource.retrieveOne(eq(ACCOUNT_ID), eq(false), eq("all"), eq(""), eq(uriInfo))).thenReturn(data);
 
         SavingsAccountData result = resource.retrieveSavings(ACCOUNT_ID, "all", uriInfo);

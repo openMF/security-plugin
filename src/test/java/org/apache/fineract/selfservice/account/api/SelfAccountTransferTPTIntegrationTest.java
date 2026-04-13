@@ -549,6 +549,12 @@ class SelfAccountTransferTPTIntegrationTest extends SelfServiceIntegrationTestBa
     try (Connection conn = DriverManager.getConnection(jdbcUrl, props)) {
       conn.setAutoCommit(false);
       try {
+        try (PreparedStatement ps = conn.prepareStatement(
+            "SELECT setval(pg_get_serial_sequence('m_appuser', 'id'), "
+                + "GREATEST(COALESCE((SELECT MAX(id) FROM m_appuser), 0), COALESCE((SELECT MAX(id) FROM m_appselfservice_user), 0)))")) {
+          ps.execute();
+        }
+
         String insertUser =
             "INSERT INTO m_appuser(office_id, username, password, email, firstname, lastname, "
                 + "is_deleted, nonexpired, nonlocked, nonexpired_credentials, enabled, firsttime_login_remaining) "
@@ -580,6 +586,11 @@ class SelfAccountTransferTPTIntegrationTest extends SelfServiceIntegrationTestBa
                 + "FROM m_appuser WHERE id = ?";
         try (PreparedStatement ps = conn.prepareStatement(insertSelfUser)) {
           ps.setLong(1, appUserId);
+          ps.execute();
+        }
+
+        try (PreparedStatement ps = conn.prepareStatement(
+            "SELECT setval(pg_get_serial_sequence('m_appselfservice_user', 'id'), (SELECT MAX(id) FROM m_appselfservice_user))")) {
           ps.execute();
         }
 

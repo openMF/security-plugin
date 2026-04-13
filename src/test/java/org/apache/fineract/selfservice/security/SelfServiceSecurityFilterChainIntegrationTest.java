@@ -36,8 +36,9 @@ class SelfServiceSecurityFilterChainIntegrationTest {
     void registrationEndpoint_isPublicAndReturns200() throws Exception {
         // POST /v1/self/registration without any Auth header should not return 401
         ResultMatcher notUnauthorized = result -> {
-            if (result.getResponse().getStatus() == 401) {
-                throw new AssertionError("Expected status not to be 401");
+            int status = result.getResponse().getStatus();
+            if (status == 401 || status == 404) {
+                throw new AssertionError("Expected status not to be 401 or 404, but was " + status);
             }
         };
 
@@ -45,6 +46,26 @@ class SelfServiceSecurityFilterChainIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"accountNumber\":\"ACC001\",\"tenantIdentifier\":\"default\"}"))
             .andExpect(notUnauthorized); // May be 404, 400, etc., but not blocked by filter chain
+    }
+
+    @Test
+    void forgotPasswordEndpoints_arePublicAndNotBlockedByAuthentication() throws Exception {
+        ResultMatcher notUnauthorized = result -> {
+            int status = result.getResponse().getStatus();
+            if (status == 401 || status == 403 || (status >= 500 && status < 600)) {
+                throw new AssertionError("Expected forgot-password endpoint not to be blocked by auth and not to return server error");
+            }
+        };
+
+        mockMvc.perform(post("/v1/self/password/request")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"username\":\"demo\",\"authenticationMode\":\"email\"}"))
+            .andExpect(notUnauthorized);
+
+        mockMvc.perform(post("/v1/self/password/renew")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"externalAuthenticationToken\":\"123456\",\"password\":\"Strong#Abc123\",\"repeatPassword\":\"Strong#Abc123\"}"))
+            .andExpect(notUnauthorized);
     }
 
     @Test

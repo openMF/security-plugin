@@ -20,9 +20,12 @@ package org.apache.fineract.selfservice.registration.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.time.LocalDateTime;
 import org.apache.fineract.infrastructure.core.domain.AbstractPersistableCustom;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
@@ -31,6 +34,8 @@ import org.apache.fineract.portfolio.client.domain.Client;
 @Entity
 @Table(name = "request_audit_table")
 public class SelfServiceRegistration extends AbstractPersistableCustom<Long> {
+
+    public static final String PASSWORD_RESET_SENTINEL = "<PASSWORD_RESET>";
 
     @ManyToOne
     @JoinColumn(name = "client_id", nullable = false)
@@ -57,19 +62,37 @@ public class SelfServiceRegistration extends AbstractPersistableCustom<Long> {
     @Column(name = "authentication_token", length = 100, nullable = true)
     private String authenticationToken;
 
+    @Column(name = "external_authorization_token", length = 100, nullable = true)
+    private String externalAuthorizationToken;
+
     @Column(name = "username", length = 100, nullable = false)
     private String username;
 
-    @Column(name = "password", length = 100, nullable = false)
+    @Column(name = "password", length = 250, nullable = false)
     private String password;
 
     @Column(name = "created_date", nullable = false)
     private LocalDateTime createdDate;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "request_type", length = 30, nullable = false)
+    private SelfServiceRequestType requestType;
+
+    @Column(name = "expires_at")
+    private LocalDateTime expiresAt;
+
+    @Column(name = "consumed", nullable = false)
+    private boolean consumed;
+
+    @Version
+    @Column(name = "version")
+    private Long version;
+
     public SelfServiceRegistration() {}
 
     public SelfServiceRegistration(final Client client, String accountNumber, final String firstName, final String middleName, final String lastName,
-            final String mobileNumber, final String email, final String authenticationToken, final String username, final String password) {
+            final String mobileNumber, final String email, final String authenticationToken, final String externalAuthorizationToken,
+            final String username, final String password, final SelfServiceRequestType requestType, final LocalDateTime expiresAt) {
         this.client = client;
         this.accountNumber = accountNumber;
         this.firstName = firstName;
@@ -78,16 +101,21 @@ public class SelfServiceRegistration extends AbstractPersistableCustom<Long> {
         this.mobileNumber = mobileNumber;
         this.email = email;
         this.authenticationToken = authenticationToken;
+        this.externalAuthorizationToken = externalAuthorizationToken;
         this.username = username;
         this.password = password;
         this.createdDate = DateUtils.getLocalDateTimeOfSystem();
+        this.requestType = requestType;
+        this.expiresAt = expiresAt;
+        this.consumed = false;
     }
 
     public static SelfServiceRegistration instance(final Client client, final String accountNumber, final String firstName, final String middleName,
-            final String lastName, final String mobileNumber, final String email, final String authenticationToken, final String username,
-            final String password) {
-        return new SelfServiceRegistration(client, accountNumber, firstName, middleName, lastName, mobileNumber, email, authenticationToken, username,
-                password);
+            final String lastName, final String mobileNumber, final String email, final String authenticationToken,
+            final String externalAuthorizationToken, final String username, final String password, final SelfServiceRequestType requestType,
+            final LocalDateTime expiresAt) {
+        return new SelfServiceRegistration(client, accountNumber, firstName, middleName, lastName, mobileNumber, email, authenticationToken,
+                externalAuthorizationToken, username, password, requestType, expiresAt);
     }
 
     public Client getClient() {
@@ -118,6 +146,10 @@ public class SelfServiceRegistration extends AbstractPersistableCustom<Long> {
         return this.authenticationToken;
     }
 
+    public String getExternalAuthorizationToken() {
+        return this.externalAuthorizationToken;
+    }
+
     public LocalDateTime getCreatedDate() {
         return this.createdDate;
     }
@@ -132,6 +164,31 @@ public class SelfServiceRegistration extends AbstractPersistableCustom<Long> {
 
     public String getAccountNumber() {
         return this.accountNumber;
+    }
+
+    public SelfServiceRequestType getRequestType() {
+        return this.requestType;
+    }
+
+    public LocalDateTime getExpiresAt() {
+        return this.expiresAt;
+    }
+
+    public boolean isConsumed() {
+        return this.consumed;
+    }
+
+    public boolean isExpired(LocalDateTime now) {
+        return this.expiresAt != null && now.isAfter(this.expiresAt);
+    }
+
+    /**
+     * Marks this request as consumed. Optimistic locking via {@code @Version}
+     * ensures only one concurrent caller succeeds; the loser gets an
+     * {@link jakarta.persistence.OptimisticLockException}.
+     */
+    public void markConsumed() {
+        this.consumed = true;
     }
 
 }

@@ -25,4 +25,5 @@
   <include file="parts/013-grant-selfservice-loan-account-create-account-permissions.xml" relativeToChangelogFile="true"/>      
   <include file="parts/014-grant-selfservice-loan-account-update-account-permissions.xml" relativeToChangelogFile="true"/>      
   <include file="parts/015-grant-selfservice-loan-account-withdrawn-account-permissions.xml" relativeToChangelogFile="true"/>        
+  <include file="parts/016-add-external-authorization-token.xml" relativeToChangelogFile="true"/>        
 </databaseChangeLog>
