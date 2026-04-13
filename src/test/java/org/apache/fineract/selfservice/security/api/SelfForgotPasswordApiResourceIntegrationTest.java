@@ -26,7 +26,7 @@ class SelfForgotPasswordApiResourceIntegrationTest extends SelfServiceIntegratio
         return String.format("%08d", Math.floorMod(UNIQUE_ID_SEQUENCE.incrementAndGet(), 100000000));
     }
 
-    private String enrollUser(String username, String password, String email, String mobileNumber) {
+    private void enrollUser(String username, String password, String email, String mobileNumber) {
         String payload = """
             {
               "username": "%s",
@@ -40,15 +40,36 @@ class SelfForgotPasswordApiResourceIntegrationTest extends SelfServiceIntegratio
             }
             """.formatted(username, password, mobileNumber, email);
 
-        Response response = given(SelfServiceTestUtils.requestSpec(getFineractPort()))
+        // Step 1: Create client + disabled user
+        Response enrollResponse = given(SelfServiceTestUtils.requestSpec(getFineractPort()))
                 .body(payload)
                 .when()
                 .post("/fineract-provider/api/v1/self/registration/client-user")
                 .then()
                 .extract().response();
 
-        assertEquals(200, response.getStatusCode(), "Enrollment must succeed before password reset testing");
-        return response.body().asString();
+        assertEquals(200, enrollResponse.getStatusCode(),
+                "Enrollment must succeed before password reset testing. Body: " + enrollResponse.body().asString());
+
+        // Step 2: Query enrollment token and confirm
+        String enrollmentToken = querySingleValue(
+                "select external_authorization_token from request_audit_table "
+                        + "where username = ? and request_type = 'ENROLLMENT' order by id desc limit 1",
+                username);
+        assertNotNull(enrollmentToken, "Enrollment token must exist");
+        assertFalse(enrollmentToken.isBlank(), "Enrollment token must not be blank");
+
+        Response confirmResponse = given(SelfServiceTestUtils.requestSpec(getFineractPort()))
+                .body("""
+                    { "externalAuthenticationToken": "%s" }
+                    """.formatted(enrollmentToken))
+                .when()
+                .post("/fineract-provider/api/v1/self/registration/client-user/confirm")
+                .then()
+                .extract().response();
+
+        assertEquals(200, confirmResponse.getStatusCode(),
+                "Enrollment confirmation must succeed. Body: " + confirmResponse.body().asString());
     }
 
     private String querySingleValue(String sql, String parameter) {

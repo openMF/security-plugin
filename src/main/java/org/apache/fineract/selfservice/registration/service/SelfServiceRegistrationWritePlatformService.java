@@ -45,10 +45,20 @@ public interface SelfServiceRegistrationWritePlatformService {
     AppSelfServiceUser createSelfServiceUserOrEnroll(String apiRequestBodyAsJson);
 
     /**
-     * Executes atomic one-shot self-enrollment by provisioning a Client and User.
-     * 
+     * Creates a Client and a disabled self-service User, stores an enrollment confirmation token,
+     * and sends the token via email or SMS. The user must be activated via {@link #confirmEnrollment}.
+     *
      * @param apiRequestBodyAsJson The incoming request containing enrollment data matching {@code SelfServiceEnrollmentRequest}.
-     * @return The freshly created AppSelfServiceUser object.
+     * @return The registration record containing the enrollment token.
      */
-    AppSelfServiceUser selfEnroll(String apiRequestBodyAsJson);
+    SelfServiceRegistration selfEnroll(String apiRequestBodyAsJson);
+
+    /**
+     * Confirms a self-enrollment token, enabling the disabled user created by {@link #selfEnroll}.
+     *
+     * @param apiRequestBodyAsJson JSON containing the token fields ({@code externalAuthenticationToken}
+     *     or legacy {@code requestId}/{@code authenticationToken})
+     * @return The activated self-service user.
+     */
+    AppSelfServiceUser confirmEnrollment(String apiRequestBodyAsJson);
 }

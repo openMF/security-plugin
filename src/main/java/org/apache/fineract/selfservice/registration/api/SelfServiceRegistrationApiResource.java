@@ -76,16 +76,17 @@ public class SelfServiceRegistrationApiResource {
     }
 
     /**
-     * Creates a client and linked self-service user in a single request.
+     * Creates a client and linked disabled self-service user, then sends an enrollment confirmation token.
+     * The user must confirm the token via {@code POST /self/registration/client-user/confirm} to activate.
      *
      * @param apiRequestBodyAsJson request payload as raw JSON
-     * @return serialized command result containing the created user identifier
+     * @return success message indicating the enrollment request was created
      */
     @POST
     @Path("client-user")
     @Consumes({MediaType.APPLICATION_JSON})
     @Produces({MediaType.APPLICATION_JSON})
-    @Operation(summary = "Self Enrollment Flow", description = "Creates a Fineract Client and Self Service User in one shot.")
+    @Operation(summary = "Self Enrollment Flow", description = "Creates a Fineract Client and a disabled Self Service User. Returns a success message (token is sent via email/SMS).")
     @RequestBody(required = true, content = @Content(schema = @Schema(implementation = SelfServiceEnrollmentRequest.class)))
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "OK"),
@@ -93,7 +94,29 @@ public class SelfServiceRegistrationApiResource {
         @ApiResponse(responseCode = "409", description = "Conflict (Duplicate Username, Email, etc)")
     })
     public String selfEnroll(final String apiRequestBodyAsJson) {
-        AppSelfServiceUser user = this.selfServiceRegistrationWritePlatformService.selfEnroll(apiRequestBodyAsJson);
+        this.selfServiceRegistrationWritePlatformService.selfEnroll(apiRequestBodyAsJson);
+        return SelfServiceApiConstants.createRequestSuccessMessage;
+    }
+
+    /**
+     * Confirms a self-enrollment token and activates the disabled user.
+     *
+     * @param apiRequestBodyAsJson request payload containing the enrollment confirmation token
+     * @return serialized command result containing the activated user identifier
+     */
+    @POST
+    @Path("client-user/confirm")
+    @Consumes({MediaType.APPLICATION_JSON})
+    @Produces({MediaType.APPLICATION_JSON})
+    @Operation(summary = "Confirm Self Enrollment", description = "Validates the enrollment token and activates the self-service user.")
+    @RequestBody(required = true, content = @Content(schema = @Schema(implementation = SelfServiceConfirmationRequest.class)))
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "OK"),
+        @ApiResponse(responseCode = "403", description = "Token expired or already consumed"),
+        @ApiResponse(responseCode = "404", description = "Token not found")
+    })
+    public String confirmEnrollment(final String apiRequestBodyAsJson) {
+        AppSelfServiceUser user = this.selfServiceRegistrationWritePlatformService.confirmEnrollment(apiRequestBodyAsJson);
         return this.toApiJsonSerializer.serialize(CommandProcessingResult.resourceResult(user.getId()));
     }
 }

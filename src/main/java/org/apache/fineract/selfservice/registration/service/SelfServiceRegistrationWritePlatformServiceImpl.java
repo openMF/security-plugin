@@ -83,6 +83,7 @@ import org.apache.fineract.useradministration.exception.RoleNotFoundException;
 import org.springframework.core.env.Environment;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -317,12 +318,7 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
     @Transactional(rollbackFor = Exception.class)
     @Override
     public AppSelfServiceUser createSelfServiceUserOrEnroll(String apiRequestBodyAsJson) {
-        JsonObject json = JsonParser.parseString(apiRequestBodyAsJson).getAsJsonObject();
-        if (json.has(SelfServiceApiConstants.requestIdParamName) || json.has(SelfServiceApiConstants.authenticationTokenParamName)
-                || json.has(SelfServiceApiConstants.externalAuthenticationTokenParamName)) {
-            return createSelfServiceUser(apiRequestBodyAsJson);
-        }
-        return selfEnroll(apiRequestBodyAsJson);
+        return createSelfServiceUser(apiRequestBodyAsJson);
     }
 
     private void handleDataIntegrityIssues(final JsonCommand command, final Throwable realCause, final Exception dve, String username) {
@@ -344,7 +340,7 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
      */
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public AppSelfServiceUser selfEnroll(String apiRequestBodyAsJson) {
+    public SelfServiceRegistration selfEnroll(String apiRequestBodyAsJson) {
         Gson gson = new Gson();
         final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
         final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
@@ -425,7 +421,8 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
             Collection<SimpleGrantedAuthority> authorities = new ArrayList<>();
             authorities.add(new SimpleGrantedAuthority("DUMMY_ROLE_NOT_USED_OR_PERSISTED_TO_AVOID_EXCEPTION"));
 
-            User springConfigUser = new User(username, password, authorities);
+            // Create user as DISABLED — will be enabled on enrollment confirmation
+            User springConfigUser = new User(username, password, false, true, true, true, authorities);
             AppSelfServiceUser appUser = new AppSelfServiceUser(
                 client.getOffice(), springConfigUser, Collections.singleton(ssRole),
                 email, client.getFirstname(), client.getLastname(), null,
@@ -435,8 +432,24 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
             userDomainService.create(appUser, false);
             appUserClientMappingRepository.saveClientUserMapping(appUser.getId(), client.getId());
 
-            log.info("Self-enrollment successful: clientId={}", newClientId);
-            return appUser;
+            // Create enrollment confirmation token
+            String authenticationToken = selfServiceAuthorizationTokenService.generateToken();
+            LocalDateTime createdAt = DateUtils.getLocalDateTimeOfSystem();
+            SelfServiceRegistration registration = SelfServiceRegistration.instance(
+                    client, client.getAccountNumber(), client.getFirstname(), client.getMiddlename(),
+                    client.getLastname(), mobileNumber, email, authenticationToken, authenticationToken,
+                    username, encodePassword(password), SelfServiceRequestType.ENROLLMENT,
+                    selfServiceAuthorizationTokenService.calculateExpiry(createdAt));
+            this.selfServiceRegistrationRepository.saveAndFlush(registration);
+            try {
+                sendAuthorizationToken(registration, isEmailAuthenticationMode);
+            } catch (RuntimeException e) {
+                log.error("Failed to deliver enrollment confirmation token for clientId={}, userId={}", newClientId, appUser.getId(), e);
+                // Swallowed intentionally: the enrollment record is persisted for retry/audit.
+            }
+
+            log.info("Self-enrollment created (pending confirmation): clientId={}, userId={}", newClientId, appUser.getId());
+            return registration;
 
         } catch (PlatformDataIntegrityException pde) {
             throw translateEnrollmentConflict(pde);
@@ -445,6 +458,74 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
         } catch (PersistenceException dve) {
             throw translateEnrollmentFailure(dve);
         }
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public AppSelfServiceUser confirmEnrollment(String apiRequestBodyAsJson) {
+        Gson gson = new Gson();
+        final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
+        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource("user");
+        this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, apiRequestBodyAsJson,
+                SelfServiceApiConstants.CREATE_USER_REQUEST_DATA_PARAMETERS);
+        JsonElement element = gson.fromJson(apiRequestBodyAsJson, JsonElement.class);
+
+        SelfServiceRegistration request = resolveEnrollmentRequest(element, baseDataValidator, dataValidationErrors);
+        if (!dataValidationErrors.isEmpty()) {
+            throw new PlatformApiDataValidationException(dataValidationErrors);
+        }
+
+        AppSelfServiceUser appUser = this.appSelfServiceUserRepository.findAppSelfServiceUserByName(request.getUsername());
+        if (appUser == null) {
+            throw new PlatformDataIntegrityException("error.msg.user.notfound.username",
+                    "User with username " + request.getUsername() + " not found.",
+                    SelfServiceApiConstants.usernameParamName, request.getUsername());
+        }
+
+        appUser.enable();
+        this.appSelfServiceUserRepository.saveAndFlush(appUser);
+        request.markConsumed();
+        try {
+            this.selfServiceRegistrationRepository.saveAndFlush(request);
+        } catch (OptimisticLockingFailureException e) {
+            throw new PlatformDataIntegrityException("error.msg.self.service.request.token.invalid",
+                    "The supplied self-service token is expired or already used.",
+                    SelfServiceApiConstants.externalAuthenticationTokenParamName);
+        }
+
+        log.info("Self-enrollment confirmed: userId={}", appUser.getId());
+        return appUser;
+    }
+
+    private SelfServiceRegistration resolveEnrollmentRequest(JsonElement element, DataValidatorBuilder baseDataValidator,
+            List<ApiParameterError> dataValidationErrors) {
+        String externalToken = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.externalAuthenticationTokenParamName, element);
+        if (externalToken != null) {
+            baseDataValidator.reset().parameter(SelfServiceApiConstants.externalAuthenticationTokenParamName).value(externalToken).notBlank()
+                    .notExceedingLengthOf(100);
+            if (!dataValidationErrors.isEmpty()) {
+                return null;
+            }
+            SelfServiceRegistration request = this.selfServiceRegistrationRepository.getRequestByExternalAuthorizationToken(externalToken,
+                    SelfServiceRequestType.ENROLLMENT);
+            validateRequestState(request, externalToken);
+            return request;
+        }
+
+        Long id = this.fromApiJsonHelper.extractLongNamed(SelfServiceApiConstants.requestIdParamName, element);
+        baseDataValidator.reset().parameter(SelfServiceApiConstants.requestIdParamName).value(id).notNull().integerGreaterThanZero();
+        String authenticationToken = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.authenticationTokenParamName, element);
+        baseDataValidator.reset().parameter(SelfServiceApiConstants.authenticationTokenParamName).value(authenticationToken).notBlank()
+                .notNull().notExceedingLengthOf(100);
+        if (!dataValidationErrors.isEmpty()) {
+            return null;
+        }
+
+        SelfServiceRegistration request = this.selfServiceRegistrationRepository.getRequestByIdAndAuthenticationToken(id, authenticationToken,
+                SelfServiceRequestType.ENROLLMENT);
+        validateRequestState(request, id, authenticationToken);
+        return request;
     }
 
     private AppUser resolveEnrollmentAuditUser(String auditUsername) {

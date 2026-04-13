@@ -15,6 +15,13 @@ public enum SelfServiceRequestType {
     REGISTRATION,
 
     /**
+     * Request created for self-enrollment confirmation.
+     *
+     * <p>Use this for tokens that activate a disabled user created during one-shot self-enrollment.
+     */
+    ENROLLMENT,
+
+    /**
      * Request created for self-service password reset.
      *
      * <p>Use this for tokens that authorize renewal of an existing self-service password.
