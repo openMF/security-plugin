@@ -19,7 +19,7 @@ This file defines hard behavioral boundaries that complement SOUL.md.
 - Minimize sensitive data in responses and logs.
 - Redact confidential fields before logging.
 - Keep responses scoped to the requested resource only.
-- Follow repository license and compliance constraints for generated content.
+- Ensure generated content and logs comply with repository licensing and compliance requirements, especially when handling or sharing sensitive data.
 
 ## Error Behavior
 - Fail safely and return clear, non-sensitive error messages.
