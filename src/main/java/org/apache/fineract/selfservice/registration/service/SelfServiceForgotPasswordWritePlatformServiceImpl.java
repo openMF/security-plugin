@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,7 +35,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.fineract.infrastructure.campaigns.sms.data.SmsProviderData;
 import org.apache.fineract.infrastructure.campaigns.sms.domain.SmsCampaign;
 import org.apache.fineract.infrastructure.campaigns.sms.service.SmsCampaignDropdownReadPlatformService;
-import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
@@ -44,7 +44,7 @@ import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidati
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
-import org.apache.fineract.infrastructure.core.service.GmailBackedPlatformEmailService;
+import org.apache.fineract.infrastructure.core.service.SelfServicePluginEmailService;
 import org.apache.fineract.infrastructure.security.service.PlatformPasswordEncoder;
 import org.apache.fineract.infrastructure.sms.domain.SmsMessage;
 import org.apache.fineract.infrastructure.sms.domain.SmsMessageRepository;
@@ -69,10 +69,14 @@ import org.apache.fineract.useradministration.domain.AppUserRepository;
 import org.apache.fineract.useradministration.domain.PasswordValidationPolicy;
 import org.apache.fineract.useradministration.domain.PasswordValidationPolicyRepository;
 import org.apache.fineract.useradministration.domain.RoleRepository;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.core.env.Environment;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
+import org.thymeleaf.ITemplateEngine;
+import org.thymeleaf.context.Context;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -84,7 +88,7 @@ public class SelfServiceForgotPasswordWritePlatformServiceImpl implements SelfSe
     private final ClientRepositoryWrapper clientRepository;
     private final PasswordValidationPolicyRepository passwordValidationPolicy;
     private final SelfServiceUserDomainService userDomainService;
-    private final GmailBackedPlatformEmailService gmailBackedPlatformEmailService;
+    private final SelfServicePluginEmailService selfServicePluginEmailService;
     private final SmsMessageRepository smsMessageRepository;
     private final SmsMessageScheduledJobService smsMessageScheduledJobService;
     private final SmsCampaignDropdownReadPlatformService smsCampaignDropdownReadPlatformService;
@@ -96,7 +100,9 @@ public class SelfServiceForgotPasswordWritePlatformServiceImpl implements SelfSe
     private final Environment env;
     private final PlatformPasswordEncoder platformPasswordEncoder;
     private final AppSelfServiceUserRepository appSelfServiceUserRepository;
-    private final SelfServiceAuthorizationTokenService selfServiceAuthorizationTokenService;
+    private final SelfServiceAuthorizationTokenService selfServiceAuthorizationTokenService;    
+    private final ITemplateEngine registrationTemplateEngine;
+    private final MessageSource registrationMessageSource;
 
     @Override
     public SelfServiceRegistration createForgotPasswordRequest(String apiRequestBodyAsJson) {
@@ -326,12 +332,20 @@ public class SelfServiceForgotPasswordWritePlatformServiceImpl implements SelfSe
     }
 
     private void sendAuthorizationMail(SelfServiceRegistration selfServiceRegistration) {
+        /*
         final String subject = "Código de Autorización ";
         final String body = "Hola  " + selfServiceRegistration.getFirstName() + ","
                 + "\nCódigo de Autorización : " + selfServiceRegistration.getExternalAuthorizationToken();
 
-        final EmailDetail emailDetail = new EmailDetail(subject, body, selfServiceRegistration.getEmail(),
-                selfServiceRegistration.getFirstName());
-        this.gmailBackedPlatformEmailService.sendDefinedEmail(emailDetail);
+        final EmailDetail emailDetail = new EmailDetail(subject, body, selfServiceRegistration.getEmail(),selfServiceRegistration.getFirstName());
+        */
+        Locale locale = LocaleContextHolder.getLocale();
+        final String subject = this.registrationMessageSource.getMessage("email.subject", null, locale);
+        Context ctx = new Context(locale);
+        ctx.setVariable("firstName", selfServiceRegistration.getFirstName());
+        ctx.setVariable("authToken", selfServiceRegistration.getExternalAuthorizationToken());
+        final String htmlBody = this.registrationTemplateEngine.process("authorization-email", ctx);
+        final EmailDetail emailDetail = new EmailDetail(subject, htmlBody, selfServiceRegistration.getEmail(), selfServiceRegistration.getFirstName());
+        this.selfServicePluginEmailService.sendFormattedEmail(emailDetail);
     }
 }

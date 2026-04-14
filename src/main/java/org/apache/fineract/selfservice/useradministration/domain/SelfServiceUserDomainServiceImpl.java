@@ -22,6 +22,7 @@ package org.apache.fineract.selfservice.useradministration.domain;
 import org.apache.fineract.infrastructure.core.service.PlatformEmailService;
 import org.apache.fineract.infrastructure.security.service.PlatformPasswordEncoder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,8 +34,9 @@ public class SelfServiceUserDomainServiceImpl implements SelfServiceUserDomainSe
     private final PlatformEmailService emailService;
 
     @Autowired
-    public SelfServiceUserDomainServiceImpl(final AppSelfServiceUserRepository userRepository, final PlatformPasswordEncoder applicationPasswordEncoder,
-            final PlatformEmailService emailService) {
+    public SelfServiceUserDomainServiceImpl(final AppSelfServiceUserRepository userRepository, 
+            final PlatformPasswordEncoder applicationPasswordEncoder,
+            @Qualifier("selfServicePluginEmailService")final PlatformEmailService emailService) {
         this.userRepository = userRepository;
         this.applicationPasswordEncoder = applicationPasswordEncoder;
         this.emailService = emailService;

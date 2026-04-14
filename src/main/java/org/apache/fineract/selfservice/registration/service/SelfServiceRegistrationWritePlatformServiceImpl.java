@@ -51,7 +51,7 @@ import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidati
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
-import org.apache.fineract.infrastructure.core.service.GmailBackedPlatformEmailService;
+import org.apache.fineract.infrastructure.core.service.SelfServicePluginEmailService;
 import org.apache.fineract.infrastructure.security.service.PlatformPasswordEncoder;
 import org.apache.fineract.infrastructure.sms.domain.SmsMessage;
 import org.apache.fineract.infrastructure.sms.domain.SmsMessageRepository;
@@ -112,7 +112,7 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
     private final ClientRepositoryWrapper clientRepository;
     private final PasswordValidationPolicyRepository passwordValidationPolicy;
     private final SelfServiceUserDomainService userDomainService;
-    private final GmailBackedPlatformEmailService gmailBackedPlatformEmailService;
+    private final SelfServicePluginEmailService selfServicePluginEmailService;
     private final SmsMessageRepository smsMessageRepository;
     private final SmsMessageScheduledJobService smsMessageScheduledJobService;
     private final SmsCampaignDropdownReadPlatformService smsCampaignDropdownReadPlatformService;
@@ -245,9 +245,8 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
         ctx.setVariable("requestId", selfServiceRegistration.getId());
         ctx.setVariable("authToken", selfServiceRegistration.getAuthenticationToken());
         final String htmlBody = this.registrationTemplateEngine.process("authorization-email", ctx);
-        final EmailDetail emailDetail = new EmailDetail(subject, htmlBody, selfServiceRegistration.getEmail(),
-                selfServiceRegistration.getFirstName());
-        this.gmailBackedPlatformEmailService.sendDefinedEmail(emailDetail);
+        final EmailDetail emailDetail = new EmailDetail(subject, htmlBody, selfServiceRegistration.getEmail(), selfServiceRegistration.getFirstName());
+        this.selfServicePluginEmailService.sendFormattedEmail(emailDetail);
     }
 
     private void throwExceptionIfValidationError(final List<ApiParameterError> dataValidationErrors, String accountNumber, String firstName,
