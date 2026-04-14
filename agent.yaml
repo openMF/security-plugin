@@ -21,6 +21,10 @@ runtime:
 # Security and permissions
 security:
   authentication_required: true
+  public_endpoints:
+    - "/v1/self/authentication"
+    - "/v1/self/registration"
+    - "/v1/self/registration/user"
   permissions:
     - "READ_SAVINGSPRODUCT"
     - "READ_LOANPRODUCT" 
