@@ -1,5 +1,15 @@
 # Skills Guide for Mifos Self-Service Plugin
 
+## Quick Reference (Essential Patterns)
+
+- Controller pattern: `@Path` + `@Component` + `@RequiredArgsConstructor` (see [JAX-RS Endpoints](#jax-rs-endpoints))
+- Service pattern: `@Service` + constructor injection + transactional write methods (see [Transaction Management](#transaction-management))
+- Validation pattern: validator component + required field checks + typed exceptions (see [Input Validation](#input-validation))
+- Security pattern: `@PreAuthorize` + self-service access validation via security context (see [Security Implementation](#security-implementation))
+- Testing pattern: Mockito-based unit tests and Testcontainers integration tests (see [Testing Patterns](#testing-patterns))
+
+Use this checklist first, then follow the detailed sections below for full examples and conventions.
+
 This document defines procedural rules and patterns for AI agents working with the Mifos Self Service Plugin codebase.
 
 ## Java Coding Standards
