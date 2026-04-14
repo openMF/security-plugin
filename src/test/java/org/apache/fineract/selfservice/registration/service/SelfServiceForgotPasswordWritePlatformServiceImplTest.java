@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 import org.apache.fineract.infrastructure.campaigns.sms.service.SmsCampaignDropdownReadPlatformService;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
-import org.apache.fineract.infrastructure.core.service.GmailBackedPlatformEmailService;
+import org.apache.fineract.infrastructure.core.service.SelfServicePluginEmailService;
 import org.apache.fineract.infrastructure.security.service.PlatformPasswordEncoder;
 import org.apache.fineract.infrastructure.sms.domain.SmsMessageRepository;
 import org.apache.fineract.infrastructure.sms.scheduler.SmsMessageScheduledJobService;
@@ -40,8 +40,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.MessageSource;
 import org.springframework.core.env.Environment;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.thymeleaf.ITemplateEngine;
 
 @ExtendWith(MockitoExtension.class)
 class SelfServiceForgotPasswordWritePlatformServiceImplTest {
@@ -52,7 +54,7 @@ class SelfServiceForgotPasswordWritePlatformServiceImplTest {
     @Mock private ClientRepositoryWrapper clientRepository;
     @Mock private PasswordValidationPolicyRepository passwordValidationPolicyRepository;
     @Mock private SelfServiceUserDomainService userDomainService;
-    @Mock private GmailBackedPlatformEmailService gmailBackedPlatformEmailService;
+    @Mock private SelfServicePluginEmailService selfServicePluginEmailService;
     @Mock private SmsMessageRepository smsMessageRepository;
     @Mock private SmsMessageScheduledJobService smsMessageScheduledJobService;
     @Mock private SmsCampaignDropdownReadPlatformService smsCampaignDropdownReadPlatformService;
@@ -65,6 +67,8 @@ class SelfServiceForgotPasswordWritePlatformServiceImplTest {
     @Mock private PlatformPasswordEncoder platformPasswordEncoder;
     @Mock private AppSelfServiceUserRepository appSelfServiceUserRepository;
     @Mock private SelfServiceAuthorizationTokenService selfServiceAuthorizationTokenService;
+    @Mock private ITemplateEngine registrationTemplateEngine;
+    @Mock private MessageSource registrationMessageSource;
 
     private SelfServiceForgotPasswordWritePlatformServiceImpl service;
 
@@ -77,7 +81,7 @@ class SelfServiceForgotPasswordWritePlatformServiceImplTest {
                 clientRepository,
                 passwordValidationPolicyRepository,
                 userDomainService,
-                gmailBackedPlatformEmailService,
+                selfServicePluginEmailService,
                 smsMessageRepository,
                 smsMessageScheduledJobService,
                 smsCampaignDropdownReadPlatformService,
@@ -89,7 +93,9 @@ class SelfServiceForgotPasswordWritePlatformServiceImplTest {
                 env,
                 platformPasswordEncoder,
                 appSelfServiceUserRepository,
-                selfServiceAuthorizationTokenService);
+                selfServiceAuthorizationTokenService,
+                registrationTemplateEngine,
+                registrationMessageSource);
     }
 
     @Test

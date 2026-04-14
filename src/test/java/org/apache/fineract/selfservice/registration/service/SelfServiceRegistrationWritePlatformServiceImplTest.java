@@ -24,7 +24,7 @@ import org.apache.fineract.infrastructure.core.domain.FineractPlatformTenant;
 import org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
-import org.apache.fineract.infrastructure.core.service.GmailBackedPlatformEmailService;
+import org.apache.fineract.infrastructure.core.service.SelfServicePluginEmailService;
 import org.apache.fineract.infrastructure.sms.domain.SmsMessageRepository;
 import org.apache.fineract.infrastructure.sms.scheduler.SmsMessageScheduledJobService;
 import org.apache.fineract.organisation.office.domain.Office;
@@ -69,7 +69,7 @@ class SelfServiceRegistrationWritePlatformServiceImplTest {
     @Mock private ClientRepositoryWrapper clientRepository;
     @Mock private PasswordValidationPolicyRepository passwordValidationPolicyRepository;
     @Mock private SelfServiceUserDomainService userDomainService;
-    @Mock private GmailBackedPlatformEmailService gmailBackedPlatformEmailService;
+    @Mock private SelfServicePluginEmailService selfServicePluginEmailService;
     @Mock private SmsMessageRepository smsMessageRepository;
     @Mock private SmsMessageScheduledJobService smsMessageScheduledJobService;
     @Mock private SmsCampaignDropdownReadPlatformService smsCampaignDropdownReadPlatformService;
@@ -82,16 +82,11 @@ class SelfServiceRegistrationWritePlatformServiceImplTest {
     @Mock private Environment env;
     @Mock private PlatformPasswordEncoder platformPasswordEncoder;
     @Mock private AppSelfServiceUserRepository appSelfServiceUserRepository;
-    @Mock private SelfServiceAuthorizationTokenService selfServiceAuthorizationTokenService;
-    //@Mock private SpringTemplateEngine registrationTemplateEngine;
-    // To this:
-    @Mock
-    private ITemplateEngine registrationTemplateEngine;
+    @Mock private SelfServiceAuthorizationTokenService selfServiceAuthorizationTokenService;    
+    @Mock private ITemplateEngine registrationTemplateEngine;
     @Mock private MessageSource registrationMessageSource;
 
     private SelfServiceRegistrationWritePlatformServiceImpl service;
-
-    
 
     @BeforeEach
     void setUp() {        
@@ -103,7 +98,7 @@ class SelfServiceRegistrationWritePlatformServiceImplTest {
             clientRepository,
             passwordValidationPolicyRepository,
             userDomainService,
-            gmailBackedPlatformEmailService,
+            selfServicePluginEmailService,
             smsMessageRepository,
             smsMessageScheduledJobService,
             smsCampaignDropdownReadPlatformService,
