@@ -42,6 +42,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import org.apache.fineract.useradministration.domain.AppUserRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.MessageSource;
 import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.core.env.Environment;
@@ -107,13 +108,15 @@ public class SelfRegistrationConfiguration {
             JdbcTemplate jdbcTemplate, AppUserRepository appUserRepository, 
             ClientWritePlatformService clientWritePlatformService, Environment env,
             PlatformPasswordEncoder platformPasswordEncoder, AppSelfServiceUserRepository appSelfServiceUserRepository,
-            SelfServiceAuthorizationTokenService selfServiceAuthorizationTokenService) {
+            SelfServiceAuthorizationTokenService selfServiceAuthorizationTokenService,
+            ApplicationEventPublisher applicationEventPublisher) {
         return new SelfServiceRegistrationWritePlatformServiceImpl(selfServiceRegistrationRepository, fromApiJsonHelper,
                 selfServiceRegistrationReadPlatformService, clientRepository, passwordValidationPolicy, userDomainService,
                 selfServicePluginEmailService, smsMessageRepository, smsMessageScheduledJobService,
                  smsCampaignDropdownReadPlatformService, appUserReadPlatformService, roleRepository, appUserClientMappingRepository,
                  jdbcTemplate, appUserRepository, clientWritePlatformService, env, platformPasswordEncoder, appSelfServiceUserRepository,
-                 selfServiceAuthorizationTokenService, registrationTemplateEngine(), registrationMessageSource());
+                 selfServiceAuthorizationTokenService, registrationTemplateEngine(), registrationMessageSource(), 
+                 applicationEventPublisher);
     }
     
      @Bean

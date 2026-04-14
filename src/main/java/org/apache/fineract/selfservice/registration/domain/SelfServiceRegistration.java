@@ -74,21 +74,27 @@ public class SelfServiceRegistration extends AbstractPersistableCustom<Long> {
     @Column(name = "created_date", nullable = false)
     private LocalDateTime createdDate;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "request_type", length = 30, nullable = false)
-    private SelfServiceRequestType requestType;
-
-    @Column(name = "expires_at")
+    @Column(name = "expires_at", nullable = true)
     private LocalDateTime expiresAt;
 
     @Column(name = "consumed", nullable = false)
     private boolean consumed;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "request_type", length = 30, nullable = false)
+    private SelfServiceRequestType requestType;
 
     @Version
     @Column(name = "version")
     private Long version;
 
     public SelfServiceRegistration() {}
+
+    public SelfServiceRegistration(final Client client, String accountNumber, final String firstName, final String middleName, final String lastName,
+            final String mobileNumber, final String email, final String authenticationToken, final String username, final String password) {
+        this(client, accountNumber, firstName, middleName, lastName, mobileNumber, email, authenticationToken, authenticationToken, username, password,
+                SelfServiceRequestType.REGISTRATION, null);
+    }
 
     public SelfServiceRegistration(final Client client, String accountNumber, final String firstName, final String middleName, final String lastName,
             final String mobileNumber, final String email, final String authenticationToken, final String externalAuthorizationToken,
@@ -105,17 +111,24 @@ public class SelfServiceRegistration extends AbstractPersistableCustom<Long> {
         this.username = username;
         this.password = password;
         this.createdDate = DateUtils.getLocalDateTimeOfSystem();
-        this.requestType = requestType;
         this.expiresAt = expiresAt;
         this.consumed = false;
+        this.requestType = requestType;
+    }
+
+    public static SelfServiceRegistration instance(final Client client, final String accountNumber, final String firstName, final String middleName,
+            final String lastName, final String mobileNumber, final String email, final String authenticationToken, final String username,
+            final String password) {
+        return new SelfServiceRegistration(client, accountNumber, firstName, middleName, lastName, mobileNumber, email, authenticationToken, username,
+                password);
     }
 
     public static SelfServiceRegistration instance(final Client client, final String accountNumber, final String firstName, final String middleName,
             final String lastName, final String mobileNumber, final String email, final String authenticationToken,
-            final String externalAuthorizationToken, final String username, final String password, final SelfServiceRequestType requestType,
+            final String externalAuthenticationToken, final String username, final String password, final SelfServiceRequestType requestType,
             final LocalDateTime expiresAt) {
         return new SelfServiceRegistration(client, accountNumber, firstName, middleName, lastName, mobileNumber, email, authenticationToken,
-                externalAuthorizationToken, username, password, requestType, expiresAt);
+                externalAuthenticationToken, username, password, requestType, expiresAt);
     }
 
     public Client getClient() {
@@ -146,6 +159,14 @@ public class SelfServiceRegistration extends AbstractPersistableCustom<Long> {
         return this.authenticationToken;
     }
 
+    /**
+     * @deprecated use {@link #getExternalAuthorizationToken()} to match the persisted field name
+     */
+    @Deprecated(forRemoval = false)
+    public String getExternalAuthenticationToken() {
+        return getExternalAuthorizationToken();
+    }
+
     public String getExternalAuthorizationToken() {
         return this.externalAuthorizationToken;
     }
@@ -174,30 +195,17 @@ public class SelfServiceRegistration extends AbstractPersistableCustom<Long> {
         return this.expiresAt;
     }
 
-    /**
-     * Returns whether this request has already been consumed and can no longer be reused.
-     *
-     * @return {@code true} when the request has been consumed
-     */
     public boolean isConsumed() {
         return this.consumed;
     }
 
-    /**
-     * Returns whether the request is expired at the supplied point in time.
-     *
-     * @param now timestamp to compare against the configured expiry
-     * @return {@code true} when the request has reached or passed its expiry time
-     */
     public boolean isExpired(LocalDateTime now) {
+        if (now == null) {
+            throw new IllegalArgumentException("now must not be null");
+        }
         return this.expiresAt != null && !now.isBefore(this.expiresAt);
     }
 
-    /**
-     * Marks this request as consumed. Optimistic locking via {@code @Version}
-     * ensures only one concurrent caller succeeds; the loser gets an
-     * {@link jakarta.persistence.OptimisticLockException}.
-     */
     public void markConsumed() {
         this.consumed = true;
     }

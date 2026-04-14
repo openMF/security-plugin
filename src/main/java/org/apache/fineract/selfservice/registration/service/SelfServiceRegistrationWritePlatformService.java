@@ -23,42 +23,32 @@ public interface SelfServiceRegistrationWritePlatformService {
 
     AppSelfServiceUser createSelfServiceUser(String apiRequestBodyAsJson);
 
-    /**
-     * Executes the legacy token-confirmation flow when {@code requestId} and
-     * {@code authenticationToken} are supplied; otherwise performs one-shot self-enrollment using
-     * client creation fields.
-     *
-     * @param apiRequestBodyAsJson JSON request body containing either legacy confirmation fields
-     *     ({@code requestId}, {@code authenticationToken}) or self-enrollment fields accepted by
-     *     the enrollment endpoint
-     * @return the created self-service user, including the generated identifier after persistence
-     * @throws org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException
-     *     if required fields are missing or invalid
-     * @throws org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException if a
-     *     duplicate user or other integrity issue is detected
-     * @throws org.apache.fineract.selfservice.registration.exception.SelfServiceEnrollmentConflictException
-     *     if enrollment fails with a conflict that maps to HTTP 409
-     *
-     * Side effects: persists registration or enrollment data, may create a client and a linked
-     * self-service user, and may trigger downstream notification or mapping writes.
-     */
     AppSelfServiceUser createSelfServiceUserOrEnroll(String apiRequestBodyAsJson);
 
     /**
-     * Creates a Client and a disabled self-service User, stores an enrollment confirmation token,
-     * and sends the token via email or SMS. The user must be activated via {@link #confirmEnrollment}.
+     * Creates a pending self-enrollment request from a JSON payload containing the registration fields.
      *
-     * @param apiRequestBodyAsJson The incoming request containing enrollment data matching {@code SelfServiceEnrollmentRequest}.
-     * @return The registration record containing the enrollment token.
+     * <p>The payload is expected to include values such as {@code username}, {@code password},
+     * {@code firstName}, {@code lastName}, {@code authenticationMode}, and the client details needed
+     * to create or link the self-service user.
+     *
+     * @param apiRequestBodyAsJson enrollment request JSON
+     * @return the persisted {@link SelfServiceRegistration} awaiting confirmation
+     * @throws org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException on invalid payload fields
+     * @throws org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException on duplicate or persistence conflicts
      */
     SelfServiceRegistration selfEnroll(String apiRequestBodyAsJson);
 
     /**
-     * Confirms a self-enrollment token, enabling the disabled user created by {@link #selfEnroll}.
+     * Confirms a pending self-enrollment request and activates the associated self-service user.
      *
-     * @param apiRequestBodyAsJson JSON containing the token fields ({@code externalAuthenticationToken}
-     *     or legacy {@code requestId}/{@code authenticationToken})
-     * @return The activated self-service user.
+     * <p>The payload is expected to contain either {@code externalAuthenticationToken} or the legacy
+     * {@code requestId}/{@code authenticationToken} combination used to resolve the pending request.
+     *
+     * @param apiRequestBodyAsJson confirmation request JSON
+     * @return the activated {@link AppSelfServiceUser}
+     * @throws org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException on invalid token payloads
+     * @throws org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException when the token is invalid, expired, or already used
      */
     AppSelfServiceUser confirmEnrollment(String apiRequestBodyAsJson);
 }

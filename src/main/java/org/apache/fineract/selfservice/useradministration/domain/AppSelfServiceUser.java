@@ -403,6 +403,17 @@ public class AppSelfServiceUser extends AbstractPersistableCustom<Long> implemen
         return this.deleted;
     }
 
+    /**
+     * Activates the self-service user and restores the account flags required for authentication.
+     */
+    public void enable() {
+        this.enabled = true;
+        this.accountNonExpired = true;
+        this.accountNonLocked = true;
+        this.credentialsNonExpired = true;
+        this.deleted = false;
+    }
+
     public boolean isSystemUser() {
         // TODO Determine system user by ID not by user name
         if (this.username.equals(AppUserConstants.SYSTEM_USER_NAME)) {
@@ -459,13 +470,6 @@ public class AppSelfServiceUser extends AbstractPersistableCustom<Long> implemen
     @Override
     public boolean isCredentialsNonExpired() {
         return this.credentialsNonExpired;
-    }
-
-    /**
-     * Activates a previously disabled self-service user after enrollment confirmation.
-     */
-    public void enable() {
-        this.enabled = true;
     }
 
     @Override

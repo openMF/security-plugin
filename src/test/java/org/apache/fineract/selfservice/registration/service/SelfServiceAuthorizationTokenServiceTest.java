@@ -28,11 +28,23 @@ class SelfServiceAuthorizationTokenServiceTest {
     @Test
     void generateToken_respectsNumericConfiguration() {
         when(env.getProperty("mifos.self.service.token.type")).thenReturn("numeric");
+        when(env.getProperty("mifos.self.service.token.length", Integer.class, 8)).thenReturn(8);
         SelfServiceAuthorizationTokenService service = new SelfServiceAuthorizationTokenService(env);
 
         String token = service.generateToken();
 
-        assertTrue(token.matches("\\d{6}"));
+        assertTrue(token.matches("\\d{8}"));
+    }
+
+    @Test
+    void generateToken_numericClampsToMinLength() {
+        when(env.getProperty("mifos.self.service.token.type")).thenReturn("numeric");
+        when(env.getProperty("mifos.self.service.token.length", Integer.class, 8)).thenReturn(4);
+        SelfServiceAuthorizationTokenService service = new SelfServiceAuthorizationTokenService(env);
+
+        String token = service.generateToken();
+
+        assertTrue(token.matches("\\d{8}"));
     }
 
     @Test

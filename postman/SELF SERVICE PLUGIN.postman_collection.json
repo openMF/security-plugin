@@ -41,7 +41,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"username\": \"service@mifos.io\",\n    \"password\": \"TEST-TEST-TEST\",\n    \"host\": \"smtp.mifos.org\",\n    \"port\": 587,\n    \"useTLS\": \"true\",\n    \"fromEmail\": \"service@mifos.io\",\n    \"fromName\": \"service@mifos.io\"\n}",
+                  "raw": "{\n    \"username\": \"{{smtp_username}}\",\n    \"password\": \"{{smtp_password}}\",\n    \"host\": \"{{smtp_host}}\",\n    \"port\": {{smtp_port}},\n    \"useTLS\": {{smtp_use_tls}},\n    \"fromEmail\": \"{{smtp_from_email}}\",\n    \"fromName\": \"{{smtp_from_name}}\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -1333,7 +1333,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic cGVkcm8ubWFybW9sOk1pZm9zSW5pdGlhdGl2ZTIwMjYj",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -1502,14 +1502,14 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic cGVkcm8ubWFybW9sOk1pZm9zSW5pdGlhdGl2ZTIwMjYj",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text",
                     "disabled": true
                   }
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"username\": \"vilma\", //required\n    \"authenticationMode\": \"email\" //required\n}",
+                  "raw": "{\n    \"username\": \"vilma\",\n    \"authenticationMode\": \"email\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -1550,7 +1550,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic cGVkcm8ubWFybW9sOk1pZm9zSW5pdGlhdGl2ZTIwMjYj",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text",
                     "disabled": true
                   }
@@ -1638,7 +1638,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic cGVkcm8ubWFybW9sOk1pZm9zSW5pdGlhdGl2ZTIwMjYj",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -1673,7 +1673,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic cGVkcm8ubWFybW9sOk1pZm9zSW5pdGlhdGl2ZTIwMjYj",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -1717,7 +1717,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic cGVkcm8ubWFybW9sOk1pZm9zSW5pdGlhdGl2ZTIwMjYj",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -1761,7 +1761,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic cGVkcm8ubWFybW9sOk1pZm9zSW5pdGlhdGl2ZTIwMjYj",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -1806,7 +1806,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic cGVkcm8ubWFybW9sOk1pZm9zSW5pdGlhdGl2ZTIwMjYj",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -1851,7 +1851,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic cGVkcm8ubWFybW9sOk1pZm9zSW5pdGlhdGl2ZTIwMjYj",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -1892,7 +1892,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic cGVkcm8ubWFybW9sOk1pZm9zSW5pdGlhdGl2ZTIwMjYj",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -1932,7 +1932,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic cGVkcm8ubWFybW9sOk1pZm9zSW5pdGlhdGl2ZTIwMjYj",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -1976,7 +1976,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic cGVkcm8ubWFybW9sOk1pZm9zSW5pdGlhdGl2ZTIwMjYj",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -2011,7 +2011,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic cGVkcm8ubWFybW9sOk1pZm9zSW5pdGlhdGl2ZTIwMjYj",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -2048,7 +2048,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic cGVkcm8ubWFybW9sOk1pZm9zSW5pdGlhdGl2ZTIwMjYj",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -2084,7 +2084,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic cGVkcm8ubWFybW9sOk1pZm9zSW5pdGlhdGl2ZTIwMjYj",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -2133,7 +2133,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic cGVkcm8ubWFybW9sOk1pZm9zSW5pdGlhdGl2ZTIwMjYj",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -2182,7 +2182,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic cGVkcm8ubWFybW9sOk1pZm9zSW5pdGlhdGl2ZTIwMjYj",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -2225,7 +2225,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic cGVkcm8ubWFybW9sOk1pZm9zSW5pdGlhdGl2ZTIwMjYj",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -2269,7 +2269,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic cGVkcm8ubWFybW9sOk1pZm9zSW5pdGlhdGl2ZTIwMjYj",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -2324,7 +2324,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic cGVkcm8ubWFybW9sOk1pZm9zSW5pdGlhdGl2ZTIwMjYj",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -2364,7 +2364,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic dG9tYXM6cGFzc3dvcmQ=",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -2405,7 +2405,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic cGVkcm8ubWFybW9sOk1pZm9zSW5pdGlhdGl2ZTIwMjYj",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -2449,7 +2449,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic dG9tYXM6cGFzc3dvcmQ=",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -2494,7 +2494,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic cGVkcm8ubWFybW9sOk1pZm9zSW5pdGlhdGl2ZTIwMjYj",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -2529,7 +2529,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic dG9tYXM6cGFzc3dvcmQ=",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -2565,7 +2565,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic cGVkcm8ubWFybW9sOk1pZm9zSW5pdGlhdGl2ZTIwMjYj",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -2606,7 +2606,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic cGVkcm8ubWFybW9sOk1pZm9zSW5pdGlhdGl2ZTIwMjYj",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -2643,7 +2643,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic cGVkcm8ubWFybW9sOk1pZm9zSW5pdGlhdGl2ZTIwMjYj",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -2679,7 +2679,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic cGVkcm8ubWFybW9sOk1pZm9zSW5pdGlhdGl2ZTIwMjYj",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -2724,7 +2724,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic cGVkcm8ubWFybW9sOk1pZm9zSW5pdGlhdGl2ZTIwMjYj",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -2767,7 +2767,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic cGVkcm8ubWFybW9sOk1pZm9zSW5pdGlhdGl2ZTIwMjYj",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -2819,7 +2819,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic cGVkcm8ubWFybW9sOk1pZm9zSW5pdGlhdGl2ZTIwMjYj",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -2863,7 +2863,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic cGVkcm8ubWFybW9sOk1pZm9zSW5pdGlhdGl2ZTIwMjYj",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -2909,7 +2909,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic cGVkcm8ubWFybW9sOk1pZm9zSW5pdGlhdGl2ZTIwMjYj",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -2963,7 +2963,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -3004,7 +3004,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -3054,7 +3054,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -3088,7 +3088,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic YW5kcm9tZWRhOnBhc3N3b3Jk",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -3123,7 +3123,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic bWFyaWE6RmluYWJpZW4yMDI1Iw==",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -3158,7 +3158,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic YW5kcm9tZWRhOnBhc3N3b3Jk",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -3194,7 +3194,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic bWFyaWE6RmluYWJpZW4yMDI1Iw==",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -3230,7 +3230,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic YW5kcm9tZWRhOnBhc3N3b3Jk",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -3288,7 +3288,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic YW5kcm9tZWRhOnBhc3N3b3Jk",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text",
                     "disabled": true
                   }
@@ -3331,7 +3331,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -3367,7 +3367,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -3403,7 +3403,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],
@@ -3439,7 +3439,7 @@
                   },
                   {
                     "key": "Authorization",
-                    "value": "Basic bWFyaWE6cGFzc3dvcmQ=",
+                    "value": "Basic {{selfservice_auth_token}}",
                     "type": "text"
                   }
                 ],

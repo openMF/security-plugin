@@ -139,6 +139,18 @@ public abstract class SelfServiceIntegrationTestBase {
     }
 
     /**
+     * Executes a SQL statement inside the Postgres test container after safely rendering parameters
+     * as SQL literals for test-only usage.
+     */
+    protected static void executeSqlInPostgres(String sqlTemplate, Object... parameters) {
+        String[] rendered = new String[parameters.length];
+        for (int index = 0; index < parameters.length; index++) {
+            rendered[index] = sqlLiteral(parameters[index]);
+        }
+        executeSqlInPostgres(sqlTemplate.formatted((Object[]) rendered));
+    }
+
+    /**
      * Queries a single scalar value from the Postgres test container using {@code psql -tA}.
      */
     protected static String querySingleValueInPostgres(String sql) {
@@ -158,6 +170,13 @@ public abstract class SelfServiceIntegrationTestBase {
             return "NULL";
         }
         return "'" + value.replace("'", "''") + "'";
+    }
+
+    /**
+     * Wraps a Java value as a SQL literal for test statements executed via {@code psql}.
+     */
+    protected static String sqlLiteral(Object value) {
+        return sqlLiteral(value == null ? null : String.valueOf(value));
     }
 
     private static Container.ExecResult execPsql(String sql, boolean tuplesOnly) {

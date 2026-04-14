@@ -89,7 +89,8 @@ public class SelfServiceEnrollmentIntegrationTest extends SelfServiceIntegration
             statement.setString(1, parameter);
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (resultSet.next()) {
-                    return resultSet.getString(1);
+                    String value = resultSet.getString(1);
+                    return value != null ? value : "";
                 }
                 return "";
             }

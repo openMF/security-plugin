@@ -58,6 +58,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.MessageSource;
 import org.thymeleaf.ITemplateEngine;
+import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings("unchecked")
@@ -85,6 +86,7 @@ class SelfServiceRegistrationWritePlatformServiceImplTest {
     @Mock private SelfServiceAuthorizationTokenService selfServiceAuthorizationTokenService;    
     @Mock private ITemplateEngine registrationTemplateEngine;
     @Mock private MessageSource registrationMessageSource;
+    @Mock private ApplicationEventPublisher applicationEventPublisher;
 
     private SelfServiceRegistrationWritePlatformServiceImpl service;
 
@@ -113,7 +115,8 @@ class SelfServiceRegistrationWritePlatformServiceImplTest {
             appSelfServiceUserRepository,
             selfServiceAuthorizationTokenService,
             registrationTemplateEngine,
-            registrationMessageSource
+            registrationMessageSource,
+            applicationEventPublisher
         );
 
         LocalDate businessDate = LocalDate.of(2026, 1, 2);
