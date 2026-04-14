@@ -1,0 +1,224 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+package org.apache.fineract.selfservice.notification.starter;
+
+import io.micrometer.core.instrument.MeterRegistry;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.Optional;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadPoolExecutor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.fineract.infrastructure.businessdate.domain.BusinessDateType;
+import org.apache.fineract.infrastructure.core.domain.FineractPlatformTenant;
+import org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil;
+import org.apache.fineract.selfservice.notification.NotificationContext;
+import org.apache.fineract.selfservice.notification.NotificationCooldownCache;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+import org.springframework.context.support.ResourceBundleMessageSource;
+import org.springframework.core.env.Environment;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.spring6.SpringTemplateEngine;
+import org.thymeleaf.templatemode.TemplateMode;
+import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
+import org.thymeleaf.templateresolver.FileTemplateResolver;
+
+/**
+ * Spring configuration for self-service notification infrastructure.
+ *
+ * @author Mifos
+ * @since 1.15.0
+ */
+@Slf4j
+@Configuration
+@EnableAsync
+@EnableConfigurationProperties(SelfServiceNotificationConfig.NotificationExecutorProperties.class)
+public class SelfServiceNotificationConfig {
+
+    /**
+     * Builds the async executor used for self-service notification handling.
+     *
+     * @param meterRegistry optional metrics registry for dropped notification counters
+     * @return configured notification executor
+     */
+    @Bean
+    public Executor notificationExecutor(Optional<MeterRegistry> meterRegistry, NotificationExecutorProperties properties) {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(properties.getCorePoolSize());
+        executor.setMaxPoolSize(properties.getMaxPoolSize());
+        executor.setQueueCapacity(properties.getQueueCapacity());
+        executor.setThreadNamePrefix(properties.getThreadNamePrefix());
+        executor.setTaskDecorator(runnable -> {
+            FineractPlatformTenant tenant = ThreadLocalContextUtil.getTenant();
+            HashMap<BusinessDateType, LocalDate> businessDates = currentBusinessDates();
+            return () -> {
+                try {
+                    ThreadLocalContextUtil.setTenant(tenant);
+                    if (businessDates != null) {
+                        ThreadLocalContextUtil.setBusinessDates(new HashMap<>(businessDates));
+                    }
+                    runnable.run();
+                } finally {
+                    ThreadLocalContextUtil.reset();
+                }
+            };
+        });
+        executor.setRejectedExecutionHandler((Runnable r, ThreadPoolExecutor e) -> {
+            String eventType = Optional.ofNullable(NotificationContext.get()).orElse("unknown");
+            meterRegistry.ifPresent(mr -> mr.counter("selfservice.notifications.dropped", "event", eventType).increment());
+            log.warn("Notification dropped due to thread pool saturation for event type: {}", eventType);
+        });
+        executor.initialize();
+        return executor;
+    }
+
+    private HashMap<BusinessDateType, LocalDate> currentBusinessDates() {
+        try {
+            HashMap<BusinessDateType, LocalDate> businessDates = ThreadLocalContextUtil.getBusinessDates();
+            return businessDates == null ? null : new HashMap<>(businessDates);
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
+    }
+
+    /**
+     * Builds the Thymeleaf template engine used for self-service notification rendering.
+     *
+     * @param env environment used to resolve template path and cache settings
+     * @return configured notification template engine
+     */
+    @Bean
+    @Primary
+    public TemplateEngine notificationTemplateEngine(Environment env) {
+        SpringTemplateEngine engine = new SpringTemplateEngine();
+        boolean cacheTemplates = env.getProperty("fineract.selfservice.notification.cache-templates", Boolean.class, true);
+
+        String externalPath = env.getProperty("fineract.selfservice.notification.template-path", "");
+        if (StringUtils.isNotBlank(externalPath)) {
+            String normalizedPath = externalPath.endsWith("/") ? externalPath : externalPath + "/";
+
+            FileTemplateResolver htmlFileResolver = new FileTemplateResolver();
+            htmlFileResolver.setOrder(1);
+            htmlFileResolver.setPrefix(normalizedPath);
+            htmlFileResolver.setSuffix(".html");
+            htmlFileResolver.setTemplateMode(TemplateMode.HTML);
+            htmlFileResolver.setCheckExistence(true);
+            htmlFileResolver.setCacheable(cacheTemplates);
+            engine.addTemplateResolver(htmlFileResolver);
+
+            FileTemplateResolver textFileResolver = new FileTemplateResolver();
+            textFileResolver.setOrder(2);
+            textFileResolver.setPrefix(normalizedPath);
+            textFileResolver.setSuffix(".txt");
+            textFileResolver.setTemplateMode(TemplateMode.TEXT);
+            textFileResolver.setCheckExistence(true);
+            textFileResolver.setCacheable(cacheTemplates);
+            engine.addTemplateResolver(textFileResolver);
+        }
+
+        ClassLoaderTemplateResolver htmlClasspathResolver = new ClassLoaderTemplateResolver();
+        htmlClasspathResolver.setOrder(3);
+        htmlClasspathResolver.setPrefix("notification/templates/");
+        htmlClasspathResolver.setSuffix(".html");
+        htmlClasspathResolver.setTemplateMode(TemplateMode.HTML);
+        htmlClasspathResolver.setCheckExistence(true);
+        htmlClasspathResolver.setCacheable(cacheTemplates);
+        engine.addTemplateResolver(htmlClasspathResolver);
+
+        ClassLoaderTemplateResolver textClasspathResolver = new ClassLoaderTemplateResolver();
+        textClasspathResolver.setOrder(4);
+        textClasspathResolver.setPrefix("notification/templates/");
+        textClasspathResolver.setSuffix(".txt");
+        textClasspathResolver.setTemplateMode(TemplateMode.TEXT);
+        textClasspathResolver.setCheckExistence(true);
+        textClasspathResolver.setCacheable(cacheTemplates);
+        engine.addTemplateResolver(textClasspathResolver);
+
+        engine.setTemplateEngineMessageSource(notificationMessageSource());
+        return engine;
+    }
+
+    /**
+     * Provides the message source for localized notification template messages.
+     *
+     * @return configured notification message source
+     */
+    @Bean
+    public ResourceBundleMessageSource notificationMessageSource() {
+        ResourceBundleMessageSource src = new ResourceBundleMessageSource();
+        src.setBasename("notification/messages/NotificationMessages");
+        src.setDefaultEncoding("UTF-8");
+        return src;
+    }
+
+    @Bean
+    public NotificationCooldownCache notificationCooldownCache(Environment env) {
+        int cooldownSeconds = env.getProperty("fineract.selfservice.notification.cooldown-seconds", Integer.class, 300);
+        return new NotificationCooldownCache(Duration.ofSeconds(cooldownSeconds), 10_000);
+    }
+
+    @ConfigurationProperties(prefix = "fineract.selfservice.notification.executor")
+    public static class NotificationExecutorProperties {
+
+        private int corePoolSize = 2;
+        private int maxPoolSize = 4;
+        private int queueCapacity = 100;
+        private String threadNamePrefix = "notif-";
+
+        public int getCorePoolSize() {
+            return corePoolSize;
+        }
+
+        public void setCorePoolSize(int corePoolSize) {
+            this.corePoolSize = corePoolSize;
+        }
+
+        public int getMaxPoolSize() {
+            return maxPoolSize;
+        }
+
+        public void setMaxPoolSize(int maxPoolSize) {
+            this.maxPoolSize = maxPoolSize;
+        }
+
+        public int getQueueCapacity() {
+            return queueCapacity;
+        }
+
+        public void setQueueCapacity(int queueCapacity) {
+            this.queueCapacity = queueCapacity;
+        }
+
+        public String getThreadNamePrefix() {
+            return threadNamePrefix;
+        }
+
+        public void setThreadNamePrefix(String threadNamePrefix) {
+            this.threadNamePrefix = threadNamePrefix;
+        }
+    }
+}

@@ -91,6 +91,26 @@ class SelfForgotPasswordApiResourceIntegrationTest extends SelfServiceIntegratio
         }
     }
 
+    private String fineractLogTail() {
+        String logs = fineract.getLogs();
+        if (logs == null || logs.isBlank()) {
+            return "<no fineract logs available>";
+        }
+        String filtered = logs.lines()
+                .filter(line -> line.contains("ERROR") || line.contains("Exception") || line.contains("Caused by:")
+                        || line.contains("SelfForgotPassword") || line.contains("/self/password/request"))
+                .reduce((left, right) -> left + System.lineSeparator() + right)
+                .orElse("");
+        if (!filtered.isBlank()) {
+            return filtered;
+        }
+        int maxLength = 8000;
+        if (logs.length() <= maxLength) {
+            return logs;
+        }
+        return logs.substring(logs.length() - maxLength);
+    }
+
     @Test
     @DisplayName("Forgot password request and renew resets the self-service password")
     void requestAndRenewPassword_endToEnd() {
@@ -116,7 +136,9 @@ class SelfForgotPasswordApiResourceIntegrationTest extends SelfServiceIntegratio
                 .extract().response();
 
         int requestStatus = requestResponse.getStatusCode();
-        assertEquals(200, requestStatus, "Forgot-password request must succeed. Body: " + requestResponse.body().asString());
+        assertEquals(200, requestStatus,
+                "Forgot-password request must succeed. Body: " + requestResponse.body().asString() + "\nFineract logs:\n"
+                        + fineractLogTail());
 
         String externalToken = querySingleValue(
                 "select external_authorization_token from request_audit_table "

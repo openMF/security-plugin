@@ -1,0 +1,6 @@
+Notice to [[${firstName}]],
+
+There was a failed attempt to login to your account ([[${username}]]) at [[${#temporals.format(eventTimestamp, 'yyyy-MM-dd HH:mm:ss z')}]].
+[# th:if="${ipAddress != null}"]Attempted IP Address: [[${ipAddress}]][/]
+
+If you forgot your password, please use the password reset feature.

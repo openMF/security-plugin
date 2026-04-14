@@ -332,13 +332,6 @@ public class SelfServiceForgotPasswordWritePlatformServiceImpl implements SelfSe
     }
 
     private void sendAuthorizationMail(SelfServiceRegistration selfServiceRegistration) {
-        /*
-        final String subject = "Código de Autorización ";
-        final String body = "Hola  " + selfServiceRegistration.getFirstName() + ","
-                + "\nCódigo de Autorización : " + selfServiceRegistration.getExternalAuthorizationToken();
-
-        final EmailDetail emailDetail = new EmailDetail(subject, body, selfServiceRegistration.getEmail(),selfServiceRegistration.getFirstName());
-        */
         Locale locale = LocaleContextHolder.getLocale();
         final String subject = this.registrationMessageSource.getMessage("email.subject", null, locale);
         Context ctx = new Context(locale);

@@ -211,6 +211,7 @@ public class SelfServiceSecurityConfiguration {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
         authProvider.setUserDetailsService(userDetailsService);
         authProvider.setPasswordEncoder(selfServicePasswordEncoder());
+        authProvider.setPreAuthenticationChecks(new org.apache.fineract.selfservice.security.service.SelfServiceUserDetailsChecker(platformUserDetailsChecker));
         authProvider.setPostAuthenticationChecks(platformUserDetailsChecker);
         return authProvider;
     }

@@ -39,6 +39,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.springframework.context.ApplicationEventPublisher;
 import org.apache.fineract.infrastructure.campaigns.sms.data.SmsProviderData;
 import org.apache.fineract.infrastructure.campaigns.sms.domain.SmsCampaign;
 import org.apache.fineract.infrastructure.campaigns.sms.service.SmsCampaignDropdownReadPlatformService;
@@ -52,6 +53,7 @@ import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityEx
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.core.service.SelfServicePluginEmailService;
+import org.apache.fineract.infrastructure.security.domain.BasicPasswordEncodablePlatformUser;
 import org.apache.fineract.infrastructure.security.service.PlatformPasswordEncoder;
 import org.apache.fineract.infrastructure.sms.domain.SmsMessage;
 import org.apache.fineract.infrastructure.sms.domain.SmsMessageRepository;
@@ -128,6 +130,7 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
     private final SelfServiceAuthorizationTokenService selfServiceAuthorizationTokenService;
     private final ITemplateEngine registrationTemplateEngine;
     private final MessageSource registrationMessageSource;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     public SelfServiceRegistration createRegistrationRequest(String apiRequestBodyAsJson) {
@@ -454,7 +457,7 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
                 sendAuthorizationToken(registration, isEmailAuthenticationMode);
             } catch (RuntimeException e) {
                 log.error("Failed to deliver enrollment confirmation token for clientId={}, userId={}", newClientId, appUser.getId(), e);
-                // Swallowed intentionally: the enrollment record is persisted for retry/audit.
+                // The enrollment record is already persisted and can be retried or inspected by operators.
             }
 
             log.info("Self-enrollment created (pending confirmation): clientId={}, userId={}", newClientId, appUser.getId());
@@ -469,6 +472,20 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
         }
     }
 
+    /**
+     * Confirms a pending self-enrollment by validating the provided authentication token,
+     * enabling the associated user account, and publishing a {@code USER_ACTIVATED} notification
+     * event after the transaction commits.
+     *
+     * <p>The JSON payload must contain either an {@code externalAuthenticationToken} or the legacy
+     * {@code requestId}/{@code authenticationToken} pair.
+     *
+     * @param apiRequestBodyAsJson confirmation request JSON
+     * @return the enabled {@link AppSelfServiceUser}
+     * @throws PlatformApiDataValidationException if required parameters are missing or invalid
+     * @throws SelfServiceRegistrationNotFoundException if no matching enrollment request exists
+     * @throws PlatformDataIntegrityException if the token is expired or already used
+     */
     @Transactional(rollbackFor = Exception.class)
     @Override
     public AppSelfServiceUser confirmEnrollment(String apiRequestBodyAsJson) {
@@ -492,16 +509,42 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
                     SelfServiceApiConstants.usernameParamName, request.getUsername());
         }
 
-        appUser.enable();
-        this.appSelfServiceUserRepository.saveAndFlush(appUser);
-        request.markConsumed();
+        // Claim the token atomically before mutating user state so the optimistic
+        // lock fires before any irreversible changes are made.
         try {
+            request.markConsumed();
             this.selfServiceRegistrationRepository.saveAndFlush(request);
         } catch (OptimisticLockingFailureException e) {
             throw new PlatformDataIntegrityException("error.msg.self.service.request.token.invalid",
                     "The supplied self-service token is expired or already used.",
                     SelfServiceApiConstants.externalAuthenticationTokenParamName);
         }
+
+        appUser.enable();
+        this.appSelfServiceUserRepository.saveAndFlush(appUser);
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                try {
+                    applicationEventPublisher.publishEvent(new org.apache.fineract.selfservice.notification.SelfServiceNotificationEvent(
+                        SelfServiceRegistrationWritePlatformServiceImpl.this,
+                        org.apache.fineract.selfservice.notification.SelfServiceNotificationEvent.Type.USER_ACTIVATED,
+                        appUser.getId(),
+                        appUser.getFirstname(),
+                        appUser.getLastname(),
+                        appUser.getUsername(),
+                        request.getEmail(),
+                        request.getMobileNumber(),
+                        isEmailMode(request),
+                        null,
+                        LocaleContextHolder.getLocale()
+                    ));
+                } catch (Exception e) {
+                    log.warn("Failed to publish USER_ACTIVATED notification for userId={}", appUser.getId(), e);
+                }
+            }
+        });
 
         log.info("Self-enrollment confirmed: userId={}", appUser.getId());
         return appUser;
@@ -737,6 +780,17 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
     }
 
     private String encodePassword(String rawPassword) {
-        return platformPasswordEncoder.encode(new RawPlatformUser(rawPassword));
+        return platformPasswordEncoder.encode(new BasicPasswordEncodablePlatformUser().setPassword(rawPassword));
+    }
+
+    private boolean isEmailMode(SelfServiceRegistration request) {
+        boolean hasEmail = StringUtils.isNotBlank(request.getEmail());
+        boolean hasMobile = StringUtils.isNotBlank(request.getMobileNumber());
+
+        if (hasEmail && !hasMobile) return true;
+        if (hasMobile && !hasEmail) return false;
+
+        String pref = env.getProperty("fineract.selfservice.notification.login.delivery-preference", "email");
+        return "email".equalsIgnoreCase(pref);
     }
 }

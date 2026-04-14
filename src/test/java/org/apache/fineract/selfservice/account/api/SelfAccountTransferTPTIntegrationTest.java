@@ -550,37 +550,36 @@ class SelfAccountTransferTPTIntegrationTest extends SelfServiceIntegrationTestBa
                 nonexpired, nonlocked, nonexpired_credentials, enabled, firsttime_login_remaining
             )
             VALUES (
-                %d, %s, (SELECT password FROM m_appuser WHERE username = 'mifos' LIMIT 1), %s,
+                %s, %s, (SELECT password FROM m_appuser WHERE username = 'mifos' LIMIT 1), %s,
                 'SS', 'TPT', false, true, true, true, true, false
             )
             RETURNING id
         ), appuser_role AS (
             INSERT INTO m_appuser_role(appuser_id, role_id)
-            SELECT id, %d FROM new_appuser
+            SELECT id, %s FROM new_appuser
         ), new_self_user AS (
             INSERT INTO m_appselfservice_user(
                 id, office_id, username, password, email, firstname, lastname, is_deleted,
                 nonexpired, nonlocked, nonexpired_credentials, enabled, firsttime_login_remaining,
                 password_never_expires, is_self_service_user, password_reset_required
             )
-            SELECT id, %d, %s, (SELECT password FROM m_appuser WHERE username = 'mifos' LIMIT 1), %s,
+            SELECT id, %s, %s, (SELECT password FROM m_appuser WHERE username = 'mifos' LIMIT 1), %s,
                 'SS', 'TPT', false, true, true, true, true, false, true, true, false
             FROM new_appuser
             RETURNING id
         ), self_user_role AS (
             INSERT INTO m_appselfservice_user_role(appuser_id, role_id)
-            SELECT id, %d FROM new_self_user
+            SELECT id, %s FROM new_self_user
         )
         INSERT INTO m_selfservice_user_client_mapping(appuser_id, client_id)
-        SELECT id, %d FROM new_self_user;
+        SELECT id, %s FROM new_self_user;
 
         SELECT setval(
             pg_get_serial_sequence('m_appselfservice_user', 'id'),
             (SELECT MAX(id) FROM m_appselfservice_user)
         );
-        """.formatted(
-            officeId, sqlLiteral(username), sqlLiteral(username + "@fineract.org"), roleId,
-            officeId, sqlLiteral(username), sqlLiteral(username + "@fineract.org"), roleId, clientId));
+        """, officeId, username, username + "@fineract.org", roleId,
+            officeId, username, username + "@fineract.org", roleId, clientId);
 
     return username;
   }

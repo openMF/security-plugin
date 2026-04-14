@@ -13,8 +13,9 @@ public class SelfServiceAuthorizationTokenService {
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final String STRING_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
-    private static final int MIN_NUMERIC_LENGTH = 4;
-    private static final int DEFAULT_NUMERIC_LENGTH = 6;
+    private static final int MIN_NUMERIC_LENGTH = 8;
+    private static final int DEFAULT_NUMERIC_LENGTH = 8;
+    private static final int DEFAULT_STRING_LENGTH = 32;
     private static final int MAX_TOKEN_LENGTH = 100;
     private static final String DEFAULT_TOKEN_TYPE = "uuidv7";
     private static final int DEFAULT_EXPIRY_SECONDS = 30;
@@ -38,9 +39,10 @@ public class SelfServiceAuthorizationTokenService {
      * @return generated token string
      */
     public String generateToken() {
-        return switch (resolveTokenType()) {
-            case "string" -> randomString(resolveTokenLength());
-            case "numeric" -> randomNumericToken(resolveTokenLength());
+        String tokenType = resolveTokenType();
+        return switch (tokenType) {
+            case "string" -> randomString(resolveTokenLength(tokenType));
+            case "numeric" -> randomNumericToken(resolveTokenLength(tokenType));
             default -> uuidV7();
         };
     }
@@ -74,14 +76,11 @@ public class SelfServiceAuthorizationTokenService {
         return StringUtils.defaultIfBlank(env.getProperty("mifos.self.service.token.type"), DEFAULT_TOKEN_TYPE).trim().toLowerCase(Locale.ROOT);
     }
 
-    private int resolveTokenLength() {
-        Integer configuredLength = env.getProperty("mifos.self.service.token.length", Integer.class);
-        if (configuredLength == null) {
-            configuredLength = env.getProperty("mifos.self.service.token.length", Integer.class, DEFAULT_NUMERIC_LENGTH);
-        }
-        int length = configuredLength == null ? DEFAULT_NUMERIC_LENGTH : configuredLength;
+    private int resolveTokenLength(String tokenType) {
+        int defaultLength = "numeric".equals(tokenType) ? DEFAULT_NUMERIC_LENGTH : DEFAULT_STRING_LENGTH;
+        int length = env.getProperty("mifos.self.service.token.length", Integer.class, defaultLength);
         length = Math.min(length, MAX_TOKEN_LENGTH);
-        if ("numeric".equals(resolveTokenType())) {
+        if ("numeric".equals(tokenType)) {
             return Math.max(length, MIN_NUMERIC_LENGTH);
         }
         return Math.max(length, 1);
