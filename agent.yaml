@@ -1,0 +1,86 @@
+# Self Service Plugin Agent Configuration
+name: "Mifos Self Service Plugin Agent"
+version: "1.15.0-SNAPSHOT"
+description: "AI agent specialized in Mifos Self Service Plugin for Apache Fineract - providing self-service banking capabilities to end users"
+
+# Core agent metadata
+type: "domain-specific"
+domain: "banking-fintech"
+framework: "spring-ai-agent-skills"
+
+# Agent identification
+agent_id: "mifos-selfservice-plugin"
+namespace: "org.apache.fineract.selfservice"
+
+# Runtime configuration
+runtime:
+  java_version: "21"
+  spring_boot_version: "3"
+  fineract_version: "1.15.0-SNAPSHOT"
+
+# Security and permissions
+security:
+  authentication_required: true
+  permissions:
+    - "READ_SAVINGSPRODUCT"
+    - "READ_LOANPRODUCT" 
+    - "READ_SAVINGSACCOUNT"
+    - "READ_LOAN"
+    - "SELF_SERVICE_USER"
+
+# API endpoints served
+endpoints:
+  base_path: "/v1/self"
+  authentication: "/v1/self/authentication"
+  registration: "/v1/self/registration"
+  user_details: "/v1/self/userdetails"
+  savings: "/v1/self/savingsaccounts"
+  loans: "/v1/self/loans"
+  products:
+    savings: "/v1/self/savingsproducts"
+    loans: "/v1/self/loanproducts"
+    shares: "/v1/self/products/share"
+
+# Integration points
+integrations:
+  apache_fineract:
+    version: "1.15.0-SNAPSHOT"
+    modules:
+      - "fineract-provider"
+      - "fineract-core"
+      - "fineract-security"
+      - "fineract-client"
+      - "fineract-savings"
+      - "fineract-loan"
+  databases:
+    - "postgresql"
+    - "mysql"
+  security:
+    - "spring-security"
+    - "basic-auth"
+    - "oauth2"
+
+# Agent capabilities
+features:
+  - "user_registration"
+  - "authentication"
+  - "savings_account_management"
+  - "loan_account_management"
+  - "product_browsing"
+  - "survey_participation"
+  - "report_generation"
+  - "client_data_access"
+
+# Development metadata
+repository:
+  url: "https://github.com/openMF/selfservice-plugin"
+  license: "MPL-2.0"
+  organization: "Mifos Initiative"
+
+# Build and deployment
+build:
+  tool: "maven"
+  packaging: "jar"
+  deployment:
+    - "docker"
+    - "tomcat"
