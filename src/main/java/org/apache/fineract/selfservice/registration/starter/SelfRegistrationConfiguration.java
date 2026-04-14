@@ -42,7 +42,12 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import org.apache.fineract.useradministration.domain.AppUserRepository;
+import org.springframework.context.MessageSource;
+import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.core.env.Environment;
+import org.thymeleaf.spring6.SpringTemplateEngine;
+import org.thymeleaf.templatemode.TemplateMode;
+import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 
 @Configuration
 public class SelfRegistrationConfiguration {
@@ -57,6 +62,34 @@ public class SelfRegistrationConfiguration {
     @ConditionalOnMissingBean(SelfServiceAuthorizationTokenService.class)
     public SelfServiceAuthorizationTokenService selfServiceAuthorizationTokenService(Environment env) {
         return new SelfServiceAuthorizationTokenService(env);
+    }
+    
+    @Bean
+    public MessageSource registrationMessageSource() {
+        ResourceBundleMessageSource messageSource = new ResourceBundleMessageSource();
+        messageSource.setBasename("i18n/messages");
+        messageSource.setDefaultEncoding("UTF-8");
+        messageSource.setFallbackToSystemLocale(false);
+        return messageSource;
+    }
+
+    /**
+     * Provides the Thymeleaf engine for rendering registration email templates.
+     *
+     * @return configured template engine
+     */
+    @Bean
+    public SpringTemplateEngine registrationTemplateEngine() {
+        ClassLoaderTemplateResolver templateResolver = new ClassLoaderTemplateResolver();
+        templateResolver.setPrefix("mail-templates/");
+        templateResolver.setSuffix(".html");
+        templateResolver.setTemplateMode(TemplateMode.HTML);
+        templateResolver.setCharacterEncoding("UTF-8");
+
+        SpringTemplateEngine templateEngine = new SpringTemplateEngine();
+        templateEngine.setTemplateResolver(templateResolver);
+        templateEngine.setTemplateEngineMessageSource(registrationMessageSource());
+        return templateEngine;
     }
 
     @Bean
@@ -80,7 +113,7 @@ public class SelfRegistrationConfiguration {
                 gmailBackedPlatformEmailService, smsMessageRepository, smsMessageScheduledJobService,
                  smsCampaignDropdownReadPlatformService, appUserReadPlatformService, roleRepository, appUserClientMappingRepository,
                  jdbcTemplate, appUserRepository, clientWritePlatformService, env, platformPasswordEncoder, appSelfServiceUserRepository,
-                 selfServiceAuthorizationTokenService);
+                 selfServiceAuthorizationTokenService, registrationTemplateEngine(), registrationMessageSource());
     }
     
      @Bean

@@ -32,6 +32,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -96,6 +97,10 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.apache.fineract.portfolio.client.service.ClientWritePlatformService;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
+import org.thymeleaf.ITemplateEngine;
+import org.thymeleaf.context.Context;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -121,6 +126,8 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
     private final PlatformPasswordEncoder platformPasswordEncoder;
     private final AppSelfServiceUserRepository appSelfServiceUserRepository;
     private final SelfServiceAuthorizationTokenService selfServiceAuthorizationTokenService;
+    private final ITemplateEngine registrationTemplateEngine;
+    private final MessageSource registrationMessageSource;
 
     @Override
     public SelfServiceRegistration createRegistrationRequest(String apiRequestBodyAsJson) {
@@ -206,10 +213,7 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
             sendAuthorizationMessage(selfServiceRegistration);
         }
     }
-
-
-
-
+    
     private void sendAuthorizationMessage(SelfServiceRegistration selfServiceRegistration) {
         Collection<SmsProviderData> smsProviders = this.smsCampaignDropdownReadPlatformService.retrieveSmsProviders();
         if (smsProviders.isEmpty()) {
@@ -217,8 +221,11 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
                     "Mobile service provider not available.");
         }
         Long providerId = new ArrayList<>(smsProviders).get(0).getId();
-        final String message = "Hola  " + selfServiceRegistration.getFirstName() + "," + "\n\n"
-                + "Código de Autorización : " + selfServiceRegistration.getExternalAuthorizationToken();
+        Locale locale = LocaleContextHolder.getLocale();
+        final String message = this.registrationMessageSource.getMessage("sms.message",
+                new Object[] { selfServiceRegistration.getFirstName(), selfServiceRegistration.getId(),
+                        selfServiceRegistration.getAuthenticationToken() },
+                locale);
         String externalId = null;
         Group group = null;
         Staff staff = null;
@@ -231,11 +238,14 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
     }
 
     private void sendAuthorizationMail(SelfServiceRegistration selfServiceRegistration) {
-        final String subject = "Código de Autorización ";
-        final String body = "Hola  " + selfServiceRegistration.getFirstName() + "," + "\nCódigo de Autorización : "
-                + selfServiceRegistration.getExternalAuthorizationToken();
-
-        final EmailDetail emailDetail = new EmailDetail(subject, body, selfServiceRegistration.getEmail(),
+        Locale locale = LocaleContextHolder.getLocale();
+        final String subject = this.registrationMessageSource.getMessage("email.subject", null, locale);
+        Context ctx = new Context(locale);
+        ctx.setVariable("firstName", selfServiceRegistration.getFirstName());
+        ctx.setVariable("requestId", selfServiceRegistration.getId());
+        ctx.setVariable("authToken", selfServiceRegistration.getAuthenticationToken());
+        final String htmlBody = this.registrationTemplateEngine.process("authorization-email", ctx);
+        final EmailDetail emailDetail = new EmailDetail(subject, htmlBody, selfServiceRegistration.getEmail(),
                 selfServiceRegistration.getFirstName());
         this.gmailBackedPlatformEmailService.sendDefinedEmail(emailDetail);
     }

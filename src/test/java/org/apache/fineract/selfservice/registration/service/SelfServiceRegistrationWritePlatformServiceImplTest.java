@@ -56,6 +56,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.MessageSource;
+import org.thymeleaf.ITemplateEngine;
 
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings("unchecked")
@@ -81,11 +83,19 @@ class SelfServiceRegistrationWritePlatformServiceImplTest {
     @Mock private PlatformPasswordEncoder platformPasswordEncoder;
     @Mock private AppSelfServiceUserRepository appSelfServiceUserRepository;
     @Mock private SelfServiceAuthorizationTokenService selfServiceAuthorizationTokenService;
+    //@Mock private SpringTemplateEngine registrationTemplateEngine;
+    // To this:
+    @Mock
+    private ITemplateEngine registrationTemplateEngine;
+    @Mock private MessageSource registrationMessageSource;
 
     private SelfServiceRegistrationWritePlatformServiceImpl service;
 
+    
+
     @BeforeEach
-    void setUp() {
+    void setUp() {        
+        
         service = new SelfServiceRegistrationWritePlatformServiceImpl(
             selfServiceRegistrationRepository,
             fromApiJsonHelper,
@@ -106,7 +116,9 @@ class SelfServiceRegistrationWritePlatformServiceImplTest {
             env,
             platformPasswordEncoder,
             appSelfServiceUserRepository,
-            selfServiceAuthorizationTokenService
+            selfServiceAuthorizationTokenService,
+            registrationTemplateEngine,
+            registrationMessageSource
         );
 
         LocalDate businessDate = LocalDate.of(2026, 1, 2);
@@ -114,6 +126,7 @@ class SelfServiceRegistrationWritePlatformServiceImplTest {
         businessDates.put(BusinessDateType.BUSINESS_DATE, businessDate);
         businessDates.put(BusinessDateType.COB_DATE, businessDate.minusDays(1));
         ThreadLocalContextUtil.setBusinessDates(businessDates);
+  
     }
 
     @AfterEach
