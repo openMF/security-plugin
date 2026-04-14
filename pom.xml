@@ -157,6 +157,11 @@
         </exclusion>
       </exclusions>
     </dependency>
+    <!-- Email Template -->
+    <dependency>
+      <groupId>org.thymeleaf</groupId>
+      <artifactId>thymeleaf-spring6</artifactId>
+    </dependency>
     <!-- Apache Fineract Libraries -->
     <dependency>
       <groupId>org.apache.fineract</groupId>
