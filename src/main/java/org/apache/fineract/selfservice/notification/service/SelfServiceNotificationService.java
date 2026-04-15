@@ -19,14 +19,15 @@
 package org.apache.fineract.selfservice.notification.service;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Collection;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.fineract.infrastructure.campaigns.sms.data.SmsProviderData;
 import org.apache.fineract.infrastructure.campaigns.sms.service.SmsCampaignDropdownReadPlatformService;
 import org.apache.fineract.infrastructure.core.domain.EmailDetail;
-import org.apache.fineract.infrastructure.core.service.PlatformEmailService;
+import org.apache.fineract.infrastructure.core.service.SelfServicePluginEmailService;
+import org.apache.fineract.infrastructure.core.service.SmtpConfigurationUnavailableException;
 import org.apache.fineract.infrastructure.sms.domain.SmsMessage;
 import org.apache.fineract.infrastructure.sms.domain.SmsMessageRepository;
 import org.apache.fineract.infrastructure.sms.domain.SmsMessageStatusType;
@@ -38,22 +39,48 @@ import org.springframework.context.event.EventListener;
 import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.thymeleaf.ITemplateEngine;
 import org.thymeleaf.context.Context;
 
+/**
+ * Service responsible for sending self-service notifications (email and SMS)
+ * in response to user-triggered events such as login, password changes, and account updates.
+ */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class SelfServiceNotificationService {
 
     private final ITemplateEngine notificationTemplateEngine;
     private final MessageSource notificationMessageSource;
-    private final PlatformEmailService emailService;
+    private final SelfServicePluginEmailService emailService;
     private final SmsMessageRepository smsMessageRepository;
     private final SmsMessageScheduledJobService smsScheduledJobService;
     private final SmsCampaignDropdownReadPlatformService smsProviderService;
     private final NotificationCooldownCache notificationCooldownCache;
     private final Environment env;
+
+    /**
+     * Guards the one-time WARN log emitted when email delivery fails due to SMTP configuration
+     * being unavailable. Since SMTP config is global, only the first occurrence is logged at WARN;
+     * subsequent occurrences are logged at DEBUG to avoid log spam.
+     */
+    private final AtomicBoolean smtpConfigWarningLogged = new AtomicBoolean(false);
+
+    public SelfServiceNotificationService(ITemplateEngine notificationTemplateEngine,
+            MessageSource notificationMessageSource, SelfServicePluginEmailService emailService,
+            SmsMessageRepository smsMessageRepository, SmsMessageScheduledJobService smsScheduledJobService,
+            SmsCampaignDropdownReadPlatformService smsProviderService,
+            NotificationCooldownCache notificationCooldownCache, Environment env) {
+        this.notificationTemplateEngine = notificationTemplateEngine;
+        this.notificationMessageSource = notificationMessageSource;
+        this.emailService = emailService;
+        this.smsMessageRepository = smsMessageRepository;
+        this.smsScheduledJobService = smsScheduledJobService;
+        this.smsProviderService = smsProviderService;
+        this.notificationCooldownCache = notificationCooldownCache;
+        this.env = env;
+    }
 
     /**
      * Handles self-service notification events asynchronously.
@@ -70,6 +97,7 @@ public class SelfServiceNotificationService {
      */
     @Async("notificationExecutor")
     @EventListener
+    @Transactional
     public void handleNotification(SelfServiceNotificationEvent event) {
         try {
             boolean globalEnabled = env.getProperty("fineract.selfservice.notification.enabled", Boolean.class, true);
@@ -95,45 +123,108 @@ public class SelfServiceNotificationService {
             if (event.getIpAddress() != null) {
                 context.setVariable("ipAddress", event.getIpAddress());
             }
-            context.setVariable("eventTimestamp", java.time.ZonedDateTime.now());
+            context.setVariable("eventTimestamp", java.time.ZonedDateTime.now(java.time.ZoneOffset.UTC));
 
             String subjectKey = "subject." + event.getType().getTemplatePrefix();
             String subject = notificationMessageSource.getMessage(subjectKey, null, subjectKey, context.getLocale());
 
             if (event.isEmailMode()) {
-                if (org.apache.commons.lang3.StringUtils.isBlank(event.getEmail())) {
-                    log.warn("Email notification skipped for event {} because no email address is available", event.getType());
-                    return;
-                }
-                String templateName = "html/" + event.getType().getTemplatePrefix();
-                String htmlBody = notificationTemplateEngine.process(templateName, context);
-                
-                String recipientName = buildRecipientName(event.getFirstName(), event.getLastName());
-                EmailDetail emailDetail = new EmailDetail(subject, htmlBody, event.getEmail(), recipientName);
-                emailService.sendDefinedEmail(emailDetail);
+                sendEmailNotification(event, subject, context);
             } else {
-                if (org.apache.commons.lang3.StringUtils.isBlank(event.getMobileNumber())) {
-                    log.warn("SMS notification skipped for event {} because no mobile number is available", event.getType());
-                    return;
-                }
-                Collection<SmsProviderData> providers = smsProviderService.retrieveSmsProviders();
-                if (providers == null || providers.isEmpty()) {
-                    log.warn("No SMS provider configured, SMS notification skipped for event {}", event.getType());
-                    return;
-                }
-                Long providerId = providers.iterator().next().getId();
-                
-                String templateName = "text/" + event.getType().getTemplatePrefix();
-                String textBody = notificationTemplateEngine.process(templateName, context);
-                
-                SmsMessage smsMessage = SmsMessage.instance(null, null, null, null, SmsMessageStatusType.PENDING, textBody, event.getMobileNumber(), null, true);
-                smsMessageRepository.save(smsMessage);
-                smsScheduledJobService.sendTriggeredMessage(new ArrayList<>(List.of(smsMessage)), providerId);
+                sendSmsNotification(event, subject, context);
+            }
+        } catch (org.apache.fineract.infrastructure.core.service.PlatformEmailSendException emailEx) {
+            if (emailEx.getCause() instanceof SmtpConfigurationUnavailableException) {
+                handleSmtpConfigError(event, (SmtpConfigurationUnavailableException) emailEx.getCause());
+            } else {
+                String cacheKey = event.getType().name() + ":" + event.getUserId();
+                notificationCooldownCache.release(cacheKey);
+                log.error("Failed to handle notification for event type {}", event.getType(), emailEx);
             }
         } catch (Exception e) {
             String cacheKey = event.getType().name() + ":" + event.getUserId();
             notificationCooldownCache.release(cacheKey);
             log.error("Failed to handle notification for event type {}", event.getType(), e);
+        }
+    }
+
+    private void sendEmailNotification(SelfServiceNotificationEvent event, String subject, Context context) {
+        if (org.apache.commons.lang3.StringUtils.isBlank(event.getEmail())) {
+            log.warn("Email notification skipped for event {} because no email address is available", event.getType());
+            releaseCooldown(event);
+            return;
+        }
+        String templateName = "html/" + event.getType().getTemplatePrefix();
+        String htmlBody = notificationTemplateEngine.process(templateName, context);
+
+        String recipientName = buildRecipientName(event.getFirstName(), event.getLastName());
+        EmailDetail emailDetail = new EmailDetail(subject, htmlBody, event.getEmail(), recipientName);
+        emailService.sendFormattedEmail(emailDetail);
+    }
+
+    private void sendSmsNotification(SelfServiceNotificationEvent event, String subject, Context context) {
+        if (org.apache.commons.lang3.StringUtils.isBlank(event.getMobileNumber())) {
+            log.warn("SMS notification skipped for event {} because no mobile number is available", event.getType());
+            releaseCooldown(event);
+            return;
+        }
+        Collection<SmsProviderData> providers = smsProviderService.retrieveSmsProviders();
+        if (providers == null || providers.isEmpty()) {
+            log.warn("No SMS provider configured, SMS notification skipped for event {}", event.getType());
+            releaseCooldown(event);
+            return;
+        }
+        Long providerId = null;
+        if (providers.size() == 1) {
+            providerId = providers.iterator().next().getId();
+        } else {
+            Long configuredProviderId = env.getProperty("fineract.selfservice.notification.sms.providerId", Long.class);
+            if (configuredProviderId != null) {
+                for (SmsProviderData provider : providers) {
+                    if (configuredProviderId.equals(provider.getId())) {
+                        providerId = provider.getId();
+                        break;
+                    }
+                }
+            }
+        }
+        if (providerId == null) {
+            log.warn("Multiple SMS providers available but no default specified, SMS notification skipped for event {}", event.getType());
+            releaseCooldown(event);
+            return;
+        }
+
+        String templateName = "text/" + event.getType().getTemplatePrefix();
+        String textBody = notificationTemplateEngine.process(templateName, context);
+
+        SmsMessage smsMessage = SmsMessage.instance(null, null, null, null, SmsMessageStatusType.PENDING, textBody, event.getMobileNumber(), null, true);
+        smsMessage = smsMessageRepository.save(smsMessage);
+        try {
+            smsScheduledJobService.sendTriggeredMessage(new ArrayList<>(List.of(smsMessage)), providerId);
+            smsMessage.setStatusType(SmsMessageStatusType.SENT.getValue());
+            smsMessageRepository.save(smsMessage);
+        } catch (Exception e) {
+            smsMessage.setStatusType(SmsMessageStatusType.FAILED.getValue());
+            smsMessageRepository.save(smsMessage);
+            throw e;
+        }
+    }
+
+    /**
+     * Handles SMTP configuration errors by releasing the cooldown (so the event can be retried
+     * immediately after the config is fixed) and logging at WARN only on the first occurrence.
+     * SMTP config is global, so once we've logged the warning once, subsequent failures for any
+     * user/event are logged at DEBUG to avoid log spam.
+     */
+    private void handleSmtpConfigError(SelfServiceNotificationEvent event, SmtpConfigurationUnavailableException configEx) {
+        String cacheKey = event.getType().name() + ":" + event.getUserId();
+        notificationCooldownCache.release(cacheKey);
+
+        if (smtpConfigWarningLogged.compareAndSet(false, true)) {
+            log.warn("Email notification skipped for event type {} — SMTP configuration unavailable: {}. "
+                    + "Further config errors will be logged at DEBUG.", event.getType(), configEx.getMessage());
+        } else {
+            log.debug("Email notification skipped for event type {} — SMTP configuration unavailable.", event.getType());
         }
     }
 
@@ -149,5 +240,10 @@ public class SelfServiceNotificationService {
             name.append(lastName);
         }
         return name.length() > 0 ? name.toString() : "User";
+    }
+
+    private void releaseCooldown(SelfServiceNotificationEvent event) {
+        String cacheKey = event.getType().name() + ":" + event.getUserId();
+        notificationCooldownCache.release(cacheKey);
     }
 }

@@ -125,8 +125,6 @@ public class SelfAuthenticationApiResource {
         Authentication authenticationCheck = null;
         try {
             authenticationCheck = this.customAuthenticationProvider.authenticate(authentication);
-            
-            AppSelfServiceUser loggedInUser = (AppSelfServiceUser) authenticationCheck.getPrincipal();
         } catch (SelfServiceDisabledException ex) {
             AppSelfServiceUser failedUser = ex.getUser();
             String mobileNumber = extractMobile(failedUser);
@@ -247,7 +245,17 @@ public class SelfAuthenticationApiResource {
     }
 
     private String extractClientIp(HttpServletRequest httpRequest) {
-        return httpRequest == null ? null : httpRequest.getRemoteAddr();
+        if (httpRequest == null) {
+            return null;
+        }
+        String xForwardedFor = httpRequest.getHeader("X-Forwarded-For");
+        if (StringUtils.isNotBlank(xForwardedFor)) {
+            String firstToken = xForwardedFor.split(",")[0].trim();
+            if (StringUtils.isNotBlank(firstToken)) {
+                return firstToken;
+            }
+        }
+        return httpRequest.getRemoteAddr();
     }
 
     private String extractMobile(AppSelfServiceUser user) {

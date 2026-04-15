@@ -327,8 +327,16 @@ public class SelfServiceForgotPasswordWritePlatformServiceImpl implements SelfSe
         boolean isNotification = false;
         SmsMessage smsMessage = SmsMessage.instance(externalId, group, selfServiceRegistration.getClient(), staff,
                 SmsMessageStatusType.PENDING, message, selfServiceRegistration.getMobileNumber(), smsCampaign, isNotification);
-        this.smsMessageRepository.save(smsMessage);
-        this.smsMessageScheduledJobService.sendTriggeredMessage(new ArrayList<>(Arrays.asList(smsMessage)), providerId);
+        smsMessage = this.smsMessageRepository.save(smsMessage);
+        try {
+            this.smsMessageScheduledJobService.sendTriggeredMessage(new ArrayList<>(Arrays.asList(smsMessage)), providerId);
+            smsMessage.setStatusType(SmsMessageStatusType.SENT.getValue());
+            this.smsMessageRepository.save(smsMessage);
+        } catch (Exception e) {
+            smsMessage.setStatusType(SmsMessageStatusType.FAILED.getValue());
+            this.smsMessageRepository.save(smsMessage);
+            throw e;
+        }
     }
 
     private void sendAuthorizationMail(SelfServiceRegistration selfServiceRegistration) {
