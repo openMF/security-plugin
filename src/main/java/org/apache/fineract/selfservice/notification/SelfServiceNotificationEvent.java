@@ -19,6 +19,7 @@
 package org.apache.fineract.selfservice.notification;
 
 import java.util.Locale;
+import java.util.Objects;
 import lombok.Getter;
 import org.springframework.context.ApplicationEvent;
 
@@ -51,11 +52,26 @@ public class SelfServiceNotificationEvent extends ApplicationEvent {
     private final String ipAddress;
     private final Locale locale;
 
+    /**
+     * Creates a new self-service notification event.
+     *
+     * @param source the object on which the event initially occurred (never {@code null})
+     * @param type the notification event type (never {@code null})
+     * @param userId the user identifier (never {@code null})
+     * @param firstName user's first name (may be {@code null})
+     * @param lastName user's last name (may be {@code null})
+     * @param username user's login username (may be {@code null})
+     * @param email user's email address (may be {@code null})
+     * @param mobileNumber user's mobile number (may be {@code null})
+     * @param emailMode {@code true} for email delivery, {@code false} for SMS
+     * @param ipAddress the originating IP address (may be {@code null})
+     * @param locale the locale for notification content (may be {@code null})
+     */
     public SelfServiceNotificationEvent(Object source, Type type, Long userId, String firstName, String lastName, String username,
             String email, String mobileNumber, boolean emailMode, String ipAddress, Locale locale) {
         super(source);
-        this.type = type;
-        this.userId = userId;
+        this.type = Objects.requireNonNull(type, "type must not be null");
+        this.userId = Objects.requireNonNull(userId, "userId must not be null");
         this.firstName = firstName;
         this.lastName = lastName;
         this.username = username;
@@ -64,5 +80,15 @@ public class SelfServiceNotificationEvent extends ApplicationEvent {
         this.emailMode = emailMode;
         this.ipAddress = ipAddress;
         this.locale = locale;
+    }
+
+    /**
+     * Returns a safe, non-PII string representation suitable for logging.
+     * Sensitive fields (email, username, mobileNumber, ipAddress) are excluded.
+     */
+    @Override
+    public String toString() {
+        return "SelfServiceNotificationEvent[type=" + type + ", userId=" + userId
+                + ", emailMode=" + emailMode + ", locale=" + locale + "]";
     }
 }

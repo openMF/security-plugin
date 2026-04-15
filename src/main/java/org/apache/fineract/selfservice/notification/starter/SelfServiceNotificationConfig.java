@@ -175,50 +175,37 @@ public class SelfServiceNotificationConfig {
         return src;
     }
 
+    /**
+     * Provides the cooldown cache for rate-limiting duplicate notifications.
+     *
+     * @param env environment used to resolve cooldown configuration
+     * @return configured notification cooldown cache
+     */
     @Bean
     public NotificationCooldownCache notificationCooldownCache(Environment env) {
         int cooldownSeconds = env.getProperty("fineract.selfservice.notification.cooldown-seconds", Integer.class, 300);
-        return new NotificationCooldownCache(Duration.ofSeconds(cooldownSeconds), 10_000);
+        int maxCacheSize = env.getProperty("fineract.selfservice.notification.cooldown-max-size", Integer.class, 10_000);
+        return new NotificationCooldownCache(Duration.ofSeconds(cooldownSeconds), maxCacheSize);
     }
 
+    /**
+     * Configuration properties for the notification thread pool executor.
+     */
     @ConfigurationProperties(prefix = "fineract.selfservice.notification.executor")
+    @org.springframework.validation.annotation.Validated
+    @lombok.Getter
+    @lombok.Setter
     public static class NotificationExecutorProperties {
 
+        @jakarta.validation.constraints.Min(1)
         private int corePoolSize = 2;
+
+        @jakarta.validation.constraints.Min(1)
         private int maxPoolSize = 4;
+
+        @jakarta.validation.constraints.Min(0)
         private int queueCapacity = 100;
+
         private String threadNamePrefix = "notif-";
-
-        public int getCorePoolSize() {
-            return corePoolSize;
-        }
-
-        public void setCorePoolSize(int corePoolSize) {
-            this.corePoolSize = corePoolSize;
-        }
-
-        public int getMaxPoolSize() {
-            return maxPoolSize;
-        }
-
-        public void setMaxPoolSize(int maxPoolSize) {
-            this.maxPoolSize = maxPoolSize;
-        }
-
-        public int getQueueCapacity() {
-            return queueCapacity;
-        }
-
-        public void setQueueCapacity(int queueCapacity) {
-            this.queueCapacity = queueCapacity;
-        }
-
-        public String getThreadNamePrefix() {
-            return threadNamePrefix;
-        }
-
-        public void setThreadNamePrefix(String threadNamePrefix) {
-            this.threadNamePrefix = threadNamePrefix;
-        }
     }
 }

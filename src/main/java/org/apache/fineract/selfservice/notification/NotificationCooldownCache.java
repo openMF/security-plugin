@@ -106,7 +106,6 @@ public class NotificationCooldownCache {
         if (existing.isAfter(clock.instant())) {
             return false;
         }
-        entries.remove(key, existing);
         entries.put(key, expiresAt);
         return true;
     }
