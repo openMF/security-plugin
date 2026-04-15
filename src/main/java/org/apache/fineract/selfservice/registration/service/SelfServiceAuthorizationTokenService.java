@@ -13,7 +13,7 @@ public class SelfServiceAuthorizationTokenService {
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final String STRING_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
-    private static final int MIN_NUMERIC_LENGTH = 8;
+    private static final int MIN_NUMERIC_LENGTH = 6;
     private static final int DEFAULT_NUMERIC_LENGTH = 8;
     private static final int DEFAULT_STRING_LENGTH = 32;
     private static final int MAX_TOKEN_LENGTH = 100;
