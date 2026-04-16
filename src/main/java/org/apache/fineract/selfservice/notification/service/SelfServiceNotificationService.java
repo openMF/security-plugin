@@ -99,8 +99,10 @@ public class SelfServiceNotificationService {
      */
     @Async("notificationExecutor")
     @EventListener
-    @Transactional
+    // REMOVED @Transactional - it conflicts with @Async and tenant context propagation
+    // Individual service calls manage their own transactions if needed
     public void handleNotification(SelfServiceNotificationEvent event) {
+        // Restore tenant context FIRST, before any DB operations
         restoreTenantContext(event);
         try {
             boolean globalEnabled = env.getProperty("fineract.selfservice.notification.enabled", Boolean.class, true);
@@ -148,6 +150,12 @@ public class SelfServiceNotificationService {
             String cacheKey = event.getType().name() + ":" + event.getUserId();
             notificationCooldownCache.release(cacheKey);
             log.error("Failed to handle notification for event type {}", event.getType(), e);
+        } finally {
+            // CRITICAL: Clean up ThreadLocal to prevent tenant context leakage in thread pool
+            // This ensures the next task on this reused thread starts with a clean slate
+            ThreadLocalContextUtil.reset();
+            log.debug("Reset tenant context on thread {} after notification processing", 
+                    Thread.currentThread().getName());
         }
     }
 
