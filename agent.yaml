@@ -21,6 +21,10 @@ runtime:
 # Security and permissions
 security:
   authentication_required: true
+  public_endpoints:
+    - "/v1/self/authentication"
+    - "/v1/self/registration"
+    - "/v1/self/registration/user"
   permissions:
     - "READ_SAVINGSPRODUCT"
     - "READ_LOANPRODUCT" 
@@ -84,3 +88,63 @@ build:
   deployment:
     - "docker"
     - "tomcat"
+
+# Optional tool schemas for agent/tooling interoperability
+tools:
+  - name: "get_loan_details"
+    description: "Fetch loan details for a given loan id"
+    input_schema:
+      type: "object"
+      properties:
+        loanId:
+          type: "integer"
+      required: ["loanId"]
+    output_schema:
+      type: "object"
+      properties:
+        loanId:
+          type: "integer"
+        status:
+          type: "string"
+        outstandingBalance:
+          type: "number"
+
+  - name: "get_savings_account"
+    description: "Fetch savings account details for a given account id"
+    input_schema:
+      type: "object"
+      properties:
+        accountId:
+          type: "integer"
+      required: ["accountId"]
+    output_schema:
+      type: "object"
+      properties:
+        accountId:
+          type: "integer"
+        status:
+          type: "string"
+        balance:
+          type: "number"
+
+  - name: "self_register_user"
+    description: "Create a self-service user registration request"
+    input_schema:
+      type: "object"
+      properties:
+        username:
+          type: "string"
+        email:
+          type: "string"
+        password:
+          type: "string"
+      required: ["username", "email", "password"]
+    output_schema:
+      type: "object"
+      properties:
+        userId:
+          type: "integer"
+        status:
+          type: "string"
+        message:
+          type: "string"
