@@ -132,7 +132,7 @@ public class SelfAuthenticationApiResource {
 
             try (NotificationContext.Scope ignored = NotificationContext.bind(SelfServiceNotificationEvent.Type.LOGIN_FAILURE.name())) {
                 try {
-                    applicationEventPublisher.publishEvent(new SelfServiceNotificationEvent(
+                    applicationEventPublisher.publishEvent(SelfServiceNotificationEvent.withTenantContext(
                         this, SelfServiceNotificationEvent.Type.LOGIN_FAILURE, failedUser.getId(), failedUser.getFirstname(),
                         failedUser.getLastname(), request.username, failedUser.getEmail(),
                         mobileNumber, emailMode, extractClientIp(httpRequest), httpRequest.getLocale()
@@ -149,7 +149,7 @@ public class SelfAuthenticationApiResource {
 
             try (NotificationContext.Scope ignored = NotificationContext.bind(SelfServiceNotificationEvent.Type.LOGIN_FAILURE.name())) {
                 try {
-                    applicationEventPublisher.publishEvent(new SelfServiceNotificationEvent(
+                    applicationEventPublisher.publishEvent(SelfServiceNotificationEvent.withTenantContext(
                         this, SelfServiceNotificationEvent.Type.LOGIN_FAILURE, failedUser.getId(), failedUser.getFirstname(),
                         failedUser.getLastname(), request.username, failedUser.getEmail(),
                         mobileNumber, emailMode, extractClientIp(httpRequest), httpRequest.getLocale()
@@ -166,7 +166,7 @@ public class SelfAuthenticationApiResource {
                 boolean emailMode = determineMode(failedUser.getEmail(), mobileNumber);
                 try (NotificationContext.Scope ignored = NotificationContext.bind(SelfServiceNotificationEvent.Type.LOGIN_FAILURE.name())) {
                     try {
-                        applicationEventPublisher.publishEvent(new SelfServiceNotificationEvent(
+                        applicationEventPublisher.publishEvent(SelfServiceNotificationEvent.withTenantContext(
                             this, SelfServiceNotificationEvent.Type.LOGIN_FAILURE, failedUser.getId(), failedUser.getFirstname(),
                             failedUser.getLastname(), request.username, failedUser.getEmail(),
                             mobileNumber, emailMode, extractClientIp(httpRequest), httpRequest.getLocale()
@@ -219,7 +219,7 @@ public class SelfAuthenticationApiResource {
                 boolean emailMode = determineMode(principal.getEmail(), mobileNumber);
                 try (NotificationContext.Scope ignored = NotificationContext.bind(SelfServiceNotificationEvent.Type.LOGIN_SUCCESS.name())) {
                     try {
-                        applicationEventPublisher.publishEvent(new SelfServiceNotificationEvent(
+                        applicationEventPublisher.publishEvent(SelfServiceNotificationEvent.withTenantContext(
                             this, SelfServiceNotificationEvent.Type.LOGIN_SUCCESS, principal.getId(), principal.getFirstname(),
                             principal.getLastname(), request.username, principal.getEmail(),
                             mobileNumber, emailMode, extractClientIp(httpRequest), httpRequest.getLocale()

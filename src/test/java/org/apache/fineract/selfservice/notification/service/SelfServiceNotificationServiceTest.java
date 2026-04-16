@@ -300,4 +300,86 @@ class SelfServiceNotificationServiceTest {
         assertTrue(errors.stream().anyMatch(e -> e.getFormattedMessage().contains("Failed to handle notification")),
                 "Should log ERROR for general exceptions");
     }
+
+    // ---- Tenant context restoration tests ----
+
+    @Test
+    void handleNotification_RestoresTenantFromEvent_WhenThreadHasNoTenant() {
+        // Simulate the afterCommit scenario: thread has NO tenant, but event carries one
+        ThreadLocalContextUtil.reset();
+
+        FineractPlatformTenant eventTenant = new FineractPlatformTenant(1L, "default", "Default", "UTC", null);
+        HashMap<BusinessDateType, LocalDate> eventDates = new HashMap<>();
+        eventDates.put(BusinessDateType.BUSINESS_DATE, LocalDate.of(2026, 4, 15));
+
+        SelfServiceNotificationEvent event = new SelfServiceNotificationEvent(this,
+                SelfServiceNotificationEvent.Type.LOGIN_SUCCESS, 1L, "Test", "User", "testuser",
+                "test@example.com", "1234567890", true, "127.0.0.1", Locale.US, eventTenant, eventDates);
+
+        // Notifications disabled so handleNotification returns early after restoring context
+        when(env.getProperty(eq("fineract.selfservice.notification.enabled"), eq(Boolean.class), any(Boolean.class))).thenReturn(false);
+
+        service.handleNotification(event);
+
+        // Verify tenant was restored on this thread
+        assertEquals("default", ThreadLocalContextUtil.getTenant().getTenantIdentifier(),
+                "Tenant should be restored from event payload");
+        assertEquals(LocalDate.of(2026, 4, 15),
+                ThreadLocalContextUtil.getBusinessDates().get(BusinessDateType.BUSINESS_DATE),
+                "Business dates should be restored from event payload");
+    }
+
+    @Test
+    void handleNotification_LogsWarning_WhenNoTenantAvailable() {
+        // No tenant in event, no tenant on thread
+        ThreadLocalContextUtil.reset();
+
+        SelfServiceNotificationEvent event = new SelfServiceNotificationEvent(this,
+                SelfServiceNotificationEvent.Type.LOGIN_SUCCESS, 1L, "Test", "User", "testuser",
+                "test@example.com", "1234567890", true, "127.0.0.1", Locale.US);
+        // event.getTenant() == null, event.getBusinessDates() == null
+
+        when(env.getProperty(eq("fineract.selfservice.notification.enabled"), eq(Boolean.class), any(Boolean.class))).thenReturn(false);
+
+        service.handleNotification(event);
+
+        List<ILoggingEvent> warns = logAppender.list.stream()
+                .filter(e -> e.getLevel() == Level.WARN)
+                .filter(e -> e.getFormattedMessage().contains("No tenant context available"))
+                .collect(Collectors.toList());
+        assertEquals(1, warns.size(), "Should log WARN when no tenant is available from any source");
+    }
+
+    @Test
+    void withTenantContext_CapturesCurrentTenantFromThreadLocal() {
+        // Set tenant on current thread
+        FineractPlatformTenant tenant = new FineractPlatformTenant(2L, "test-tenant", "Test", "UTC", null);
+        ThreadLocalContextUtil.setTenant(tenant);
+        HashMap<BusinessDateType, LocalDate> dates = new HashMap<>();
+        dates.put(BusinessDateType.BUSINESS_DATE, LocalDate.of(2026, 1, 1));
+        ThreadLocalContextUtil.setBusinessDates(dates);
+
+        SelfServiceNotificationEvent event = SelfServiceNotificationEvent.withTenantContext(this,
+                SelfServiceNotificationEvent.Type.LOGIN_SUCCESS, 1L, "Test", "User", "testuser",
+                "test@example.com", "1234567890", true, "127.0.0.1", Locale.US);
+
+        assertEquals("test-tenant", event.getTenant().getTenantIdentifier(),
+                "Factory should capture tenant from ThreadLocal");
+        assertEquals(LocalDate.of(2026, 1, 1),
+                event.getBusinessDates().get(BusinessDateType.BUSINESS_DATE),
+                "Factory should capture business dates from ThreadLocal");
+    }
+
+    @Test
+    void withTenantContext_HandlesNoTenantGracefully() {
+        ThreadLocalContextUtil.reset();
+
+        SelfServiceNotificationEvent event = SelfServiceNotificationEvent.withTenantContext(this,
+                SelfServiceNotificationEvent.Type.LOGIN_SUCCESS, 1L, "Test", "User", "testuser",
+                "test@example.com", "1234567890", true, "127.0.0.1", Locale.US);
+
+        // Should not throw, tenant/dates should be null
+        assertTrue(event.getTenant() == null, "Tenant should be null when ThreadLocal is empty");
+        assertTrue(event.getBusinessDates() == null, "Business dates should be null when ThreadLocal is empty");
+    }
 }

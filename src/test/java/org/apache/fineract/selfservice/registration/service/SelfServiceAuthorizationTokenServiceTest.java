@@ -1,7 +1,7 @@
 package org.apache.fineract.selfservice.registration.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDateTime;
@@ -22,7 +22,7 @@ class SelfServiceAuthorizationTokenServiceTest {
 
         String token = service.generateToken();
 
-        assertTrue(token.matches("^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"));
+        assertThat(token).matches("^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$");
     }
 
     @Test
@@ -33,7 +33,7 @@ class SelfServiceAuthorizationTokenServiceTest {
 
         String token = service.generateToken();
 
-        assertTrue(token.matches("\\d{8}"));
+        assertThat(token).matches("\\d{8}");
     }
 
     @Test
@@ -44,7 +44,8 @@ class SelfServiceAuthorizationTokenServiceTest {
 
         String token = service.generateToken();
 
-        assertTrue(token.matches("\\d{8}"));
+        // MIN_NUMERIC_LENGTH is 6 (backward compat with existing mobile apps)
+        assertThat(token).matches("\\d{6}");
     }
 
     @Test
