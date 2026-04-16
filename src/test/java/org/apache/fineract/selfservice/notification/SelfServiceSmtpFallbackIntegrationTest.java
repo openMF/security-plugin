@@ -86,6 +86,7 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
     "fineract.selfservice.notification.cooldown-seconds=5"
     // Deliberately NOT setting fineract.selfservice.smtp.* to verify the exception path
 })
+@org.springframework.test.annotation.DirtiesContext
 public class SelfServiceSmtpFallbackIntegrationTest {
 
     @Autowired

@@ -73,11 +73,18 @@ public class SelfServiceNotificationConfig {
         executor.setQueueCapacity(properties.getQueueCapacity());
         executor.setThreadNamePrefix(properties.getThreadNamePrefix());
         executor.setTaskDecorator(runnable -> {
-            FineractPlatformTenant tenant = ThreadLocalContextUtil.getTenant();
+            FineractPlatformTenant capturedTenant = null;
+            try {
+                capturedTenant = ThreadLocalContextUtil.getTenant();
+            } catch (IllegalStateException ignored) {
+            }
+            final FineractPlatformTenant tenant = capturedTenant;
             HashMap<BusinessDateType, LocalDate> businessDates = currentBusinessDates();
             return () -> {
                 try {
-                    ThreadLocalContextUtil.setTenant(tenant);
+                    if (tenant != null) {
+                        ThreadLocalContextUtil.setTenant(tenant);
+                    }
                     if (businessDates != null) {
                         ThreadLocalContextUtil.setBusinessDates(new HashMap<>(businessDates));
                     }

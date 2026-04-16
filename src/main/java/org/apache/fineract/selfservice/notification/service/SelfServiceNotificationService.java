@@ -26,8 +26,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.fineract.infrastructure.campaigns.sms.data.SmsProviderData;
 import org.apache.fineract.infrastructure.campaigns.sms.service.SmsCampaignDropdownReadPlatformService;
 import org.apache.fineract.infrastructure.core.domain.EmailDetail;
+import org.apache.fineract.infrastructure.core.domain.FineractPlatformTenant;
 import org.apache.fineract.infrastructure.core.service.SelfServicePluginEmailService;
 import org.apache.fineract.infrastructure.core.service.SmtpConfigurationUnavailableException;
+import org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil;
 import org.apache.fineract.infrastructure.sms.domain.SmsMessage;
 import org.apache.fineract.infrastructure.sms.domain.SmsMessageRepository;
 import org.apache.fineract.infrastructure.sms.domain.SmsMessageStatusType;
@@ -99,6 +101,7 @@ public class SelfServiceNotificationService {
     @EventListener
     @Transactional
     public void handleNotification(SelfServiceNotificationEvent event) {
+        restoreTenantContext(event);
         try {
             boolean globalEnabled = env.getProperty("fineract.selfservice.notification.enabled", Boolean.class, true);
             if (!globalEnabled) {
@@ -245,5 +248,43 @@ public class SelfServiceNotificationService {
     private void releaseCooldown(SelfServiceNotificationEvent event) {
         String cacheKey = event.getType().name() + ":" + event.getUserId();
         notificationCooldownCache.release(cacheKey);
+    }
+
+    /**
+     * Restores the Fineract tenant context and business dates from the event onto the current
+     * thread. This is critical for async listeners running on the notification executor pool,
+     * where the original request thread's {@code ThreadLocal} tenant context may not have been
+     * propagated (e.g. when events are published from {@code afterCommit()} callbacks after
+     * the auth filter has already cleared the context).
+     *
+     * <p>The event-carried tenant takes precedence because it was captured at event creation
+     * time on the originating thread. The {@code TaskDecorator} in
+     * {@link org.apache.fineract.selfservice.notification.starter.SelfServiceNotificationConfig}
+     * serves as a belt-and-suspenders fallback.
+     */
+    void restoreTenantContext(SelfServiceNotificationEvent event) {
+        FineractPlatformTenant eventTenant = event.getTenant();
+        if (eventTenant != null) {
+            ThreadLocalContextUtil.setTenant(eventTenant);
+            log.debug("Restored tenant '{}' from notification event on thread {}",
+                    eventTenant.getTenantIdentifier(), Thread.currentThread().getName());
+        } else {
+            FineractPlatformTenant threadTenant = null;
+            try {
+                threadTenant = ThreadLocalContextUtil.getTenant();
+            } catch (IllegalStateException ignored) {
+                // getTenant() may throw on some Fineract versions
+            }
+            if (threadTenant != null) {
+                log.debug("Using TaskDecorator-propagated tenant '{}' on thread {}",
+                        threadTenant.getTenantIdentifier(), Thread.currentThread().getName());
+            } else {
+                log.warn("No tenant context available for notification event {} on thread {} — "
+                        + "database operations may fail", event.getType(), Thread.currentThread().getName());
+            }
+        }
+        if (event.getBusinessDates() != null) {
+            ThreadLocalContextUtil.setBusinessDates(event.getBusinessDates());
+        }
     }
 }

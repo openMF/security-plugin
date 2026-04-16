@@ -531,6 +531,22 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
         appUser.enable();
         this.appSelfServiceUserRepository.saveAndFlush(appUser);
 
+        org.apache.fineract.infrastructure.core.domain.FineractPlatformTenant capturedTenant = null;
+        try {
+            capturedTenant = org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil.getTenant();
+        } catch (IllegalStateException ignored) {
+        }
+        final org.apache.fineract.infrastructure.core.domain.FineractPlatformTenant tenantSnapshot = capturedTenant;
+        final java.util.HashMap<org.apache.fineract.infrastructure.businessdate.domain.BusinessDateType, java.time.LocalDate> businessDatesSnapshot;
+        java.util.HashMap<org.apache.fineract.infrastructure.businessdate.domain.BusinessDateType, java.time.LocalDate> tempDates = null;
+        try {
+            java.util.HashMap<org.apache.fineract.infrastructure.businessdate.domain.BusinessDateType, java.time.LocalDate> dates =
+                    org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil.getBusinessDates();
+            tempDates = dates != null ? new java.util.HashMap<>(dates) : null;
+        } catch (IllegalArgumentException e) {
+        }
+        businessDatesSnapshot = tempDates;
+
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
@@ -546,7 +562,9 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
                         request.getMobileNumber(),
                         isEmailMode(request),
                         null,
-                        LocaleContextHolder.getLocale()
+                        LocaleContextHolder.getLocale(),
+                        tenantSnapshot,
+                        businessDatesSnapshot
                     ));
                 } catch (Exception e) {
                     log.warn("Failed to publish USER_ACTIVATED notification for userId={}", appUser.getId(), e);
