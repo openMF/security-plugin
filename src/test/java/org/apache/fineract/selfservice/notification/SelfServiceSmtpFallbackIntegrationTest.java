@@ -148,20 +148,38 @@ public class SelfServiceSmtpFallbackIntegrationTest {
         assertTrue(completionListener.awaitCompletion(1),
                 "Second notification should complete within timeout");
 
-        // Assert log-once behavior
-        List<ILoggingEvent> smtpLogs = notificationLogAppender.list.stream()
-                .filter(e -> e.getFormattedMessage().contains("SMTP configuration unavailable"))
-                .collect(Collectors.toList());
+        // Poll for expected logs with a timeout. completionListener.awaitCompletion() only
+        // guarantees the sibling listener finished, not that the notification handler has
+        // emitted all logs. Both listeners run independently on the same thread pool, so
+        // under slow execution or high load the logs may not be present yet.
+        List<ILoggingEvent> smtpLogs = java.util.Collections.emptyList();
+        long warnCount = 0;
+        long debugCount = 0;
+        boolean warnMentionsSuppression = false;
+        long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(3);
+        do {
+            smtpLogs = new java.util.ArrayList<>(notificationLogAppender.list).stream()
+                    .filter(e -> e.getFormattedMessage().contains("SMTP configuration unavailable"))
+                    .collect(Collectors.toList());
+            warnCount = smtpLogs.stream().filter(e -> e.getLevel() == Level.WARN).count();
+            debugCount = smtpLogs.stream().filter(e -> e.getLevel() == Level.DEBUG).count();
+            warnMentionsSuppression = smtpLogs.stream()
+                    .filter(e -> e.getLevel() == Level.WARN)
+                    .anyMatch(e -> e.getFormattedMessage().contains("Further config errors"));
+            if (smtpLogs.size() >= 2 && warnCount == 1 && debugCount >= 1 && warnMentionsSuppression) {
+                break;
+            }
+            Thread.sleep(25);
+        } while (System.nanoTime() < deadlineNanos);
 
         assertTrue(smtpLogs.size() >= 2, "Expected at least 2 SMTP config log events, got " + smtpLogs.size());
 
-        assertEquals(Level.WARN, smtpLogs.get(0).getLevel(),
-                "First SMTP config error should be logged at WARN");
-        assertTrue(smtpLogs.get(0).getFormattedMessage().contains("Further config errors"),
-                "First WARN should indicate suppression of future errors");
-
-        assertEquals(Level.DEBUG, smtpLogs.get(1).getLevel(),
-                "Subsequent SMTP config errors should be logged at DEBUG");
+        assertEquals(1, warnCount,
+                "Exactly one SMTP config error should be logged at WARN (the first to hit compareAndSet)");
+        assertTrue(warnMentionsSuppression,
+                "The WARN log should indicate suppression of future errors");
+        assertTrue(debugCount >= 1,
+                "Subsequent SMTP config errors should be logged at DEBUG, got " + debugCount);
     }
 
     @Test
