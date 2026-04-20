@@ -1,9 +1,3 @@
-/**
- * Copyright since 2026 Mifos Initiative
- *
- * <p>This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy
- * of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
- */
 package community.mifos.payments.infrastructure.audit;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -125,7 +119,8 @@ public class PaymentAuditLogger {
     }
 
     /**
-     * Logs security-relevant events (validation failures, signature errors, etc.)
+     * Logs security-relevant events using typed AuditAction enum.
+     * Use this for standard security events defined in AuditAction.
      */
     @Async("auditExecutor")
     public CompletableFuture<Void> logSecurityEvent(String transactionId,
@@ -146,6 +141,43 @@ public class PaymentAuditLogger {
                     .providerCode(providerCode)
                     .transactionId(transactionId)
                     .details(details)
+                    .contextJson(context != null ? toJson(context) : null)
+                    .severity(AuditSeverity.WARNING)
+                    .build();
+
+                SECURITY_LOG.warn("Payment security event [{}]: {}", action, toJson(event));
+                persistAuditEvent(event);
+
+            } finally {
+                MDC.clear();
+            }
+        });
+    }
+
+    /**
+     * Logs security-relevant events using a raw String action.
+     * Use this for provider-specific or dynamic event types not in AuditAction enum.
+     * Example: "RECONCILIATION_MISMATCH", "MISSING_FROM_SETTLEMENT", "DICT_LOOKUP_FAILURE"
+     */
+    @Async("auditExecutor")
+    public CompletableFuture<Void> logSecurityEvent(String transactionId,
+                                                     String providerCode,
+                                                     String action,
+                                                     String details,
+                                                     Map<String, Object> context) {
+        return CompletableFuture.runAsync(() -> {
+            try {
+                MDC.put("traceId", transactionId != null ? transactionId : "N/A");
+                MDC.put("provider", providerCode != null ? providerCode : "N/A");
+                MDC.put("action", action);
+
+                AuditEvent event = AuditEvent.builder()
+                    .eventId(UUID.randomUUID().toString())
+                    .timestamp(LocalDateTime.now())
+                    .action(AuditAction.SECURITY_EVENT) // Generic action for DB consistency
+                    .providerCode(providerCode)
+                    .transactionId(transactionId)
+                    .details("[" + action + "] " + details) // Embed specific action in details
                     .contextJson(context != null ? toJson(context) : null)
                     .severity(AuditSeverity.WARNING)
                     .build();
@@ -264,4 +296,3 @@ public class PaymentAuditLogger {
         }
     }
 }
-
