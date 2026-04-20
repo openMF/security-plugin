@@ -13,27 +13,29 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
 import java.math.BigDecimal;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
 
 /**
  * Self-Service API for Fast Payments (PIX, SPEI, SINPE)
  * Exposed to mobile/web self-service clients
  */
-@RestController
-@RequestMapping("/selfservice/payments")
+@Path("/v1/self/payments")
+@Component
 @Tag(name = "Fast Payments", description = "Instant payment transfers for LATAM")
+@RequiredArgsConstructor
 public class FastPaymentApiResource {
     
     private final FastPaymentService paymentService;
     
-    public FastPaymentApiResource(FastPaymentService paymentService) {
-        this.paymentService = paymentService;
-    }
-    
-    @PostMapping("/transfer")
+    @POST
+    @Path("/transfer")
     @PreAuthorize("hasRole('SELF_SERVICE_USER')")
     @Operation(summary = "Initiate fast payment transfer",
                description = "Supports PIX (BR), SPEI (MX), SINPE (CR)")
