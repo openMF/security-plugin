@@ -26,4 +26,5 @@
   <include file="parts/014-grant-selfservice-loan-account-update-account-permissions.xml" relativeToChangelogFile="true"/>      
   <include file="parts/015-grant-selfservice-loan-account-withdrawn-account-permissions.xml" relativeToChangelogFile="true"/>        
   <include file="parts/016-add-external-authorization-token.xml" relativeToChangelogFile="true"/>        
+  <include file="parts/017-create-fast-payment-transactions-initial-schema.xml" relativeToChangelogFile="true"/>        
 </databaseChangeLog>

@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+ Copyright since 2026 Mifos Initiative
+ 
+ <p>This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy
+ of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+-->
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">    
+
+
+    <!-- ============================================================ -->
+    <!-- ChangeSet: Create payment_transactions table                 -->
+    <!-- ============================================================ -->
+    <changeSet author="fineract" id="ss-0017-1">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="payment_transactions"/>
+            </not>
+        </preConditions>
+
+        <createTable tableName="payment_transactions"
+                     remarks="Stores payment transaction records for multiple providers and countries">
+            
+            <!-- Primary Key with auto-increment (cross-db compatible) -->
+            <column name="id" type="BIGINT" autoIncrement="true" remarks="Primary key">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            
+            <!-- Business identifiers -->
+            <column name="transaction_id" type="VARCHAR(50)" remarks="Unique external transaction identifier">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="reference_code" type="VARCHAR(50)" remarks="Internal reference code">
+                <constraints nullable="false"/>
+            </column>
+            <column name="provider_code" type="VARCHAR(10)" remarks="Payment provider: PIX, SPEI, SINPE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="country_code" type="VARCHAR(2)" remarks="ISO country code: BR, MX, CR">
+                <constraints nullable="false"/>
+            </column>
+            
+            <!-- Amount details -->
+            <column name="amount" type="DECIMAL(19,6)" remarks="Transaction amount with 6 decimal precision">
+                <constraints nullable="false"/>
+            </column>
+            <column name="currency" type="VARCHAR(3)" remarks="ISO 4217 currency code">
+                <constraints nullable="false"/>
+            </column>
+            
+            <!-- Parties involved -->
+            <column name="source_account_id" type="BIGINT" remarks="Source account ID (internal)"/>
+            <column name="source_client_id" type="BIGINT" remarks="Source client ID (internal)"/>
+            <column name="recipient_identifier" type="VARCHAR(100)" remarks="PIX key, CLABE, phone, etc.">
+                <constraints nullable="false"/>
+            </column>
+            <column name="recipient_name" type="VARCHAR(200)" remarks="Recipient full name"/>
+            <column name="recipient_bank_code" type="VARCHAR(10)" remarks="Bank/institution code"/>
+            
+            <!-- Status tracking -->
+            <column name="status" type="VARCHAR(20)" remarks="PENDING, COMPLETED, FAILED, CANCELLED, REFUNDED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status_reason" type="VARCHAR(255)" remarks="Human-readable status explanation"/>
+            
+            <!-- Provider-specific data (JSON - cross-db compatible) -->
+            <column name="provider_metadata" type="JSON" remarks="Provider-specific response metadata"/>
+            <column name="qr_code_data" type="CLOB" remarks="QR code payload for PIX/SPEI"/>
+            
+            <!-- Timestamps -->
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP" remarks="Record creation time">
+                <constraints nullable="false"/>
+            </column>
+            <column name="completed_at" type="TIMESTAMP" remarks="Transaction completion time"/>
+            <column name="expires_at" type="TIMESTAMP" remarks="Transaction expiration time"/>
+            
+            <!-- Audit fields -->
+            <column name="created_by" type="VARCHAR(100)" remarks="User/system that created the record"/>
+            <column name="external_reference" type="VARCHAR(100)" remarks="External system reference"/>
+        </createTable>
+
+        <!-- Indexes -->
+        <createIndex tableName="payment_transactions" indexName="idx_payment_txn_transaction_id">
+            <column name="transaction_id"/>
+        </createIndex>
+        <createIndex tableName="payment_transactions" indexName="idx_payment_txn_status">
+            <column name="status"/>
+        </createIndex>
+        <createIndex tableName="payment_transactions" indexName="idx_payment_txn_created_at">
+            <column name="created_at"/>
+        </createIndex>
+        <createIndex tableName="payment_transactions" indexName="idx_payment_txn_provider_country">
+            <column name="provider_code"/>
+            <column name="country_code"/>
+        </createIndex>
+        
+        <!-- MySQL-specific: Set engine and charset (optional, skipped on PostgreSQL) -->
+        <sql dbms="mysql">
+            ALTER TABLE payment_transactions ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        </sql>
+    </changeSet>
+
+
+    <!-- ============================================================ -->
+    <!-- ChangeSet: Create payment_provider_configs table             -->
+    <!-- ============================================================ -->
+    <changeSet author="fineract" id="ss-0017-2">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="payment_provider_configs"/>
+            </not>
+        </preConditions>
+
+        <createTable tableName="payment_provider_configs"
+                     remarks="Configuration for payment providers by country">
+            
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="provider_code" type="VARCHAR(10)" remarks="PIX, SPEI, SINPE">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="country_code" type="VARCHAR(2)" remarks="ISO country code">
+                <constraints nullable="false"/>
+            </column>
+            <column name="base_url" type="VARCHAR(255)" remarks="Provider API base URL">
+                <constraints nullable="false"/>
+            </column>
+            <column name="api_version" type="VARCHAR(10)" remarks="API version string"/>
+            <column name="auth_type" type="VARCHAR(20)" remarks="OAUTH2, MTLS, API_KEY"/>
+            <column name="enabled" type="BOOLEAN" defaultValueBoolean="true" remarks="Is this config active"/>
+            <column name="config_json" type="JSON" remarks="Provider-specific configuration as JSON"/>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP" remarks="Last update timestamp"/>
+        </createTable>
+
+        <!-- Composite unique constraint: provider + country -->
+        <addUniqueConstraint tableName="payment_provider_configs"
+                            columnNames="provider_code, country_code"
+                            constraintName="uk_provider_country"/>
+
+        <!-- MySQL-specific settings -->
+        <sql dbms="mysql">
+            ALTER TABLE payment_provider_configs ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        </sql>
+    </changeSet>
+
+
+    <!-- ============================================================ -->
+    <!-- ChangeSet: Create payment_webhook_events table               -->
+    <!-- ============================================================ -->
+    <changeSet author="fineract" id="ss-0017-3">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="payment_webhook_events"/>
+            </not>
+        </preConditions>
+
+        <createTable tableName="payment_webhook_events"
+                     remarks="Log of webhook events received from payment providers">
+            
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="provider_code" type="VARCHAR(10)" remarks="Source provider">
+                <constraints nullable="false"/>
+            </column>
+            <column name="event_type" type="VARCHAR(50)" remarks="Type of webhook event">
+                <constraints nullable="false"/>
+            </column>
+            <column name="payload" type="JSON" remarks="Raw webhook payload">
+                <constraints nullable="false"/>
+            </column>
+            <column name="received_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP" remarks="When webhook was received"/>
+            <column name="processed" type="BOOLEAN" defaultValueBoolean="false" remarks="Has this event been processed"/>
+            <column name="processing_result" type="VARCHAR(50)" remarks="Result of processing: SUCCESS, ERROR, SKIP"/>
+        </createTable>
+
+        <!-- Indexes for efficient querying -->
+        <createIndex tableName="payment_webhook_events" indexName="idx_webhook_provider_type">
+            <column name="provider_code"/>
+            <column name="event_type"/>
+        </createIndex>
+        <createIndex tableName="payment_webhook_events" indexName="idx_webhook_received_at">
+            <column name="received_at"/>
+        </createIndex>
+        <createIndex tableName="payment_webhook_events" indexName="idx_webhook_processed">
+            <column name="processed"/>
+        </createIndex>
+
+        <!-- MySQL-specific settings -->
+        <sql dbms="mysql">
+            ALTER TABLE payment_webhook_events ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        </sql>
+    </changeSet>
+
+
+    <!-- ============================================================ -->
+    <!-- Optional: Add ON UPDATE CURRENT_TIMESTAMP for MySQL          -->
+    <!-- PostgreSQL handles this differently via triggers if needed   -->
+    <!-- ============================================================ -->
+    <changeSet author="fineract" id="ss-0017-4" dbms="mysql">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="payment_provider_configs"/>
+        </preConditions>
+        <sql>
+            ALTER TABLE payment_provider_configs 
+            MODIFY updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+        </sql>
+    </changeSet>
+
+
+    <!-- ============================================================ -->
+    <!-- Optional: PostgreSQL-specific JSONB optimization             -->
+    <!-- ============================================================ -->
+    <changeSet author="fineract" id="ss-0017-5" dbms="postgresql">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="payment_transactions"/>
+        </preConditions>
+        <!-- Convert JSON to JSONB for better querying in PostgreSQL -->
+        <modifyDataType tableName="payment_transactions" columnName="provider_metadata" newDataType="JSONB"/>
+        <modifyDataType tableName="payment_provider_configs" columnName="config_json" newDataType="JSONB"/>
+        <modifyDataType tableName="payment_webhook_events" columnName="payload" newDataType="JSONB"/>
+        
+        <!-- Add GIN indexes for JSONB fields (PostgreSQL only) -->
+        <sql>
+            CREATE INDEX IF NOT EXISTS idx_payment_txn_metadata_gin 
+            ON payment_transactions USING GIN (provider_metadata);
+            
+            CREATE INDEX IF NOT EXISTS idx_provider_config_json_gin 
+            ON payment_provider_configs USING GIN (config_json);
+            
+            CREATE INDEX IF NOT EXISTS idx_webhook_payload_gin 
+            ON payment_webhook_events USING GIN (payload);
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

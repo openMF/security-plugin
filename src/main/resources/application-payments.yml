@@ -1,0 +1,60 @@
+payments:
+  providers:
+    pix:
+      enabled: false
+      base-url: ${PIX_API_URL:https://api.bcb.gov.br/pix}
+      client-id: ${PIX_CLIENT_ID}
+      client-secret: ${PIX_CLIENT_SECRET}
+      certificate-path: ${PIX_CERT_PATH:/certs/pix.p12}
+      certificate-password: ${PIX_CERT_PASSWORD}
+      timeout-seconds: 30
+      pix-key: ${PIX_KEY}
+      webhook-url: ${PIX_WEBHOOK_URL:https://api.mifos.io/webhooks}
+      webhook-secret: ${PIX_WEBHOOK_SECRET}
+      timeout: PT30S  # ISO 8601 duration
+      max-amount: 1000000.00
+      cobranca-mode: true
+      default-expiry-hours: 24
+      
+    spei:
+      enabled: false
+      base-url: ${SPEI_API_URL:https://www.banxico.org.mx/spei}
+      institution-code: ${SPEI_INSTITUTION_CODE}
+      api-key: ${SPEI_API_KEY}
+      codi-enabled: true
+      clabe-account: ${SPEI_CLABE_ACCOUNT}
+      
+    sinpe:
+      enabled: true
+      base-url: ${SINPE_API_URL:https://sandbox.bccr.fi.cr/sinpe}
+      source-phone: ${SINPE_SOURCE_PHONE}
+      source-iban: ${SINPE_SOURCE_IBAN}
+      institution-code: ${SINPE_INSTITUTION_CODE}
+      webhook-url: ${SINPE_WEBHOOK_URL:https://api.mifos.io/webhooks}
+      webhook-secret: ${SINPE_WEBHOOK_SECRET}
+      timeout: PT30S # ISO 8601 duration
+      mobile-max-amount: 100000.00   # CRC ~USD 200
+      iban-max-amount: 10000000.00   # CRC 10M
+      sms-notification-enabled: true
+      default-channel: MOBILE
+      
+  security:
+    webhook-secret: ${WEBHOOK_SECRET}
+    encryption-key: ${PAYMENT_ENCRYPTION_KEY}
+    
+  limits:
+    pix-max-amount: 1000000.00    # BRL 1M
+    spei-max-amount: 10000000.00  # MXN 10M
+    sinpe-mobile-max: 100000.00   # CRC 100k (~USD 200)
+  security:
+    # BACEN PIX webhook RSA public key (PEM format, no headers/footers or with them)
+    pix-webhook-public-key: |
+      -----BEGIN PUBLIC KEY-----
+      MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...
+      -----END PUBLIC KEY-----
+    
+    # SPEI shared secret for HMAC validation
+    spei-webhook-secret: ${SPEI_WEBHOOK_SECRET}
+    
+    # SINPE shared secret for HMAC validation  
+    sinpe-webhook-secret: ${SINPE_WEBHOOK_SECRET}
