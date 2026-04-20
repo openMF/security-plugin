@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 
 /**
  * Exception for SPEI (Mexico) specific payment errors.
- * Extends PaymentException with Banxico (Banco de México) error codes.
+ * Extends PaymentException with Banxico error codes and SPEI-specific context.
  */
 public class SpeiPaymentException extends PaymentException {
 
@@ -14,14 +14,14 @@ public class SpeiPaymentException extends PaymentException {
 
     /**
      * Banxico error code from SPEI response.
-     * Examples: "R01", "R03", "R14", "R17", "R31"
+     * Example: "E001", "E002", "C001"
      */
     private final String banxicoErrorCode;
 
     /**
-     * SPEI order ID (idOrden) if available.
+     * SPEI transaction ID (idOrden) if available.
      */
-    private final String speiOrderId;
+    private final String speiTransactionId;
 
     /**
      * Type of SPEI operation that failed.
@@ -29,7 +29,7 @@ public class SpeiPaymentException extends PaymentException {
     private final SpeiOperation operation;
 
     /**
-     * HTTP status code from Banxico/SPEI API response.
+     * HTTP status code from Banxico API response.
      */
     private final int httpStatusCode;
 
@@ -41,7 +41,7 @@ public class SpeiPaymentException extends PaymentException {
     public SpeiPaymentException(String message) {
         super(message, "SPEI_ERROR");
         this.banxicoErrorCode = null;
-        this.speiOrderId = null;
+        this.speiTransactionId = null;
         this.operation = null;
         this.httpStatusCode = 0;
         this.retryable = false;
@@ -50,48 +50,48 @@ public class SpeiPaymentException extends PaymentException {
     public SpeiPaymentException(String message, String banxicoErrorCode) {
         super(message, "SPEI_ERROR");
         this.banxicoErrorCode = banxicoErrorCode;
-        this.speiOrderId = null;
+        this.speiTransactionId = null;
         this.operation = null;
         this.httpStatusCode = 0;
         this.retryable = isRetryableBanxicoCode(banxicoErrorCode);
     }
 
-    public SpeiPaymentException(String message, String banxicoErrorCode, String speiOrderId) {
+    public SpeiPaymentException(String message, String banxicoErrorCode, String speiTransactionId) {
         super(message, "SPEI_ERROR");
         this.banxicoErrorCode = banxicoErrorCode;
-        this.speiOrderId = speiOrderId;
+        this.speiTransactionId = speiTransactionId;
         this.operation = null;
         this.httpStatusCode = 0;
         this.retryable = isRetryableBanxicoCode(banxicoErrorCode);
     }
 
     public SpeiPaymentException(String message, String banxicoErrorCode,
-                                String speiOrderId, Throwable cause) {
+                                String speiTransactionId, Throwable cause) {
         super(message, "SPEI_ERROR", cause);
         this.banxicoErrorCode = banxicoErrorCode;
-        this.speiOrderId = speiOrderId;
+        this.speiTransactionId = speiTransactionId;
         this.operation = null;
         this.httpStatusCode = 0;
         this.retryable = isRetryableBanxicoCode(banxicoErrorCode);
     }
 
     public SpeiPaymentException(String message, String banxicoErrorCode,
-                                String speiOrderId, SpeiOperation operation,
+                                String speiTransactionId, SpeiOperation operation,
                                 int httpStatusCode, boolean retryable) {
         super(message, "SPEI_ERROR");
         this.banxicoErrorCode = banxicoErrorCode;
-        this.speiOrderId = speiOrderId;
+        this.speiTransactionId = speiTransactionId;
         this.operation = operation;
         this.httpStatusCode = httpStatusCode;
         this.retryable = retryable;
     }
 
     public SpeiPaymentException(String message, String banxicoErrorCode,
-                                String speiOrderId, SpeiOperation operation,
+                                String speiTransactionId, SpeiOperation operation,
                                 int httpStatusCode, boolean retryable, Throwable cause) {
         super(message, "SPEI_ERROR", cause);
         this.banxicoErrorCode = banxicoErrorCode;
-        this.speiOrderId = speiOrderId;
+        this.speiTransactionId = speiTransactionId;
         this.operation = operation;
         this.httpStatusCode = httpStatusCode;
         this.retryable = retryable;
@@ -102,13 +102,13 @@ public class SpeiPaymentException extends PaymentException {
     // -------------------------------------------------------------------------
 
     /**
-     * Invalid CLABE format (not 18 digits or invalid checksum).
-     * Banxico code: R01
+     * Invalid CLABE format or checksum.
+     * Banxico code: E001
      */
     public static SpeiPaymentException invalidClabe(String clabe) {
         return new SpeiPaymentException(
-            "Invalid CLABE format: " + maskClabe(clabe),
-            "R01",
+            "Invalid CLABE format or checksum: " + maskClabe(clabe),
+            "E001",
             null,
             SpeiOperation.VALIDATION,
             400,
@@ -117,13 +117,13 @@ public class SpeiPaymentException extends PaymentException {
     }
 
     /**
-     * CLABE does not exist or is closed.
-     * Banxico code: R03
+     * CLABE not found or not active.
+     * Banxico code: E002
      */
     public static SpeiPaymentException clabeNotFound(String clabe) {
         return new SpeiPaymentException(
-            "CLABE not found or closed: " + maskClabe(clabe),
-            "R03",
+            "CLABE not found or inactive in SPEI: " + maskClabe(clabe),
+            "E002",
             null,
             SpeiOperation.VALIDATION,
             404,
@@ -132,13 +132,13 @@ public class SpeiPaymentException extends PaymentException {
     }
 
     /**
-     * Amount exceeds SPEI limit (MXN 800,000 for same-day, higher for scheduled).
-     * Banxico code: R14
+     * Amount exceeds SPEI same-day limit (MXN 800,000).
+     * Banxico code: E003
      */
     public static SpeiPaymentException amountExceedsLimit(BigDecimal amount, BigDecimal limit) {
         return new SpeiPaymentException(
-            "Amount " + amount + " exceeds SPEI limit of " + limit,
-            "R14",
+            "Amount " + amount + " exceeds SPEI same-day limit of " + limit,
+            "E003",
             null,
             SpeiOperation.TRANSFER,
             422,
@@ -147,13 +147,28 @@ public class SpeiPaymentException extends PaymentException {
     }
 
     /**
-     * Insufficient funds in sender's account.
-     * Banxico code: R17
+     * Amount exceeds CoDi limit (MXN 30,000).
+     * Banxico code: E004
+     */
+    public static SpeiPaymentException codiAmountExceedsLimit(BigDecimal amount, BigDecimal limit) {
+        return new SpeiPaymentException(
+            "Amount " + amount + " exceeds CoDi limit of " + limit,
+            "E004",
+            null,
+            SpeiOperation.CODI_TRANSFER,
+            422,
+            false
+        );
+    }
+
+    /**
+     * Insufficient funds.
+     * Banxico code: E005
      */
     public static SpeiPaymentException insufficientFunds(String idOrden) {
         return new SpeiPaymentException(
-            "Insufficient funds for SPEI order: " + idOrden,
-            "R17",
+            "Insufficient funds for SPEI transaction: " + idOrden,
+            "E005",
             idOrden,
             SpeiOperation.TRANSFER,
             422,
@@ -162,43 +177,13 @@ public class SpeiPaymentException extends PaymentException {
     }
 
     /**
-     * Transaction rejected by receiving institution.
-     * Banxico code: R31
-     */
-    public static SpeiPaymentException rejectedByReceivingBank(String idOrden, String reason) {
-        return new SpeiPaymentException(
-            "SPEI order rejected by receiving bank: " + reason,
-            "R31",
-            idOrden,
-            SpeiOperation.TRANSFER,
-            422,
-            false
-        );
-    }
-
-    /**
-     * Duplicate order detected (same claveRastreo within 24h).
-     * Banxico code: R32
-     */
-    public static SpeiPaymentException duplicateOrder(String claveRastreo) {
-        return new SpeiPaymentException(
-            "Duplicate SPEI order with claveRastreo: " + claveRastreo,
-            "R32",
-            null,
-            SpeiOperation.TRANSFER,
-            409,
-            false
-        );
-    }
-
-    /**
-     * Transaction timeout at Banxico/SPEI.
-     * Banxico code: T01
+     * Transaction timeout at Banxico.
+     * Banxico code: T001
      */
     public static SpeiPaymentException transactionTimeout(String idOrden) {
         return new SpeiPaymentException(
             "SPEI transaction timeout: " + idOrden,
-            "T01",
+            "T001",
             idOrden,
             SpeiOperation.TRANSFER,
             504,
@@ -207,13 +192,88 @@ public class SpeiPaymentException extends PaymentException {
     }
 
     /**
-     * SPEI system unavailable (maintenance window).
-     * Banxico code: S01
+     * Duplicate transaction detected.
+     * Banxico code: E006
      */
-    public static SpeiPaymentException systemUnavailable(Throwable cause) {
+    public static SpeiPaymentException duplicateTransaction(String idOrden) {
         return new SpeiPaymentException(
-            "SPEI system temporarily unavailable",
-            "S01",
+            "Duplicate SPEI transaction detected: " + idOrden,
+            "E006",
+            idOrden,
+            SpeiOperation.TRANSFER,
+            409,
+            false
+        );
+    }
+
+    /**
+     * Transaction already completed (cannot cancel).
+     * Banxico code: E007
+     */
+    public static SpeiPaymentException alreadyCompleted(String idOrden) {
+        return new SpeiPaymentException(
+            "SPEI transaction already completed and cannot be cancelled: " + idOrden,
+            "E007",
+            idOrden,
+            SpeiOperation.CANCELLATION,
+            422,
+            false
+        );
+    }
+
+    /**
+     * Outside SPEI operating hours (06:00-17:30 CST).
+     * Banxico code: E008
+     */
+    public static SpeiPaymentException outsideOperatingHours() {
+        return new SpeiPaymentException(
+            "Transaction requested outside SPEI operating hours (06:00-17:30 CST)",
+            "E008",
+            null,
+            SpeiOperation.TRANSFER,
+            422,
+            false
+        );
+    }
+
+    /**
+     * CoDi not enabled for this account.
+     * Banxico code: E009
+     */
+    public static SpeiPaymentException codiNotEnabled() {
+        return new SpeiPaymentException(
+            "CoDi (Cobro Digital) is not enabled for this account",
+            "E009",
+            null,
+            SpeiOperation.CODI_TRANSFER,
+            422,
+            false
+        );
+    }
+
+    /**
+     * Invalid CoDi QR code.
+     * Banxico code: E010
+     */
+    public static SpeiPaymentException invalidCodiQr(String reason) {
+        return new SpeiPaymentException(
+            "Invalid CoDi QR code: " + reason,
+            "E010",
+            null,
+            SpeiOperation.CODI_GENERATION,
+            400,
+            false
+        );
+    }
+
+    /**
+     * Banxico/SPEI service unavailable.
+     * Banxico code: S001
+     */
+    public static SpeiPaymentException serviceUnavailable(Throwable cause) {
+        return new SpeiPaymentException(
+            "SPEI service temporarily unavailable",
+            "S001",
             null,
             SpeiOperation.TRANSFER,
             503,
@@ -223,46 +283,31 @@ public class SpeiPaymentException extends PaymentException {
     }
 
     /**
-     * CoDi QR code generation failed.
-     * Banxico code: C01
+     * Invalid certificate or mutual TLS failure.
+     * Banxico code: S002
      */
-    public static SpeiPaymentException codiGenerationFailed(String reason) {
+    public static SpeiPaymentException certificateError(String details) {
         return new SpeiPaymentException(
-            "CoDi QR generation failed: " + reason,
-            "C01",
+            "SPEI certificate authentication failed: " + details,
+            "S002",
             null,
-            SpeiOperation.CODI_GENERATION,
-            500,
+            SpeiOperation.AUTHENTICATION,
+            401,
             false
         );
     }
 
     /**
-     * Invalid RFC/CURP format.
-     * Banxico code: R40
+     * Webhook signature validation failed.
+     * Banxico code: W001
      */
-    public static SpeiPaymentException invalidRfcCurp(String rfcCurp) {
+    public static SpeiPaymentException invalidWebhookSignature() {
         return new SpeiPaymentException(
-            "Invalid RFC/CURP format: " + rfcCurp,
-            "R40",
+            "SPEI webhook signature validation failed",
+            "W001",
             null,
-            SpeiOperation.VALIDATION,
-            400,
-            false
-        );
-    }
-
-    /**
-     * Order already settled (cannot cancel).
-     * Banxico code: R50
-     */
-    public static SpeiPaymentException alreadySettled(String idOrden) {
-        return new SpeiPaymentException(
-            "SPEI order already settled and cannot be cancelled: " + idOrden,
-            "R50",
-            idOrden,
-            SpeiOperation.CANCELLATION,
-            422,
+            SpeiOperation.WEBHOOK,
+            401,
             false
         );
     }
@@ -274,14 +319,14 @@ public class SpeiPaymentException extends PaymentException {
     private static boolean isRetryableBanxicoCode(String banxicoErrorCode) {
         if (banxicoErrorCode == null) return false;
         return switch (banxicoErrorCode) {
-            case "T01", "S01", "S02", "G01", "G02" -> true;
+            case "T001", "S001", "S003", "G001" -> true;
             default -> false;
         };
     }
 
     private static String maskClabe(String clabe) {
         if (clabe == null || clabe.length() < 6) return "***";
-        return clabe.substring(0, 3) + "**********" + clabe.substring(clabe.length() - 3);
+        return clabe.substring(0, 3) + "**************" + clabe.substring(clabe.length() - 3);
     }
 
     // -------------------------------------------------------------------------
@@ -292,8 +337,8 @@ public class SpeiPaymentException extends PaymentException {
         return banxicoErrorCode;
     }
 
-    public String getSpeiOrderId() {
-        return speiOrderId;
+    public String getSpeiTransactionId() {
+        return speiTransactionId;
     }
 
     public SpeiOperation getOperation() {
@@ -313,7 +358,7 @@ public class SpeiPaymentException extends PaymentException {
         return "SpeiPaymentException{" +
                 "message='" + getMessage() + '\'' +
                 ", banxicoErrorCode='" + banxicoErrorCode + '\'' +
-                ", speiOrderId='" + speiOrderId + '\'' +
+                ", speiTransactionId='" + speiTransactionId + '\'' +
                 ", operation=" + operation +
                 ", httpStatusCode=" + httpStatusCode +
                 ", retryable=" + retryable +
@@ -326,11 +371,14 @@ public class SpeiPaymentException extends PaymentException {
     // -------------------------------------------------------------------------
 
     public enum SpeiOperation {
-        VALIDATION,      // CLABE/RFC validation
-        TRANSFER,        // SPEI transfer (pacs.008)
-        CODI_GENERATION, // CoDi QR code generation
-        CANCELLATION,    // Order cancellation
-        REFUND,          // Return / devolución
+        VALIDATION,      // CLABE validation
+        TRANSFER,        // SPEI transfer
+        CODI_TRANSFER,   // CoDi payment
+        CODI_GENERATION, // CoDi QR generation
+        CANCELLATION,    // Transaction cancellation
+        REVERSAL,        // Return/refund (devolución)
+        WEBHOOK,         // Webhook processing
+        AUTHENTICATION,  // Mutual TLS / OAuth
         RECONCILIATION   // End-of-day reconciliation
     }
 }

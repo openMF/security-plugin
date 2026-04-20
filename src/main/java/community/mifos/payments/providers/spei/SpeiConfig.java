@@ -59,6 +59,7 @@ public class SpeiConfig {
 
     /**
      * Sender's CLABE (18-digit standardized bank account number).
+     * Used for receiving payments and CoDi QR generation.
      */
     @NotBlank
     @Size(min = 18, max = 18, message = "CLABE must be exactly 18 digits")
@@ -176,7 +177,7 @@ public class SpeiConfig {
     }
 
     public String getClientSecret() {
-        return clientId;
+        return clientSecret;
     }
 
     public void setClientSecret(String clientSecret) {
@@ -309,6 +310,26 @@ public class SpeiConfig {
 
     public void setOperatingHoursEnd(String operatingHoursEnd) {
         this.operatingHoursEnd = operatingHoursEnd;
+    }
+
+    // -------------------------------------------------------------------------
+    // Convenience Methods for Provider API Compatibility
+    // -------------------------------------------------------------------------
+
+    /**
+     * Returns the CLABE account for manual transfers and CoDi QR generation.
+     * Alias for getSourceClabe() to match provider naming convention.
+     */
+    public String getClabeAccount() {
+        return this.sourceClabe;
+    }
+
+    /**
+     * Checks if CoDi (Cobro Digital) is enabled.
+     * Boolean-style accessor for use in conditional expressions.
+     */
+    public boolean isCodiEnabled() {
+        return Boolean.TRUE.equals(this.codiEnabled);
     }
 
     // -------------------------------------------------------------------------

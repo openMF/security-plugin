@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
@@ -17,14 +18,18 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.http.ResponseEntity;
 
 /**
  * End-of-day reconciliation service for SPEI (Mexico) transactions.
  * Matches internal transactions against Banxico settlement files.
  * Runs automatically via scheduled job or can be triggered manually.
+ * 
+ * Also supports real-time queuing of transactions for immediate reconciliation tracking.
  */
 @Service
 public class SpeiReconciliationService {
@@ -37,6 +42,13 @@ public class SpeiReconciliationService {
     private final PaymentTransactionRepository transactionRepository;
     private final PaymentAuditLogger auditLogger;
 
+    /**
+     * In-memory queue for transactions pending reconciliation.
+     * Stores transaction IDs that need to be verified against settlement files.
+     * Cleared after each reconciliation run.
+     */
+    private final ConcurrentHashMap<String, LocalDateTime> reconciliationQueue = new ConcurrentHashMap<>();
+
     public SpeiReconciliationService(SpeiConfig config,
                                       PaymentTransactionRepository transactionRepository,
                                       PaymentAuditLogger auditLogger) {
@@ -44,6 +56,74 @@ public class SpeiReconciliationService {
         this.restTemplate = new RestTemplate();
         this.transactionRepository = transactionRepository;
         this.auditLogger = auditLogger;
+    }
+
+    // -------------------------------------------------------------------------
+    // Real-Time Queue (called from SpeiPaymentProvider.postProcessPayment)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Queues a transaction for reconciliation tracking.
+     * Called immediately after SPEI payment execution (postProcessPayment).
+     * 
+     * Since SPEI settlements are real-time, we mark the transaction as needing
+     * end-of-day verification against Banxico's official settlement file.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void queueForReconciliation(PaymentTransaction transaction) {
+        if (transaction == null || transaction.getTransactionId() == null) {
+            LOG.warn("Cannot queue null transaction for reconciliation");
+            return;
+        }
+
+        String txId = transaction.getTransactionId();
+        
+        // Add to in-memory queue with timestamp
+        reconciliationQueue.put(txId, LocalDateTime.now());
+        
+        // Ensure transaction is marked as not reconciled
+        if (Boolean.TRUE.equals(transaction.getReconciled())) {
+            transaction.setReconciled(false);
+            transaction.setReconciledAt(null);
+        }
+        
+        // Persist the reconciled flag state
+        transactionRepository.save(transaction);
+
+        LOG.info("SPEI transaction queued for reconciliation: {} (ref: {})", 
+            txId, transaction.getReferenceCode());
+
+        auditLogger.logSecurityEvent(
+            txId,
+            "SPEI",
+            "RECONCILIATION_QUEUED",
+            "Transaction queued for end-of-day reconciliation",
+            null
+        );
+    }
+
+    /**
+     * Checks if a transaction is currently in the reconciliation queue.
+     */
+    public boolean isQueuedForReconciliation(String transactionId) {
+        return reconciliationQueue.containsKey(transactionId);
+    }
+
+    /**
+     * Returns the number of transactions currently queued for reconciliation.
+     */
+    public int getQueueSize() {
+        return reconciliationQueue.size();
+    }
+
+    /**
+     * Clears the reconciliation queue.
+     * Called after successful reconciliation run.
+     */
+    public void clearReconciliationQueue() {
+        int size = reconciliationQueue.size();
+        reconciliationQueue.clear();
+        LOG.info("Cleared SPEI reconciliation queue ({} entries)", size);
     }
 
     // -------------------------------------------------------------------------
@@ -57,7 +137,12 @@ public class SpeiReconciliationService {
     @Scheduled(cron = "0 30 18 * * *", zone = "America/Mexico_City")
     public void scheduledDailyReconciliation() {
         LOG.info("Starting scheduled SPEI daily reconciliation");
-        reconcileByDate(LocalDate.now(ZoneId.of("America/Mexico_City")));
+        try {
+            reconcileByDate(LocalDate.now(ZoneId.of("America/Mexico_City")));
+        } finally {
+            // Clear queue after reconciliation regardless of outcome
+            clearReconciliationQueue();
+        }
     }
 
     /**
@@ -74,17 +159,30 @@ public class SpeiReconciliationService {
         List<PaymentTransaction> completedTransactions = transactionRepository
             .findByProviderCodeAndStatus("SPEI", PaymentStatus.COMPLETED);
 
-        // 2. Fetch Banxico settlement file for the date
+        // 2. Also check queued transactions that might not be in standard status lists
+        List<PaymentTransaction> queuedTransactions = fetchQueuedTransactions();
+
+        // 3. Fetch Banxico settlement file for the date
         List<SpeiSettlementRecord> settlementRecords = fetchSettlementFile(date);
 
-        // 3. Match and reconcile
+        // 4. Match and reconcile
         int matched = 0;
         int mismatched = 0;
         int missing = 0;
         int corrected = 0;
 
-        // Reconcile pending transactions
-        for (PaymentTransaction tx : pendingTransactions) {
+        // Combine all transactions to check
+        List<PaymentTransaction> allTransactionsToReconcile = new ArrayList<>();
+        allTransactionsToReconcile.addAll(pendingTransactions);
+        allTransactionsToReconcile.addAll(completedTransactions);
+        allTransactionsToReconcile.addAll(queuedTransactions);
+
+        // Remove duplicates (same transaction might appear in multiple lists)
+        List<PaymentTransaction> uniqueTransactions = allTransactionsToReconcile.stream()
+            .distinct()
+            .toList();
+
+        for (PaymentTransaction tx : uniqueTransactions) {
             Optional<SpeiSettlementRecord> match = findMatchingRecord(tx, settlementRecords);
 
             if (match.isPresent()) {
@@ -101,12 +199,21 @@ public class SpeiReconciliationService {
                 }
             } else {
                 // Transaction not found in settlement file
-                if (tx.isExpired()) {
+                if (tx.isExpired() || isStale(tx)) {
                     // Likely failed at provider but we weren't notified
+                    PaymentStatus oldStatus = tx.getStatus();
                     tx.setStatus(PaymentStatus.FAILED);
                     tx.setStatusReason("Not found in Banxico settlement file");
                     transactionRepository.save(tx);
                     corrected++;
+                    
+                    auditLogger.logStatusChange(
+                        tx.getTransactionId(),
+                        "SPEI",
+                        oldStatus,
+                        PaymentStatus.FAILED,
+                        "Transaction not found in settlement file after expiry"
+                    );
                 }
                 missing++;
             }
@@ -114,7 +221,7 @@ public class SpeiReconciliationService {
 
         // Verify completed transactions are in settlement file
         for (PaymentTransaction tx : completedTransactions) {
-            if (!tx.getReconciled()) {
+            if (!Boolean.TRUE.equals(tx.getReconciled())) {
                 Optional<SpeiSettlementRecord> match = findMatchingRecord(tx, settlementRecords);
                 if (match.isPresent()) {
                     markAsReconciled(tx, match.get());
@@ -139,6 +246,38 @@ public class SpeiReconciliationService {
 
         LOG.info("SPEI reconciliation completed: {}", result);
         return result;
+    }
+
+    // -------------------------------------------------------------------------
+    // Queue Helpers
+    // -------------------------------------------------------------------------
+
+    /**
+     * Fetches transactions from the reconciliation queue that exist in the database.
+     */
+    private List<PaymentTransaction> fetchQueuedTransactions() {
+        if (reconciliationQueue.isEmpty()) {
+            return List.of();
+        }
+
+        List<PaymentTransaction> queued = new ArrayList<>();
+        for (String txId : reconciliationQueue.keySet()) {
+            transactionRepository.findByTransactionId(txId).ifPresent(queued::add);
+        }
+        return queued;
+    }
+
+    /**
+     * Checks if a transaction is stale (queued for too long without settlement).
+     */
+    private boolean isStale(PaymentTransaction tx) {
+        LocalDateTime queuedAt = reconciliationQueue.get(tx.getTransactionId());
+        if (queuedAt != null) {
+            // If queued for more than 24 hours, consider stale
+            return queuedAt.plusHours(24).isBefore(LocalDateTime.now());
+        }
+        // Fallback: check creation time
+        return tx.isExpired();
     }
 
     // -------------------------------------------------------------------------
@@ -179,10 +318,14 @@ public class SpeiReconciliationService {
         List<PaymentTransaction> transactions = transactionRepository
             .findByProviderCodeAndStatus("SPEI", PaymentStatus.PENDING);
 
+        // Also include queued transactions
+        transactions.addAll(fetchQueuedTransactions());
+
         return transactions.stream()
             .map(tx -> queryTransactionStatus(tx.getTransactionId()))
             .filter(Optional::isPresent)
             .map(Optional::get)
+            .distinct()
             .toList();
     }
 
@@ -252,9 +395,18 @@ public class SpeiReconciliationService {
         // Update status if provider shows completion but we still have pending
         PaymentStatus settlementStatus = mapSpeiStatus(record.estado());
         if (tx.getStatus() == PaymentStatus.PENDING && settlementStatus == PaymentStatus.COMPLETED) {
+            PaymentStatus oldStatus = tx.getStatus();
             tx.setStatus(PaymentStatus.COMPLETED);
             tx.setCompletedAtLocal(record.fechaLiquidacion() != null ?
                 record.fechaLiquidacion() : LocalDateTime.now());
+            
+            auditLogger.logStatusChange(
+                tx.getTransactionId(),
+                "SPEI",
+                oldStatus,
+                PaymentStatus.COMPLETED,
+                "Updated to COMPLETED during reconciliation"
+            );
         }
 
         transactionRepository.save(tx);
@@ -266,6 +418,9 @@ public class SpeiReconciliationService {
             tx.getStatus(),
             "Reconciled with Banxico settlement file"
         );
+
+        // Remove from queue if present
+        reconciliationQueue.remove(tx.getTransactionId());
 
         LOG.info("SPEI transaction reconciled: {} -> {}", tx.getReferenceCode(), record.estado());
     }

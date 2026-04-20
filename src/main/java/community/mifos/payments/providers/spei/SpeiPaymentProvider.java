@@ -125,8 +125,56 @@ public class SpeiPaymentProvider extends AbstractPaymentProvider {
             SpeiTransferResponse.class
         );
         
-        return Optional.ofNullable(response.getBody())
-            .map(this::mapToTransaction);
+        SpeiTransferResponse status = response.getBody();
+        if (status == null) {
+            return Optional.empty();
+        }
+        
+        return Optional.of(mapToTransaction(status));
+    }
+    
+    /**
+     * Maps SpeiTransferResponse to PaymentTransaction entity.
+     */
+    private PaymentTransaction mapToTransaction(SpeiTransferResponse response) {
+        PaymentTransaction transaction = new PaymentTransaction();
+        transaction.setTransactionId(response.getIdOrden());
+        transaction.setReferenceCode(response.getReferenciaNumerica());
+        transaction.setStatus(mapSpeiStatus(response.getEstado()));
+        transaction.setAmount(response.getMonto());
+        transaction.setCurrency(response.getMoneda() != null ? response.getMoneda() : getCurrency());
+        transaction.setProviderCode(getProviderCode());
+        transaction.setCountryCode(getCountryCode());
+        transaction.setRecipientIdentifier(response.getClaveRastreo());
+        transaction.setRecipientName(response.getNombreBeneficiario());
+        transaction.setRecipientBankCode(response.getClaveRastreo() != null ? 
+            extractBankCode(response.getClaveRastreo()) : null);
+        transaction.setDescription(response.getConceptoPago());
+        transaction.setChannel(response.getEsCoDi() != null && response.getEsCoDi() ? "CoDi" : "SPEI");
+        
+        if (response.getFechaRegistro() != null) {
+            transaction.setCreatedAtLocal(response.getFechaRegistro());
+        }
+        
+        if (response.getFechaLiquidacion() != null) {
+            transaction.setCompletedAtLocal(response.getFechaLiquidacion());
+            transaction.setSettledAtLocal(response.getFechaLiquidacion());
+        }
+        
+        // Map error details if present
+        if (response.hasError()) {
+            transaction.setStatusReason(response.getCodigoError() + ": " + response.getMensajeError());
+        }
+        
+        // Handle CoDi QR data
+        if (response.getCodigoQr() != null) {
+            transaction.setQrCodeData(response.getCodigoQr());
+        }
+        if (response.getUrlCoDi() != null) {
+            transaction.setPaymentUrl(response.getUrlCoDi());
+        }
+        
+        return transaction;
     }
     
     @Override
