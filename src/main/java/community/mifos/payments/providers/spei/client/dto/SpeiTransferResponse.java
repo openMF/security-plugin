@@ -68,6 +68,12 @@ public class SpeiTransferResponse {
     private String mensajeError;
 
     /**
+     * Whether this is a CoDi (QR) payment.
+     */
+    @JsonProperty("esCoDi")
+    private Boolean esCoDi;
+
+    /**
      * CoDi QR data (if CoDi payment).
      */
     @JsonProperty("codigoQr")
@@ -203,6 +209,14 @@ public class SpeiTransferResponse {
         this.mensajeError = mensajeError;
     }
 
+    public Boolean getEsCoDi() {
+        return esCoDi;
+    }
+
+    public void setEsCoDi(Boolean esCoDi) {
+        this.esCoDi = esCoDi;
+    }
+
     public String getCodigoQr() {
         return codigoQr;
     }
@@ -240,6 +254,6 @@ public class SpeiTransferResponse {
     }
 
     public boolean isCoDi() {
-        return codigoQr != null && !codigoQr.isBlank();
+        return esCoDi != null && esCoDi;
     }
 }

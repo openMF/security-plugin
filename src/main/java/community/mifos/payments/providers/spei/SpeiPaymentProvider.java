@@ -108,7 +108,7 @@ public class SpeiPaymentProvider extends AbstractPaymentProvider {
             .recipientIdentifier(payment.getRecipientIdentifier())
             .recipientBankCode(extractBankCode(payment.getRecipientIdentifier()))
             .createdAtLocal(LocalDateTime.now())
-            .settlementTime(LocalDateTime.now()) // SPEI is real-time
+            .settledAtLocal(LocalDateTime.now()) // SPEI is real-time
             .build();
     }
     
