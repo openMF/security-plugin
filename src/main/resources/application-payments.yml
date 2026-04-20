@@ -18,11 +18,29 @@ payments:
       
     spei:
       enabled: false
-      base-url: ${SPEI_API_URL:https://www.banxico.org.mx/spei}
+      base-url: ${SPEI_API_URL:https://sandbox.banxico.org.mx/spei}
       institution-code: ${SPEI_INSTITUTION_CODE}
       api-key: ${SPEI_API_KEY}
       codi-enabled: true
       clabe-account: ${SPEI_CLABE_ACCOUNT}
+      client-id: ${SPEI_CLIENT_ID}
+      client-secret: ${SPEI_CLIENT_SECRET}
+      certificate-path: ${SPEI_CERT_PATH:/secure/certs/spei.p12}
+      certificate-password: ${SPEI_CERT_PASSWORD}
+      source-clabe: ${SPEI_SOURCE_CLABE}
+      institution-code: ${SPEI_INSTITUTION_CODE}
+      source-rfc: ${SPEI_SOURCE_RFC}
+      webhook-url: ${SPEI_WEBHOOK_URL:https://api.mifos.io/webhooks}
+      webhook-secret: ${SPEI_WEBHOOK_SECRET}
+      timeout: PT30S # ISO 8601 duration
+      same-day-max-amount: 800000.00   # MXN 800k
+      codi-max-amount: 30000.00        # MXN 30k
+      codi-enabled: true
+      codi-webhook-url: ${SPEI_CODI_WEBHOOK_URL:https://api.mifos.io/webhooks/codi}
+      default-settlement-type: SAME_DAY
+      enforce-operating-hours: true
+      operating-hours-start: "06:00"
+      operating-hours-end: "17:30"
       
     sinpe:
       enabled: true
