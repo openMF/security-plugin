@@ -20,31 +20,40 @@ package org.apache.fineract.selfservice.registration.service;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import jakarta.persistence.PersistenceException;
 import java.lang.reflect.Type;
-import java.security.SecureRandom;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.fineract.infrastructure.campaigns.sms.data.SmsProviderData;
 import org.apache.fineract.infrastructure.campaigns.sms.domain.SmsCampaign;
 import org.apache.fineract.infrastructure.campaigns.sms.service.SmsCampaignDropdownReadPlatformService;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
+import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.domain.EmailDetail;
 import org.apache.fineract.infrastructure.core.exception.ErrorHandler;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
-import org.apache.fineract.infrastructure.core.service.GmailBackedPlatformEmailService;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
+import org.apache.fineract.infrastructure.core.service.SelfServicePluginEmailService;
+import org.apache.fineract.infrastructure.security.domain.BasicPasswordEncodablePlatformUser;
+import org.apache.fineract.infrastructure.security.service.PlatformPasswordEncoder;
 import org.apache.fineract.infrastructure.sms.domain.SmsMessage;
 import org.apache.fineract.infrastructure.sms.domain.SmsMessageRepository;
 import org.apache.fineract.infrastructure.sms.domain.SmsMessageStatusType;
@@ -53,30 +62,48 @@ import org.apache.fineract.organisation.staff.domain.Staff;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
 import org.apache.fineract.portfolio.client.exception.ClientNotFoundException;
+import org.apache.fineract.portfolio.client.service.ClientWritePlatformService;
 import org.apache.fineract.portfolio.group.domain.Group;
 import org.apache.fineract.selfservice.registration.SelfServiceApiConstants;
 import org.apache.fineract.selfservice.registration.domain.SelfServiceRegistration;
 import org.apache.fineract.selfservice.registration.domain.SelfServiceRegistrationRepository;
+import org.apache.fineract.selfservice.registration.domain.SelfServiceRequestType;
+import org.apache.fineract.selfservice.registration.exception.SelfServiceEnrollmentConflictException;
 import org.apache.fineract.selfservice.registration.exception.SelfServiceRegistrationNotFoundException;
 import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
 import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUserClientMappingRepository;
+import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUserRepository;
+import org.apache.fineract.selfservice.useradministration.domain.SelfServiceUserDomainService;
+import org.apache.fineract.selfservice.useradministration.service.AppSelfServiceUserReadPlatformService;
+import org.apache.fineract.useradministration.domain.AppUser;
+import org.apache.fineract.useradministration.domain.AppUserRepository;
 import org.apache.fineract.useradministration.domain.PasswordValidationPolicy;
 import org.apache.fineract.useradministration.domain.PasswordValidationPolicyRepository;
 import org.apache.fineract.useradministration.domain.Role;
 import org.apache.fineract.useradministration.domain.RoleRepository;
-import org.apache.fineract.selfservice.useradministration.domain.SelfServiceUserDomainService;
 import org.apache.fineract.useradministration.exception.RoleNotFoundException;
-import org.apache.fineract.selfservice.useradministration.service.AppSelfServiceUserReadPlatformService;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.core.env.Environment;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.security.authentication.AuthenticationServiceException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.thymeleaf.ITemplateEngine;
+import org.thymeleaf.context.Context;
 
 @Slf4j
-@Service
 public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServiceRegistrationWritePlatformService {
 
     public record RegistrationContext(
@@ -88,14 +115,24 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
             SelfServiceUserDomainService userDomainService,
             AppSelfServiceUserReadPlatformService appUserReadPlatformService,
             RoleRepository roleRepository,
-            AppSelfServiceUserClientMappingRepository appUserClientMappingRepository
+            AppSelfServiceUserClientMappingRepository appUserClientMappingRepository,
+            JdbcTemplate jdbcTemplate,
+            AppUserRepository appUserRepository,
+            ClientWritePlatformService clientWritePlatformService,
+            Environment env,
+            PlatformPasswordEncoder platformPasswordEncoder,
+            AppSelfServiceUserRepository appSelfServiceUserRepository,
+            SelfServiceAuthorizationTokenService selfServiceAuthorizationTokenService
     ) {}
 
     public record NotificationContext(
-            GmailBackedPlatformEmailService gmailBackedPlatformEmailService,
+            SelfServicePluginEmailService selfServicePluginEmailService,
             SmsMessageRepository smsMessageRepository,
             SmsMessageScheduledJobService smsMessageScheduledJobService,
-            SmsCampaignDropdownReadPlatformService smsCampaignDropdownReadPlatformService
+            SmsCampaignDropdownReadPlatformService smsCampaignDropdownReadPlatformService,
+            ITemplateEngine registrationTemplateEngine,
+            MessageSource registrationMessageSource,
+            ApplicationEventPublisher applicationEventPublisher
     ) {}
 
     private final SelfServiceRegistrationRepository selfServiceRegistrationRepository;
@@ -104,14 +141,24 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
     private final ClientRepositoryWrapper clientRepository;
     private final PasswordValidationPolicyRepository passwordValidationPolicy;
     private final SelfServiceUserDomainService userDomainService;
-    private final GmailBackedPlatformEmailService gmailBackedPlatformEmailService;
+    private final AppSelfServiceUserReadPlatformService appUserReadPlatformService;
+    private final RoleRepository roleRepository;
+    private final AppSelfServiceUserClientMappingRepository appUserClientMappingRepository;
+    private final JdbcTemplate jdbcTemplate;
+    private final AppUserRepository appUserRepository;
+    private final ClientWritePlatformService clientWritePlatformService;
+    private final Environment env;
+    private final PlatformPasswordEncoder platformPasswordEncoder;
+    private final AppSelfServiceUserRepository appSelfServiceUserRepository;
+    private final SelfServiceAuthorizationTokenService selfServiceAuthorizationTokenService;
+
+    private final SelfServicePluginEmailService selfServicePluginEmailService;
     private final SmsMessageRepository smsMessageRepository;
     private final SmsMessageScheduledJobService smsMessageScheduledJobService;
     private final SmsCampaignDropdownReadPlatformService smsCampaignDropdownReadPlatformService;
-    private final AppSelfServiceUserReadPlatformService appUserReadPlatformService;
-    private final RoleRepository roleRepository;
-    private static final SecureRandom secureRandom = new SecureRandom();
-    private final AppSelfServiceUserClientMappingRepository appUserClientMappingRepository;
+    private final ITemplateEngine registrationTemplateEngine;
+    private final MessageSource registrationMessageSource;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     public SelfServiceRegistrationWritePlatformServiceImpl(RegistrationContext regCtx, NotificationContext notifCtx) {
         this.selfServiceRegistrationRepository = regCtx.selfServiceRegistrationRepository();
@@ -123,35 +170,55 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
         this.appUserReadPlatformService = regCtx.appUserReadPlatformService();
         this.roleRepository = regCtx.roleRepository();
         this.appUserClientMappingRepository = regCtx.appUserClientMappingRepository();
+        this.jdbcTemplate = regCtx.jdbcTemplate();
+        this.appUserRepository = regCtx.appUserRepository();
+        this.clientWritePlatformService = regCtx.clientWritePlatformService();
+        this.env = regCtx.env();
+        this.platformPasswordEncoder = regCtx.platformPasswordEncoder();
+        this.appSelfServiceUserRepository = regCtx.appSelfServiceUserRepository();
+        this.selfServiceAuthorizationTokenService = regCtx.selfServiceAuthorizationTokenService();
 
-        this.gmailBackedPlatformEmailService = notifCtx.gmailBackedPlatformEmailService();
+        this.selfServicePluginEmailService = notifCtx.selfServicePluginEmailService();
         this.smsMessageRepository = notifCtx.smsMessageRepository();
         this.smsMessageScheduledJobService = notifCtx.smsMessageScheduledJobService();
         this.smsCampaignDropdownReadPlatformService = notifCtx.smsCampaignDropdownReadPlatformService();
+        this.registrationTemplateEngine = notifCtx.registrationTemplateEngine();
+        this.registrationMessageSource = notifCtx.registrationMessageSource();
+        this.applicationEventPublisher = notifCtx.applicationEventPublisher();
     }
 
-    private record RegistrationPayload(String accountNumber, String firstName, String middleName, String lastName, String username, String email, String mobileNumber, String authenticationMode) {}
+    private record RegistrationPayload(String accountNumber, String firstName, String middleName, String lastName, String username, String email, String mobileNumber, String authenticationMode, String password) {}
 
     @Override
     @Transactional
     public SelfServiceRegistration createRegistrationRequest(String apiRequestBodyAsJson) {
         RegistrationPayload payload = parseAndValidate(apiRequestBodyAsJson);
 
-        String authenticationToken = randomAuthorizationTokenGeneration();
+        String authenticationToken = selfServiceAuthorizationTokenService.generateToken();
+        LocalDateTime createdAt = org.apache.fineract.infrastructure.core.service.DateUtils.getLocalDateTimeOfSystem();
+        
         Client client = this.clientRepository.getClientByAccountNumber(payload.accountNumber());
-        SelfServiceRegistration selfServiceRegistration = this.selfServiceRegistrationRepository.saveAndFlush(
-                SelfServiceRegistration.instance(client.getId(), payload.accountNumber(), payload.firstName(), payload.middleName(), payload.lastName(),
-                        payload.mobileNumber(), payload.email(), authenticationToken, payload.username(),
-                        org.apache.fineract.infrastructure.core.service.DateUtils.getLocalDateTimeOfSystem()));
+        
+        SelfServiceRegistration selfServiceRegistration = SelfServiceRegistration.instance(
+                client.getId(), payload.accountNumber(), payload.firstName(), payload.middleName(), payload.lastName(),
+                payload.mobileNumber(), payload.email(), authenticationToken, authenticationToken, payload.username(), 
+                encodePassword(payload.password()), SelfServiceRequestType.REGISTRATION, createdAt, 
+                selfServiceAuthorizationTokenService.calculateExpiry(createdAt));
+                
+        final SelfServiceRegistration savedRegistration = this.selfServiceRegistrationRepository.saveAndFlush(selfServiceRegistration);
+
         boolean isEmailAuth = payload.authenticationMode().equalsIgnoreCase(SelfServiceApiConstants.emailModeParamName);
-        org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
-            new org.springframework.transaction.support.TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    sendAuthorizationToken(selfServiceRegistration, client, isEmailAuth);
-                }
-            });
-        return selfServiceRegistration;
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        sendAuthorizationToken(savedRegistration, client, isEmailAuth);
+                    }
+                });
+        }
+
+        return savedRegistration;
     }
 
     private RegistrationPayload parseAndValidate(String apiRequestBodyAsJson) {
@@ -175,7 +242,8 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
             this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.usernameParamName, element),
             this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.emailParamName, element),
             !isEmailAuth ? this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.mobileNumberParamName, element) : null,
-            authMode
+            authMode,
+            this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.passwordParamName, element)
         );
     }
 
@@ -188,6 +256,10 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
         baseDataValidator.reset().parameter(SelfServiceApiConstants.middleNameParamName).value(payload.middleName()).ignoreIfNull().notExceedingLengthOf(100);
         baseDataValidator.reset().parameter(SelfServiceApiConstants.lastNameParamName).value(payload.lastName()).notBlank().notExceedingLengthOf(100);
         baseDataValidator.reset().parameter(SelfServiceApiConstants.usernameParamName).value(payload.username()).notBlank().notExceedingLengthOf(100);
+
+        final PasswordValidationPolicy validationPolicy = this.passwordValidationPolicy.findActivePasswordValidationPolicy();
+        baseDataValidator.reset().parameter(SelfServiceApiConstants.passwordParamName).value(payload.password())
+                .matchesRegularExpression(validationPolicy.getRegex(), validationPolicy.getDescription()).notExceedingLengthOf(100);
 
         baseDataValidator.reset().parameter(SelfServiceApiConstants.authenticationModeParamName).value(payload.authenticationMode()).notBlank()
                 .isOneOfTheseStringValues(SelfServiceApiConstants.emailModeParamName, SelfServiceApiConstants.mobileModeParamName);
@@ -224,23 +296,41 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
             throw new PlatformDataIntegrityException("error.msg.mobile.service.provider.not.available", "Mobile service provider not available.");
         }
         Long providerId = new ArrayList<>(smsProviders).get(0).getId();
-        final String message = String.format("Hola %s,\n\nPara crear un usuario, utilice los siguientes datos\n\nId de Petición : %s\nCódigo de Autorización : %s",
-                selfServiceRegistration.getFirstName(), selfServiceRegistration.getId(), selfServiceRegistration.getAuthenticationToken());
+        Locale locale = LocaleContextHolder.getLocale();
+        final String message = this.registrationMessageSource.getMessage("sms.message",
+                new Object[] { selfServiceRegistration.getFirstName(), selfServiceRegistration.getId(),
+                        selfServiceRegistration.getAuthenticationToken() },
+                locale);
+        String externalId = null;
+        Group group = null;
+        Staff staff = null;
+        SmsCampaign smsCampaign = null;
+        boolean isNotification = false;
         
-        SmsMessage smsMessage = java.util.Objects.requireNonNull(
-                SmsMessage.instance(null, null, client, null,
-                        SmsMessageStatusType.PENDING, message, selfServiceRegistration.getMobileNumber(), null, false));
-        this.smsMessageRepository.save(smsMessage);
-        this.smsMessageScheduledJobService.sendTriggeredMessage(new ArrayList<>(Arrays.asList(smsMessage)), providerId);
+        SmsMessage smsMessage = SmsMessage.instance(externalId, group, client, staff,
+                SmsMessageStatusType.PENDING, message, selfServiceRegistration.getMobileNumber(), smsCampaign, isNotification);
+        smsMessage = this.smsMessageRepository.save(smsMessage);
+        try {
+            this.smsMessageScheduledJobService.sendTriggeredMessage(new ArrayList<>(Arrays.asList(smsMessage)), providerId);
+            smsMessage.setStatusType(SmsMessageStatusType.SENT.getValue());
+            this.smsMessageRepository.save(smsMessage);
+        } catch (Exception e) {
+            smsMessage.setStatusType(SmsMessageStatusType.FAILED.getValue());
+            this.smsMessageRepository.save(smsMessage);
+            throw e;
+        }
     }
 
     private void sendAuthorizationMail(SelfServiceRegistration selfServiceRegistration) {
-        final String subject = "Código de Autorización ";
-        final String body = String.format("Hola %s,\nPara crear un usuario, utilice los siguientes datos\n\nId de Petición: %s\nCódigo de Autorización : %s",
-                selfServiceRegistration.getFirstName(), selfServiceRegistration.getId(), selfServiceRegistration.getAuthenticationToken());
-
-        final EmailDetail emailDetail = new EmailDetail(subject, body, selfServiceRegistration.getEmail(), selfServiceRegistration.getFirstName());
-        this.gmailBackedPlatformEmailService.sendDefinedEmail(emailDetail);
+        Locale locale = LocaleContextHolder.getLocale();
+        final String subject = this.registrationMessageSource.getMessage("email.subject", null, locale);
+        Context ctx = new Context(locale);
+        ctx.setVariable("firstName", selfServiceRegistration.getFirstName());
+        ctx.setVariable("requestId", selfServiceRegistration.getId());
+        ctx.setVariable("authToken", selfServiceRegistration.getAuthenticationToken());
+        final String htmlBody = this.registrationTemplateEngine.process("authorization-email", ctx);
+        final EmailDetail emailDetail = new EmailDetail(subject, htmlBody, selfServiceRegistration.getEmail(), selfServiceRegistration.getFirstName());
+        this.selfServicePluginEmailService.sendFormattedEmail(emailDetail);
     }
 
     private void throwExceptionIfValidationError(final List<ApiParameterError> dataValidationErrors, String accountNumber, String firstName,
@@ -255,63 +345,38 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
         }
     }
 
-    public static String randomAuthorizationTokenGeneration() {
-        Integer randomPIN = (int) (secureRandom.nextDouble() * 9000) + 1000;
-        return randomPIN.toString();
-    }
-
+    @Transactional(rollbackFor = Exception.class)
     @Override
-    @Transactional
     public AppSelfServiceUser createSelfServiceUser(String apiRequestBodyAsJson) {
         JsonCommand command = null;
         String username = null;
         try {
-            JsonElement element = validateAndParseUserRequest(apiRequestBodyAsJson);
-            Long id = this.fromApiJsonHelper.extractLongNamed(SelfServiceApiConstants.requestIdParamName, element);
-            String token = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.authenticationTokenParamName, element);
-            String password = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.passwordParamName, element);
-            command = JsonCommand.fromJsonElement(id, element);
+            Gson gson = new Gson();
+            final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
+            final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+            final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource("user");
+            this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, apiRequestBodyAsJson,
+                    SelfServiceApiConstants.CREATE_USER_REQUEST_DATA_PARAMETERS);
+            JsonElement element = gson.fromJson(apiRequestBodyAsJson, JsonElement.class);
 
-            SelfServiceRegistration reg = this.selfServiceRegistrationRepository.getRequestByIdAndAuthenticationToken(id, token);
-            if (reg == null) {
-                throw new SelfServiceRegistrationNotFoundException(id, token);
+            SelfServiceRegistration selfServiceRegistration = resolveRegistrationRequest(element, baseDataValidator, dataValidationErrors);
+            if (!dataValidationErrors.isEmpty()) {
+                throw new PlatformApiDataValidationException(dataValidationErrors);
             }
-            username = reg.getUsername();
-            return doCreateSelfServiceUser(reg, password);
+
+            command = JsonCommand.fromJsonElement(selfServiceRegistration.getId(), element, this.fromApiJsonHelper);
+            username = selfServiceRegistration.getUsername();
+            return doCreateSelfServiceUser(selfServiceRegistration);
+
         } catch (final JpaSystemException | DataIntegrityViolationException dve) {
             throw handleDataIntegrityIssues(command, dve.getMostSpecificCause(), dve, username);
         } catch (final PersistenceException | AuthenticationServiceException dve) {
-            throw handleDataIntegrityIssues(command, ExceptionUtils.getRootCause(dve.getCause()), dve, username);
+            Throwable throwable = ExceptionUtils.getRootCause(dve);
+            throw handleDataIntegrityIssues(command, throwable != null ? throwable : dve, dve, username);
         }
     }
 
-    private JsonElement validateAndParseUserRequest(String apiRequestBodyAsJson) {
-        final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
-        this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, apiRequestBodyAsJson, SelfServiceApiConstants.CREATE_USER_REQUEST_DATA_PARAMETERS);
-        JsonElement element = new Gson().fromJson(apiRequestBodyAsJson, JsonElement.class);
-
-        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
-        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource("user");
-
-        Long id = this.fromApiJsonHelper.extractLongNamed(SelfServiceApiConstants.requestIdParamName, element);
-        baseDataValidator.reset().parameter(SelfServiceApiConstants.requestIdParamName).value(id).notNull().integerGreaterThanZero();
-        String authenticationToken = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.authenticationTokenParamName, element);
-        baseDataValidator.reset().parameter(SelfServiceApiConstants.authenticationTokenParamName).value(authenticationToken).notBlank()
-                .notNull().notExceedingLengthOf(100);
-
-        String password = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.passwordParamName, element);
-        final PasswordValidationPolicy validationPolicy = this.passwordValidationPolicy.findActivePasswordValidationPolicy();
-        baseDataValidator.reset().parameter(SelfServiceApiConstants.passwordParamName).value(password)
-                .notNull()
-                .matchesRegularExpression(validationPolicy.getRegex(), validationPolicy.getDescription()).notExceedingLengthOf(100);
-
-        if (!dataValidationErrors.isEmpty()) {
-            throw new PlatformApiDataValidationException(dataValidationErrors);
-        }
-        return element;
-    }
-
-    private AppSelfServiceUser doCreateSelfServiceUser(SelfServiceRegistration reg, String password) {
+    private AppSelfServiceUser doCreateSelfServiceUser(SelfServiceRegistration reg) {
         Client client = this.clientRepository.findOneWithNotFoundDetection(reg.getClientId());
         final boolean passwordNeverExpire = true;
         final boolean isSelfServiceUser = true;
@@ -324,12 +389,26 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
         }
         allRoles.add(role);
         List<Client> clients = new ArrayList<>();
-        User user = new User(reg.getUsername(), password, authorities);
+        
+        // reg.getPassword() already contains the ENCODED password from Registration phase
+        User user = new User(reg.getUsername(), reg.getPassword(), authorities);
         AppSelfServiceUser appUser = new AppSelfServiceUser(client.getOffice(), user, allRoles, reg.getEmail(), client.getFirstname(),
                 client.getLastname(), null, passwordNeverExpire, isSelfServiceUser, clients, null);
-        this.userDomainService.create(appUser, true);
+                
+        // Pass false for the encode-password parameter since the password is ALREADY encoded
+        this.userDomainService.create(appUser, false);
         this.appUserClientMappingRepository.saveClientUserMapping(appUser.getId(), client.getId());
+        
+        reg.markConsumed();
+        this.selfServiceRegistrationRepository.saveAndFlush(reg);
+        
         return appUser;
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public AppSelfServiceUser createSelfServiceUserOrEnroll(String apiRequestBodyAsJson) {
+        return createSelfServiceUser(apiRequestBodyAsJson);
     }
 
     private RuntimeException handleDataIntegrityIssues(final JsonCommand command, final Throwable realCause, final Exception dve, String username) {
@@ -339,5 +418,451 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
                     "User with username " + username + " already exists.", "username", username);
         }
         return ErrorHandler.getMappable(dve, "error.msg.unknown.data.integrity.issue", "Unknown data integrity issue with resource.");
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public SelfServiceRegistration selfEnroll(String apiRequestBodyAsJson) {
+        Gson gson = new Gson();
+        final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
+        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource("user");
+        this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, apiRequestBodyAsJson,
+                SelfServiceApiConstants.SELF_ENROLLMENT_DATA_PARAMETERS);
+        JsonElement element = gson.fromJson(apiRequestBodyAsJson, JsonElement.class);
+
+        String username = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.usernameParamName, element);
+        baseDataValidator.reset().parameter(SelfServiceApiConstants.usernameParamName).value(username).notBlank().notExceedingLengthOf(100);
+
+        String password = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.passwordParamName, element);
+        final PasswordValidationPolicy validationPolicy = this.passwordValidationPolicy.findActivePasswordValidationPolicy();
+        baseDataValidator.reset().parameter(SelfServiceApiConstants.passwordParamName).value(password)
+                .matchesRegularExpression(validationPolicy.getRegex(), validationPolicy.getDescription()).notExceedingLengthOf(100);
+
+        String authenticationMode = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.authenticationModeParamName, element);
+        baseDataValidator.reset().parameter(SelfServiceApiConstants.authenticationModeParamName).value(authenticationMode).notBlank()
+                .isOneOfTheseStringValues(SelfServiceApiConstants.emailModeParamName, SelfServiceApiConstants.mobileModeParamName);
+
+        String email = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.emailParamName, element);
+        baseDataValidator.reset().parameter(SelfServiceApiConstants.emailParamName).value(email).notExceedingLengthOf(100);
+
+        boolean isEmailAuthenticationMode = authenticationMode != null && authenticationMode.equalsIgnoreCase(SelfServiceApiConstants.emailModeParamName);
+        if (isEmailAuthenticationMode) {
+             baseDataValidator.reset().parameter(SelfServiceApiConstants.emailParamName).value(email).notBlank();
+        }
+
+        String mobileNumber = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.mobileNumberParamName, element);
+        if (!isEmailAuthenticationMode) {
+            baseDataValidator.reset().parameter(SelfServiceApiConstants.mobileNumberParamName).value(mobileNumber).notBlank()
+                    .validatePhoneNumber();
+        } else if (mobileNumber != null) {
+            baseDataValidator.reset().parameter(SelfServiceApiConstants.mobileNumberParamName).value(mobileNumber)
+                    .validatePhoneNumber();
+        }
+
+        if (!dataValidationErrors.isEmpty()) {
+            throw new PlatformApiDataValidationException(dataValidationErrors);
+        }
+
+        validateForDuplicateUsernameForEnrollment(username);
+
+        JsonObject originalJson = JsonParser.parseString(apiRequestBodyAsJson).getAsJsonObject();
+        JsonObject sanitizedJson = normalizeSelfEnrollmentClientPayload(originalJson);
+        JsonElement parsedSanitizedElement = sanitizedJson;
+
+        String auditUsername = env.getProperty("fineract.selfservice.enrollment.audit-user", "mifos");
+        final Authentication previousAuth = SecurityContextHolder.getContext().getAuthentication();
+        AppUser auditUser = resolveEnrollmentAuditUser(auditUsername);
+        Authentication auth = new UsernamePasswordAuthenticationToken(auditUser, null, auditUser.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(auth);
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                if (previousAuth != null) {
+                    SecurityContextHolder.getContext().setAuthentication(previousAuth);
+                } else {
+                    SecurityContextHolder.clearContext();
+                }
+            }
+        });
+
+        try {
+            JsonCommand command = JsonCommand.fromJsonElement(null, parsedSanitizedElement, this.fromApiJsonHelper);
+            CommandProcessingResult result = clientWritePlatformService.createClient(command);
+            Long newClientId = result.getResourceId();
+
+            Client client = clientRepository.findOneWithNotFoundDetection(newClientId);
+            Role ssRole = roleRepository.getRoleByName(SelfServiceApiConstants.SELF_SERVICE_USER_ROLE);
+            if (ssRole == null) {
+                throw new RoleNotFoundException(SelfServiceApiConstants.SELF_SERVICE_USER_ROLE);
+            }
+            Collection<SimpleGrantedAuthority> authorities = new ArrayList<>();
+            authorities.add(new SimpleGrantedAuthority("DUMMY_ROLE_NOT_USED_OR_PERSISTED_TO_AVOID_EXCEPTION"));
+
+            User springConfigUser = new User(username, password, false, true, true, true, authorities);
+            AppSelfServiceUser appUser = new AppSelfServiceUser(
+                client.getOffice(), springConfigUser, Collections.singleton(ssRole),
+                email, client.getFirstname(), client.getLastname(), null,
+                true, true, Collections.emptyList(), null
+            );
+
+            // Pass false for the encode-password parameter since the springConfigUser already holds the plain pass now,
+            // wait, but the userDomainService encodes if true. Here we actually want to encode it! Wait!
+            // In the branch code, userDomainService.create(..., false); was called in develop so maybe develop encodes it during save?
+            // Actually `encodePassword(password)` is never called on `selfEnroll` EXCEPT inside `SelfServiceRegistration.instance`.
+            // So for AppSelfServiceUser, we MUST encode it via userDomainService!
+            this.userDomainService.create(appUser, true);
+            this.appUserClientMappingRepository.saveClientUserMapping(appUser.getId(), client.getId());
+
+            String authenticationToken = selfServiceAuthorizationTokenService.generateToken();
+            LocalDateTime createdAt = DateUtils.getLocalDateTimeOfSystem();
+            SelfServiceRegistration registration = SelfServiceRegistration.instance(
+                    client.getId(), client.getAccountNumber(), client.getFirstname(), client.getMiddlename(),
+                    client.getLastname(), mobileNumber, email, authenticationToken, authenticationToken,
+                    username, encodePassword(password), SelfServiceRequestType.CLIENT_USER_ENROLLMENT, createdAt,
+                    selfServiceAuthorizationTokenService.calculateExpiry(createdAt));
+            this.selfServiceRegistrationRepository.saveAndFlush(registration);
+            try {
+                // To avoid sending the whole Client entity, we just use our client 
+                sendAuthorizationToken(registration, client, isEmailAuthenticationMode);
+            } catch (RuntimeException e) {
+                log.error("Failed to deliver enrollment confirmation token for clientId={}, userId={}", newClientId, appUser.getId(), e);
+            }
+
+            log.info("Self-enrollment created (pending confirmation): clientId={}, userId={}", newClientId, appUser.getId());
+            return registration;
+
+        } catch (PlatformDataIntegrityException pde) {
+            throw translateEnrollmentConflict(pde);
+        } catch (DataIntegrityViolationException dve) {
+            throw translateEnrollmentFailure(dve);
+        } catch (PersistenceException dve) {
+            throw translateEnrollmentFailure(dve);
+        }
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public AppSelfServiceUser confirmEnrollment(String apiRequestBodyAsJson) {
+        Gson gson = new Gson();
+        final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
+        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource("user");
+        this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, apiRequestBodyAsJson,
+                SelfServiceApiConstants.CREATE_USER_REQUEST_DATA_PARAMETERS);
+        JsonElement element = gson.fromJson(apiRequestBodyAsJson, JsonElement.class);
+
+        SelfServiceRegistration request = resolveEnrollmentRequest(element, baseDataValidator, dataValidationErrors);
+        if (!dataValidationErrors.isEmpty()) {
+            throw new PlatformApiDataValidationException(dataValidationErrors);
+        }
+
+        AppSelfServiceUser appUser = this.appSelfServiceUserRepository.findAppSelfServiceUserByName(request.getUsername());
+        if (appUser == null) {
+            throw new PlatformDataIntegrityException("error.msg.user.notfound.username",
+                    "User with username " + request.getUsername() + " not found.",
+                    SelfServiceApiConstants.usernameParamName, request.getUsername());
+        }
+
+        try {
+            request.markConsumed();
+            this.selfServiceRegistrationRepository.saveAndFlush(request);
+        } catch (OptimisticLockingFailureException e) {
+            throw new PlatformDataIntegrityException("error.msg.self.service.request.token.invalid",
+                    "The supplied self-service token is expired or already used.",
+                    SelfServiceApiConstants.externalAuthenticationTokenParamName);
+        }
+
+        appUser.enable();
+        this.appSelfServiceUserRepository.saveAndFlush(appUser);
+
+        org.apache.fineract.infrastructure.core.domain.FineractPlatformTenant capturedTenant = null;
+        try {
+            capturedTenant = org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil.getTenant();
+        } catch (IllegalStateException ignored) {
+        }
+        final org.apache.fineract.infrastructure.core.domain.FineractPlatformTenant tenantSnapshot = capturedTenant;
+        final java.util.HashMap<org.apache.fineract.infrastructure.businessdate.domain.BusinessDateType, java.time.LocalDate> businessDatesSnapshot;
+        java.util.HashMap<org.apache.fineract.infrastructure.businessdate.domain.BusinessDateType, java.time.LocalDate> tempDates = null;
+        try {
+            java.util.HashMap<org.apache.fineract.infrastructure.businessdate.domain.BusinessDateType, java.time.LocalDate> dates =
+                    org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil.getBusinessDates();
+            tempDates = dates != null ? new java.util.HashMap<>(dates) : null;
+        } catch (IllegalArgumentException e) {
+        }
+        businessDatesSnapshot = tempDates;
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                try {
+                    applicationEventPublisher.publishEvent(new org.apache.fineract.selfservice.notification.SelfServiceNotificationEvent(
+                        SelfServiceRegistrationWritePlatformServiceImpl.this,
+                        org.apache.fineract.selfservice.notification.SelfServiceNotificationEvent.Type.USER_ACTIVATED,
+                        appUser.getId(),
+                        appUser.getFirstname(),
+                        appUser.getLastname(),
+                        appUser.getUsername(),
+                        request.getEmail(),
+                        request.getMobileNumber(),
+                        isEmailMode(request),
+                        null,
+                        LocaleContextHolder.getLocale(),
+                        tenantSnapshot,
+                        businessDatesSnapshot
+                    ));
+                } catch (Exception e) {
+                    log.warn("Failed to publish USER_ACTIVATED notification for userId={}", appUser.getId(), e);
+                }
+            }
+        });
+
+        log.info("Self-enrollment confirmed: userId={}", appUser.getId());
+        return appUser;
+    }
+
+    private SelfServiceRegistration resolveEnrollmentRequest(JsonElement element, DataValidatorBuilder baseDataValidator,
+            List<ApiParameterError> dataValidationErrors) {
+        String externalToken = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.externalAuthenticationTokenParamName, element);
+        if (externalToken != null) {
+            baseDataValidator.reset().parameter(SelfServiceApiConstants.externalAuthenticationTokenParamName).value(externalToken).notBlank()
+                    .notExceedingLengthOf(100);
+            if (!dataValidationErrors.isEmpty()) {
+                return null;
+            }
+            SelfServiceRegistration request = this.selfServiceRegistrationRepository.getRequestByExternalAuthorizationToken(externalToken,
+                    SelfServiceRequestType.CLIENT_USER_ENROLLMENT);
+            validateRequestState(request, externalToken);
+            return request;
+        }
+
+        Long id = this.fromApiJsonHelper.extractLongNamed(SelfServiceApiConstants.requestIdParamName, element);
+        baseDataValidator.reset().parameter(SelfServiceApiConstants.requestIdParamName).value(id).notNull().integerGreaterThanZero();
+        String authenticationToken = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.authenticationTokenParamName, element);
+        baseDataValidator.reset().parameter(SelfServiceApiConstants.authenticationTokenParamName).value(authenticationToken).notBlank()
+                .notNull().notExceedingLengthOf(100);
+        if (!dataValidationErrors.isEmpty()) {
+            return null;
+        }
+
+        SelfServiceRegistration request = this.selfServiceRegistrationRepository.getRequestByIdAndAuthenticationToken(id, authenticationToken,
+                SelfServiceRequestType.CLIENT_USER_ENROLLMENT);
+        validateRequestState(request, id, authenticationToken);
+        return request;
+    }
+
+    private AppUser resolveEnrollmentAuditUser(String auditUsername) {
+        try {
+            Long auditUserId = jdbcTemplate.queryForObject("SELECT id FROM m_appuser WHERE username = ?", Long.class, auditUsername);
+            if (auditUserId == null) {
+                throw new IllegalStateException(
+                        "Self-enrollment audit user '" + auditUsername + "' is configured but no matching m_appuser id was returned.");
+            }
+            return appUserRepository.findById(auditUserId).orElseThrow(
+                    () -> new IllegalStateException("Self-enrollment audit user '" + auditUsername
+                            + "' was found in m_appuser lookup but could not be loaded from the repository."));
+        } catch (EmptyResultDataAccessException e) {
+            throw new IllegalStateException("Configured self-enrollment audit user '" + auditUsername
+                    + "' does not exist. Set fineract.selfservice.enrollment.audit-user to a valid username.", e);
+        }
+    }
+
+    private void validateForDuplicateUsernameForEnrollment(String username) {
+        boolean isDuplicateUserName = this.appUserReadPlatformService.isUsernameExist(username);
+        if (isDuplicateUserName) {
+            throw enrollmentConflict("error.msg.user.duplicate.username", "Username already exists", "username");
+        }
+    }
+
+    private SelfServiceEnrollmentConflictException enrollmentConflict(String code, String message, String parameterName) {
+        return new SelfServiceEnrollmentConflictException(code, message, parameterName);
+    }
+
+    private RuntimeException translateEnrollmentConflict(PlatformDataIntegrityException exception) {
+        String code = exception.getGlobalisationMessageCode();
+        if ("error.msg.client.duplicate.mobileNo".equals(code)) {
+            return enrollmentConflict(code, exception.getDefaultUserMessage(), "mobileNo");
+        }
+        if ("error.msg.client.duplicate.email".equals(code)) {
+            return enrollmentConflict(code, exception.getDefaultUserMessage(), "email");
+        }
+        if ("error.msg.user.duplicate.username".equals(code)) {
+            return enrollmentConflict(code, exception.getDefaultUserMessage(), "username");
+        }
+        return exception;
+    }
+
+    private RuntimeException translateEnrollmentFailure(Exception exception) {
+        Throwable rootCause = ExceptionUtils.getRootCause(exception);
+        Throwable mostSpecificCause = rootCause != null ? rootCause : exception;
+        String message = mostSpecificCause.getMessage();
+        if (message == null) {
+            return ErrorHandler.getMappable(exception, "error.msg.unknown.data.integrity.issue", "Unknown data integrity issue");
+        }
+
+        String normalized = message.toLowerCase();
+        if (normalized.contains("username") || normalized.contains("username_org")) {
+            return enrollmentConflict("error.msg.user.duplicate.username", "Username already exists", "username");
+        }
+        if (normalized.contains("mobile_no") || normalized.contains("mobileno")) {
+            return enrollmentConflict("error.msg.client.duplicate.mobileNo", "Mobile number already exists", "mobileNo");
+        }
+        if (normalized.contains("email")) {
+            return enrollmentConflict("error.msg.client.duplicate.email", "Email already exists", "email");
+        }
+
+        return ErrorHandler.getMappable(exception, "error.msg.unknown.data.integrity.issue", "Unknown data integrity issue");
+    }
+
+    private JsonObject normalizeSelfEnrollmentClientPayload(JsonObject originalJson) {
+        JsonObject sanitizedJson = new JsonObject();
+
+        copyFirstPresent(originalJson, sanitizedJson, SelfServiceApiConstants.firstnameParamName,
+                SelfServiceApiConstants.firstnameParamName, SelfServiceApiConstants.firstNameParamName);
+        copyFirstPresent(originalJson, sanitizedJson, SelfServiceApiConstants.middlenameParamName,
+                SelfServiceApiConstants.middlenameParamName, SelfServiceApiConstants.middleNameParamName);
+        copyFirstPresent(originalJson, sanitizedJson, SelfServiceApiConstants.lastnameParamName,
+                SelfServiceApiConstants.lastnameParamName, SelfServiceApiConstants.lastNameParamName);
+        copyIfPresent(originalJson, sanitizedJson, "mobileNo", SelfServiceApiConstants.mobileNumberParamName);
+        copyIfPresent(originalJson, sanitizedJson, "emailAddress", SelfServiceApiConstants.emailParamName);
+        copyIfPresent(originalJson, sanitizedJson, SelfServiceApiConstants.clientTypeIdParamName, SelfServiceApiConstants.clientTypeIdParamName);
+        copyIfPresent(originalJson, sanitizedJson, SelfServiceApiConstants.clientClassificationIdParamName,
+                SelfServiceApiConstants.clientClassificationIdParamName);
+        copyIfPresent(originalJson, sanitizedJson, SelfServiceApiConstants.dateOfBirthParamName, SelfServiceApiConstants.dateOfBirthParamName);
+        copyIfPresent(originalJson, sanitizedJson, SelfServiceApiConstants.genderIdParamName, SelfServiceApiConstants.genderIdParamName);
+        copyIfPresent(originalJson, sanitizedJson, SelfServiceApiConstants.addressParamName, SelfServiceApiConstants.addressParamName);
+        copyIfPresent(originalJson, sanitizedJson, SelfServiceApiConstants.datatablesParamName, SelfServiceApiConstants.datatablesParamName);
+        copyIfPresent(originalJson, sanitizedJson, SelfServiceApiConstants.familyMembersParamName, SelfServiceApiConstants.familyMembersParamName);
+        copyFirstPresent(originalJson, sanitizedJson, SelfServiceApiConstants.externalIdParamName,
+                SelfServiceApiConstants.externalIdParamName, SelfServiceApiConstants.externalIDParamName);
+
+        long officeId = Long.parseLong(env.getProperty("fineract.selfservice.enrollment.default-office-id", "1"));
+        sanitizedJson.addProperty(SelfServiceApiConstants.officeIdParamName, officeId);
+
+        int legalFormId = originalJson.has(SelfServiceApiConstants.legalFormIdParamName)
+                ? originalJson.get(SelfServiceApiConstants.legalFormIdParamName).getAsInt()
+                : Integer.parseInt(env.getProperty("fineract.selfservice.enrollment.default-legal-form-id", "1"));
+        sanitizedJson.addProperty(SelfServiceApiConstants.legalFormIdParamName, legalFormId);
+
+        String submittedOnDate = stringValueOrDefault(originalJson, SelfServiceApiConstants.submittedOnDateParamName, null);
+        String dateFormat = stringValueOrDefault(originalJson, SelfServiceApiConstants.dateFormatParamName, null);
+        if (StringUtils.isBlank(dateFormat)) {
+            if (looksIsoDate(submittedOnDate)) {
+                dateFormat = "yyyy-MM-dd";
+            } else {
+                dateFormat = env.getProperty("fineract.selfservice.enrollment.default-date-format", "yyyy-MM-dd");
+            }
+        }
+        sanitizedJson.addProperty(SelfServiceApiConstants.dateFormatParamName, dateFormat);
+
+        String locale = stringValueOrDefault(originalJson, SelfServiceApiConstants.localeParamName,
+                env.getProperty("fineract.selfservice.enrollment.default-locale", "en"));
+        sanitizedJson.addProperty(SelfServiceApiConstants.localeParamName, locale);
+
+        boolean isActive = Boolean.parseBoolean(env.getProperty("fineract.selfservice.enrollment.default-active", "false"));
+        sanitizedJson.addProperty(SelfServiceApiConstants.activeParamName, isActive);
+
+        String today = java.time.LocalDate.now(java.time.ZoneId.of("UTC")).toString();
+        sanitizedJson.addProperty(SelfServiceApiConstants.submittedOnDateParamName,
+                StringUtils.defaultIfBlank(submittedOnDate, today));
+        if (isActive) {
+            sanitizedJson.addProperty(SelfServiceApiConstants.activationDateParamName, today);
+        }
+
+        return sanitizedJson;
+    }
+
+    private void copyIfPresent(JsonObject source, JsonObject target, String targetKey, String sourceKey) {
+        if (source.has(sourceKey)) {
+            target.add(targetKey, source.get(sourceKey));
+        }
+    }
+
+    private void copyFirstPresent(JsonObject source, JsonObject target, String targetKey, String... sourceKeys) {
+        for (String sourceKey : sourceKeys) {
+            if (source.has(sourceKey)) {
+                target.add(targetKey, source.get(sourceKey));
+                return;
+            }
+        }
+    }
+
+    private String stringValueOrDefault(JsonObject json, String key, String defaultValue) {
+        if (json.has(key) && !json.get(key).isJsonNull()) {
+            return json.get(key).getAsString();
+        }
+        return defaultValue;
+    }
+
+    private boolean looksIsoDate(String value) {
+        return StringUtils.isNotBlank(value) && value.matches("\\d{4}-\\d{2}-\\d{2}");
+    }
+
+    private SelfServiceRegistration resolveRegistrationRequest(JsonElement element, DataValidatorBuilder baseDataValidator,
+            List<ApiParameterError> dataValidationErrors) {
+        String externalToken = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.externalAuthenticationTokenParamName, element);
+        if (externalToken != null) {
+            baseDataValidator.reset().parameter(SelfServiceApiConstants.externalAuthenticationTokenParamName).value(externalToken).notBlank()
+                    .notExceedingLengthOf(100);
+            if (!dataValidationErrors.isEmpty()) {
+                return null;
+            }
+            SelfServiceRegistration request = this.selfServiceRegistrationRepository.getRequestByExternalAuthorizationToken(externalToken,
+                    SelfServiceRequestType.REGISTRATION);
+            validateRequestState(request, externalToken);
+            return request;
+        }
+
+        Long id = this.fromApiJsonHelper.extractLongNamed(SelfServiceApiConstants.requestIdParamName, element);
+        baseDataValidator.reset().parameter(SelfServiceApiConstants.requestIdParamName).value(id).notNull().integerGreaterThanZero();
+        String authenticationToken = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.authenticationTokenParamName, element);
+        baseDataValidator.reset().parameter(SelfServiceApiConstants.authenticationTokenParamName).value(authenticationToken).notBlank()
+                .notNull().notExceedingLengthOf(100);
+        if (!dataValidationErrors.isEmpty()) {
+            return null;
+        }
+
+        SelfServiceRegistration request = this.selfServiceRegistrationRepository.getRequestByIdAndAuthenticationToken(id, authenticationToken,
+                SelfServiceRequestType.REGISTRATION);
+        validateRequestState(request, id, authenticationToken);
+        return request;
+    }
+
+    private void validateRequestState(SelfServiceRegistration request, String externalToken) {
+        if (request == null) {
+            throw new SelfServiceRegistrationNotFoundException(externalToken);
+        }
+        if (request.isConsumed() || request.isExpired(DateUtils.getLocalDateTimeOfSystem())) {
+            throw new PlatformDataIntegrityException("error.msg.self.service.request.token.invalid",
+                    "The supplied self-service token is expired or already used.", SelfServiceApiConstants.externalAuthenticationTokenParamName,
+                    externalToken);
+        }
+    }
+
+    private void validateRequestState(SelfServiceRegistration request, Long requestId, String authenticationToken) {
+        if (request == null) {
+            throw new SelfServiceRegistrationNotFoundException(requestId, authenticationToken);
+        }
+        if (request.isConsumed() || request.isExpired(DateUtils.getLocalDateTimeOfSystem())) {
+            throw new PlatformDataIntegrityException("error.msg.self.service.request.token.invalid",
+                    "The supplied self-service token is expired or already used.", SelfServiceApiConstants.authenticationTokenParamName,
+                    authenticationToken);
+        }
+    }
+
+    private String encodePassword(String rawPassword) {
+        return platformPasswordEncoder.encode(new BasicPasswordEncodablePlatformUser().setPassword(rawPassword));
+    }
+
+    private boolean isEmailMode(SelfServiceRegistration request) {
+        boolean hasEmail = StringUtils.isNotBlank(request.getEmail());
+        boolean hasMobile = StringUtils.isNotBlank(request.getMobileNumber());
+
+        if (hasEmail && !hasMobile) return true;
+        if (hasMobile && !hasEmail) return false;
+
+        String pref = env.getProperty("fineract.selfservice.notification.login.delivery-preference", "email");
+        return "email".equalsIgnoreCase(pref);
     }
 }

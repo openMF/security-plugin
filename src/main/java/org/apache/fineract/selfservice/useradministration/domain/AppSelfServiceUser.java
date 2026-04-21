@@ -486,6 +486,10 @@ public class AppSelfServiceUser extends AbstractPersistableCustom<Long> implemen
         return this.enabled;
     }
 
+    public void enable() {
+        this.enabled = true;
+    }
+
     public boolean isBypassUser() {
         return hasAnyPermission("BYPASS_LOAN_WRITE_PROTECTION");
     }

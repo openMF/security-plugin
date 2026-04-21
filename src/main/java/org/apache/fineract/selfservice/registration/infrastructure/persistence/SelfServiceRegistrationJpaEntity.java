@@ -16,6 +16,8 @@ package org.apache.fineract.selfservice.registration.infrastructure.persistence;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -23,14 +25,9 @@ import java.time.LocalDateTime;
 import org.apache.fineract.infrastructure.core.domain.AbstractPersistableCustom;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.selfservice.registration.domain.SelfServiceRegistration;
+import org.apache.fineract.selfservice.registration.domain.SelfServiceRequestType;
 import org.springframework.lang.NonNull;
 
-/**
- * JPA persistence entity for self-service user registration requests.
- *
- * <p>All {@code jakarta.persistence.*} annotations live exclusively here. Domain logic belongs in
- * {@link SelfServiceRegistration}.
- */
 @Entity
 @Table(name = "request_audit_table")
 public class SelfServiceRegistrationJpaEntity extends AbstractPersistableCustom<Long> {
@@ -60,14 +57,25 @@ public class SelfServiceRegistrationJpaEntity extends AbstractPersistableCustom<
   @Column(name = "authentication_token", length = 100)
   private String authenticationToken;
 
+  @Column(name = "external_authorization_token", length = 100)
+  private String externalAuthorizationToken;
+
   @Column(name = "username", length = 100, nullable = false)
   private String username;
-
 
   @Column(name = "created_date", nullable = false)
   private LocalDateTime createdDate;
 
-  /** Required by JPA. */
+  @Column(name = "expires_at")
+  private LocalDateTime expiresAt;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "request_type", length = 50)
+  private SelfServiceRequestType requestType;
+
+  @Column(name = "consumed", nullable = false)
+  private boolean consumed;
+
   protected SelfServiceRegistrationJpaEntity() {}
 
   private SelfServiceRegistrationJpaEntity(
@@ -79,8 +87,12 @@ public class SelfServiceRegistrationJpaEntity extends AbstractPersistableCustom<
       String mobileNumber,
       String email,
       String authenticationToken,
+      String externalAuthorizationToken,
       String username,
-      LocalDateTime createdDate) {
+      LocalDateTime createdDate,
+      LocalDateTime expiresAt,
+      SelfServiceRequestType requestType,
+      boolean consumed) {
     this.client = client;
     this.accountNumber = accountNumber;
     this.firstName = firstName;
@@ -89,17 +101,14 @@ public class SelfServiceRegistrationJpaEntity extends AbstractPersistableCustom<
     this.mobileNumber = mobileNumber;
     this.email = email;
     this.authenticationToken = authenticationToken;
+    this.externalAuthorizationToken = externalAuthorizationToken;
     this.username = username;
     this.createdDate = createdDate;
+    this.expiresAt = expiresAt;
+    this.requestType = requestType;
+    this.consumed = consumed;
   }
 
-  /**
-   * Creates a new (not-yet-persisted) JPA entity from the domain object.
-   *
-   * @param domain the domain registration request
-   * @param client the resolved {@link Client} JPA entity (fetched by the adapter using
-   *     {@code domain.getClientId()})
-   */
   @NonNull
   public static SelfServiceRegistrationJpaEntity fromNewDomain(
       SelfServiceRegistration domain, Client client) {
@@ -112,11 +121,14 @@ public class SelfServiceRegistrationJpaEntity extends AbstractPersistableCustom<
         domain.getMobileNumber(),
         domain.getEmail(),
         domain.getAuthenticationToken(),
+        domain.getExternalAuthorizationToken(),
         domain.getUsername(),
-        domain.getCreatedDate());
+        domain.getCreatedDate(),
+        domain.getExpiresAt(),
+        domain.getRequestType(),
+        domain.isConsumed());
   }
 
-  /** Converts this JPA entity back to the pure domain object. */
   public SelfServiceRegistration toDomain() {
     return SelfServiceRegistration.reconstruct(
         getId(),
@@ -128,9 +140,15 @@ public class SelfServiceRegistrationJpaEntity extends AbstractPersistableCustom<
         mobileNumber,
         email,
         authenticationToken,
+        externalAuthorizationToken,
         username,
-        createdDate);
+        null,
+        createdDate,
+        expiresAt,
+        requestType,
+        consumed);
   }
+
   public void updateFromDomain(SelfServiceRegistration domain, Client client) {
     this.client = client;
     this.accountNumber = domain.getAccountNumber();
@@ -140,7 +158,11 @@ public class SelfServiceRegistrationJpaEntity extends AbstractPersistableCustom<
     this.mobileNumber = domain.getMobileNumber();
     this.email = domain.getEmail();
     this.authenticationToken = domain.getAuthenticationToken();
+    this.externalAuthorizationToken = domain.getExternalAuthorizationToken();
     this.username = domain.getUsername();
     this.createdDate = domain.getCreatedDate();
+    this.expiresAt = domain.getExpiresAt();
+    this.requestType = domain.getRequestType();
+    this.consumed = domain.isConsumed();
   }
 }

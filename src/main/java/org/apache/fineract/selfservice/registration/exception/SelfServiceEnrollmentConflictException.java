@@ -12,20 +12,13 @@
  * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.fineract.selfservice.registration.service;
+package org.apache.fineract.selfservice.registration.exception;
 
-import org.apache.fineract.selfservice.registration.domain.SelfServiceRegistration;
-import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
+import org.apache.fineract.infrastructure.core.exception.AbstractPlatformDomainRuleException;
 
-public interface SelfServiceRegistrationWritePlatformService {
+public class SelfServiceEnrollmentConflictException extends AbstractPlatformDomainRuleException {
 
-    SelfServiceRegistration createRegistrationRequest(String apiRequestBodyAsJson);
-
-    AppSelfServiceUser createSelfServiceUser(String apiRequestBodyAsJson);
-
-    AppSelfServiceUser createSelfServiceUserOrEnroll(String apiRequestBodyAsJson);
-
-    SelfServiceRegistration selfEnroll(String apiRequestBodyAsJson);
-
-    AppSelfServiceUser confirmEnrollment(String apiRequestBodyAsJson);
+    public SelfServiceEnrollmentConflictException(String code, String message, String parameterName) {
+        super(code, message, parameterName);
+    }
 }

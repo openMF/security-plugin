@@ -14,17 +14,11 @@
  */
 package org.apache.fineract.selfservice.registration.infrastructure.persistence;
 
+import org.apache.fineract.selfservice.registration.domain.SelfServiceRequestType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-/**
- * Spring Data JPA repository for {@link SelfServiceRegistrationJpaEntity}.
- *
- * <p>Application code must NOT inject this interface directly — use the domain interface
- * {@link org.apache.fineract.selfservice.registration.domain.SelfServiceRegistrationRepository}
- * instead. This repository is an implementation detail of the infrastructure layer.
- */
 public interface SelfServiceRegistrationJpaRepository
     extends JpaRepository<SelfServiceRegistrationJpaEntity, Long> {
 
@@ -33,4 +27,20 @@ public interface SelfServiceRegistrationJpaRepository
           + " where r.id = :id and r.authenticationToken = :authenticationToken")
   SelfServiceRegistrationJpaEntity findByIdAndAuthenticationToken(
       @Param("id") Long id, @Param("authenticationToken") String authenticationToken);
+
+  @Query(
+      "select r from SelfServiceRegistrationJpaEntity r"
+          + " where r.id = :id and r.authenticationToken = :authenticationToken"
+          + " and r.requestType = :requestType")
+  SelfServiceRegistrationJpaEntity findByIdAndAuthenticationTokenAndRequestType(
+      @Param("id") Long id,
+      @Param("authenticationToken") String authenticationToken,
+      @Param("requestType") SelfServiceRequestType requestType);
+
+  @Query(
+      "select r from SelfServiceRegistrationJpaEntity r"
+          + " where r.externalAuthorizationToken = :token and r.requestType = :requestType")
+  SelfServiceRegistrationJpaEntity findByExternalAuthorizationTokenAndRequestType(
+      @Param("token") String externalAuthorizationToken,
+      @Param("requestType") SelfServiceRequestType requestType);
 }

@@ -27,4 +27,10 @@ public class SelfServiceRegistrationNotFoundException
             + " and authentication token :"
             + authenticationToken);
   }
+
+  public SelfServiceRegistrationNotFoundException(String externalToken) {
+    super(
+        "error.msg.self.service.registration.not.found",
+        "Self service registration not found with external token : " + externalToken);
+  }
 }

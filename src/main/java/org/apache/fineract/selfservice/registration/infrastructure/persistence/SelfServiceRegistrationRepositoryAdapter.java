@@ -19,15 +19,8 @@ import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
 import org.apache.fineract.selfservice.registration.domain.SelfServiceRegistration;
 import org.apache.fineract.selfservice.registration.domain.SelfServiceRegistrationRepository;
+import org.apache.fineract.selfservice.registration.domain.SelfServiceRequestType;
 
-/**
- * Adapts {@link SelfServiceRegistrationJpaRepository} (Spring Data / JPA) to the pure domain
- * interface {@link SelfServiceRegistrationRepository}.
- *
- * <p>The adapter is responsible for resolving the {@link Client} JPA entity by the
- * {@code clientId} stored in the domain object, keeping both the domain layer and the service
- * layer free of persistence concerns.
- */
 @RequiredArgsConstructor
 public class SelfServiceRegistrationRepositoryAdapter implements SelfServiceRegistrationRepository {
 
@@ -53,6 +46,22 @@ public class SelfServiceRegistrationRepositoryAdapter implements SelfServiceRegi
       Long id, String authenticationToken) {
     SelfServiceRegistrationJpaEntity entity =
         jpaRepository.findByIdAndAuthenticationToken(id, authenticationToken);
+    return entity == null ? null : entity.toDomain();
+  }
+
+  @Override
+  public SelfServiceRegistration getRequestByIdAndAuthenticationToken(
+      Long id, String authenticationToken, SelfServiceRequestType requestType) {
+    SelfServiceRegistrationJpaEntity entity =
+        jpaRepository.findByIdAndAuthenticationTokenAndRequestType(id, authenticationToken, requestType);
+    return entity == null ? null : entity.toDomain();
+  }
+
+  @Override
+  public SelfServiceRegistration getRequestByExternalAuthorizationToken(
+      String externalAuthorizationToken, SelfServiceRequestType requestType) {
+    SelfServiceRegistrationJpaEntity entity =
+        jpaRepository.findByExternalAuthorizationTokenAndRequestType(externalAuthorizationToken, requestType);
     return entity == null ? null : entity.toDomain();
   }
 }

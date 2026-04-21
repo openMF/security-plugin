@@ -1,15 +1,21 @@
+/**
+ * Copyright since 2026 Mifos Initiative
+ *
+ * <p>This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy
+ * of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package org.apache.fineract.selfservice.registration.domain;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
 
-import org.apache.fineract.portfolio.client.domain.Client;
+import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
 
 class SelfServiceRegistrationTest {
 
   @Test
   void instance_shouldCreateRegistrationWithAllFields() {
+    LocalDateTime now = LocalDateTime.now();
     SelfServiceRegistration reg =
         SelfServiceRegistration.instance(
             1L,
@@ -20,8 +26,12 @@ class SelfServiceRegistrationTest {
             "5522649498",
             "pedro@test.com",
             "1234",
+            "external-token",
             "pedro.marmol",
-            java.time.LocalDateTime.now());
+            "SecurePass123#",
+            SelfServiceRequestType.REGISTRATION,
+            now,
+            now.plusSeconds(30));
 
     assertEquals(1L, reg.getClientId());
     assertEquals("000000001", reg.getAccountNumber());
@@ -31,12 +41,18 @@ class SelfServiceRegistrationTest {
     assertEquals("5522649498", reg.getMobileNumber());
     assertEquals("pedro@test.com", reg.getEmail());
     assertEquals("1234", reg.getAuthenticationToken());
+    assertEquals("external-token", reg.getExternalAuthorizationToken());
     assertEquals("pedro.marmol", reg.getUsername());
+    assertEquals("SecurePass123#", reg.getPassword());
+    assertEquals(SelfServiceRequestType.REGISTRATION, reg.getRequestType());
+    assertFalse(reg.isConsumed());
+    assertNotNull(reg.getExpiresAt());
     assertNotNull(reg.getCreatedDate());
   }
 
   @Test
   void instance_shouldHandleNullMiddleName() {
+    LocalDateTime now = LocalDateTime.now();
     SelfServiceRegistration reg =
         SelfServiceRegistration.instance(
             1L,
@@ -47,13 +63,15 @@ class SelfServiceRegistrationTest {
             null,
             "john@test.com",
             "5678",
+            "other-token",
             "john.doe",
-            java.time.LocalDateTime.now());
+            "Pass456#",
+            SelfServiceRequestType.FORGOT_PASSWORD,
+            now,
+            now.plusSeconds(30));
 
     assertNull(reg.getMiddleName());
     assertNull(reg.getMobileNumber());
     assertEquals("John", reg.getFirstName());
   }
-
-
 }

@@ -15,17 +15,10 @@
 package org.apache.fineract.selfservice.registration.service;
 
 import org.apache.fineract.selfservice.registration.domain.SelfServiceRegistration;
-import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
 
-public interface SelfServiceRegistrationWritePlatformService {
+public interface SelfServiceForgotPassworWritePlatformService {
 
-    SelfServiceRegistration createRegistrationRequest(String apiRequestBodyAsJson);
+    SelfServiceRegistration requestPasswordReset(String apiRequestBodyAsJson);
 
-    AppSelfServiceUser createSelfServiceUser(String apiRequestBodyAsJson);
-
-    AppSelfServiceUser createSelfServiceUserOrEnroll(String apiRequestBodyAsJson);
-
-    SelfServiceRegistration selfEnroll(String apiRequestBodyAsJson);
-
-    AppSelfServiceUser confirmEnrollment(String apiRequestBodyAsJson);
+    void resetPassword(String apiRequestBodyAsJson);
 }

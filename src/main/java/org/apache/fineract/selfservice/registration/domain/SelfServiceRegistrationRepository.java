@@ -30,10 +30,34 @@ public interface SelfServiceRegistrationRepository {
   SelfServiceRegistration saveAndFlush(SelfServiceRegistration entity);
 
   /**
-   * Looks up a registration request by its id and one-time authentication token.
+   * Finds a self-service request by its identifier and authentication token.
    *
-   * @return the matching request, or {@code null} if none is found
+   * @param id request identifier
+   * @param authenticationToken authentication token stored with the request
+   * @return matching request, or {@code null} when no record matches
    */
   SelfServiceRegistration getRequestByIdAndAuthenticationToken(
       Long id, String authenticationToken);
+
+  /**
+   * Finds a self-service request by identifier, authentication token, and request type.
+   *
+   * @param id request identifier
+   * @param authenticationToken authentication token stored with the request
+   * @param requestType expected request type
+   * @return matching request, or {@code null} when no record matches
+   */
+  SelfServiceRegistration getRequestByIdAndAuthenticationToken(
+      Long id, String authenticationToken, SelfServiceRequestType requestType);
+
+  /**
+   * Finds a self-service request by external authorization token and request type.
+   *
+   * @param externalAuthorizationToken external authorization token stored with the request
+   * @param requestType expected request type
+   * @return matching request, or {@code null} when no record matches
+   */
+  SelfServiceRegistration getRequestByExternalAuthorizationToken(
+      String externalAuthorizationToken, SelfServiceRequestType requestType);
+
 }

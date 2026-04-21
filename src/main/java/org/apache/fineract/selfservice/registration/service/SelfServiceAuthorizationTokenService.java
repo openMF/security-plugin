@@ -14,18 +14,24 @@
  */
 package org.apache.fineract.selfservice.registration.service;
 
-import org.apache.fineract.selfservice.registration.domain.SelfServiceRegistration;
-import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
+import java.time.LocalDateTime;
+import java.util.UUID;
+import org.springframework.core.env.Environment;
 
-public interface SelfServiceRegistrationWritePlatformService {
+public class SelfServiceAuthorizationTokenService {
 
-    SelfServiceRegistration createRegistrationRequest(String apiRequestBodyAsJson);
+    private final long expiryMinutes;
 
-    AppSelfServiceUser createSelfServiceUser(String apiRequestBodyAsJson);
+    public SelfServiceAuthorizationTokenService(Environment env) {
+        this.expiryMinutes = Long.parseLong(
+                env.getProperty("fineract.selfservice.registration.token.expiry-minutes", "60"));
+    }
 
-    AppSelfServiceUser createSelfServiceUserOrEnroll(String apiRequestBodyAsJson);
+    public String generateToken() {
+        return UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
+    }
 
-    SelfServiceRegistration selfEnroll(String apiRequestBodyAsJson);
-
-    AppSelfServiceUser confirmEnrollment(String apiRequestBodyAsJson);
+    public LocalDateTime calculateExpiry(LocalDateTime createdAt) {
+        return createdAt.plusMinutes(expiryMinutes);
+    }
 }
