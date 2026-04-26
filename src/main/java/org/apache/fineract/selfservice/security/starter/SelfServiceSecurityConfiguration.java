@@ -122,11 +122,15 @@ public class SelfServiceSecurityConfiguration {
                 .requestMatchers(HttpMethod.POST, "/api/v1/self/registration").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/self/registration/user").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/self/registration/client-user").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/v1/self/registration/client-user/confirm").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/self/registration/client-user/confirm").permitAll()                
                 .requestMatchers(HttpMethod.POST, "/v1/self/registration").permitAll()
                 .requestMatchers(HttpMethod.POST, "/v1/self/registration/user").permitAll()
                 .requestMatchers(HttpMethod.POST, "/v1/self/registration/client-user").permitAll()
                 .requestMatchers(HttpMethod.POST, "/v1/self/registration/client-user/confirm").permitAll()
+                
+                // Client Identity documents available in the platform    
+                .requestMatchers(HttpMethod.GET, "/api/v1/self/registration/identifiers").permitAll()
+                .requestMatchers(HttpMethod.GET, "/v1/self/registration/identifiers").permitAll()
 
                 // Self authentication (login)
                 .requestMatchers(HttpMethod.POST, "/api/v1/self/authentication").permitAll()

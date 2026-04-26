@@ -15,6 +15,7 @@
 package org.apache.fineract.selfservice.registration.api;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
@@ -22,13 +23,18 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
+import org.apache.fineract.selfservice.registration.data.IdentityDocumentData;
+import org.apache.fineract.selfservice.client.service.SelfServiceClientIdentifierReadPlatformService;
 import org.apache.fineract.selfservice.registration.SelfServiceApiConstants;
 import org.apache.fineract.selfservice.registration.service.SelfServiceRegistrationWritePlatformService;
 import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
@@ -45,6 +51,7 @@ public class SelfServiceRegistrationApiResource {
 
     private final SelfServiceRegistrationWritePlatformService selfServiceRegistrationWritePlatformService;
     private final DefaultToApiJsonSerializer<AppSelfServiceUser> toApiJsonSerializer;
+    private final SelfServiceClientIdentifierReadPlatformService clientIdentifierReadPlatformService;
 
     /**
      * Creates a self-service registration request pending later confirmation.
@@ -118,5 +125,13 @@ public class SelfServiceRegistrationApiResource {
     public String confirmEnrollment(final String apiRequestBodyAsJson) {
         AppSelfServiceUser user = this.selfServiceRegistrationWritePlatformService.confirmEnrollment(apiRequestBodyAsJson);
         return this.toApiJsonSerializer.serialize(CommandProcessingResult.resourceResult(user.getId()));
+    }
+    
+    @GET
+    @Path("identifiers")
+    @Produces({ MediaType.APPLICATION_JSON })
+    @Operation(summary = "List all client identity documents", description = "Returns all the available client identity documents supported")
+    public List<IdentityDocumentData> retrieveAllClientIdentifiers() {
+        return this.clientIdentifierReadPlatformService.retrieveClientIdentifiers();
     }
 }
