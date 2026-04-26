@@ -14,6 +14,10 @@
  */
 package org.apache.fineract.selfservice.account.starter;
 
+import community.mifos.payments.core.repository.PaymentTransactionRepository;
+import community.mifos.payments.core.service.FastPaymentService;
+import community.mifos.payments.infrastructure.audit.PaymentAuditLogger;
+import community.mifos.payments.providers.base.PaymentProviderFactory;
 import org.apache.fineract.selfservice.security.service.PlatformSelfServiceSecurityContext;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepositoryWrapper;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountRepositoryWrapper;
@@ -37,6 +41,14 @@ public class SelfAccountConfiguration {
   @ConditionalOnMissingBean(SelfAccountTransferReadService.class)
   public SelfAccountTransferReadService selfAccountTransferReadService(JdbcTemplate jdbcTemplate) {
     return new SelfAccountTransferReadServiceImpl(jdbcTemplate);
+  }
+  
+  @Bean
+  @ConditionalOnMissingBean(FastPaymentService.class)
+  public FastPaymentService fastPaymentService(PaymentProviderFactory providerFactory,
+                              PaymentTransactionRepository transactionRepository,
+                              PaymentAuditLogger auditLogger) {        
+    return new FastPaymentService(providerFactory, transactionRepository,auditLogger);
   }
 
   @Bean
