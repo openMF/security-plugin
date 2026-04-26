@@ -20,7 +20,6 @@ package org.apache.fineract.selfservice.client.service;
 
 import org.apache.fineract.selfservice.registration.data.IdentityDocumentData;
 import java.util.List;
-import org.apache.fineract.portfolio.client.data.ClientIdentifierData;
 
 public interface SelfServiceClientIdentifierReadPlatformService {
 

@@ -23,20 +23,16 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
-import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 
 @Service
-@Slf4j
 @RequiredArgsConstructor
 public class SelfServiceClientIdentifierReadPlatformServiceImpl implements SelfServiceClientIdentifierReadPlatformService {
 
     private final JdbcTemplate jdbcTemplate;
-    private final PlatformSecurityContext context;
     
     @Override
     public List<IdentityDocumentData> retrieveClientIdentifiers() {
@@ -44,8 +40,6 @@ public class SelfServiceClientIdentifierReadPlatformServiceImpl implements SelfS
         final ClientIdentityMapper rm = new ClientIdentityMapper();
 
         String sql = "select " + rm.publicSchema();
-        
-        log.info("SELECT IDENTITY DOCUMENTS "+sql);
         
         return this.jdbcTemplate.query(sql, rm); // NOSONAR
     }
