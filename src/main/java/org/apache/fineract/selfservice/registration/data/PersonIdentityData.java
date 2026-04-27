@@ -18,26 +18,28 @@
  */
 package org.apache.fineract.selfservice.registration.data;
 
-import lombok.Data;
+import lombok.AllArgsConstructor;
 import lombok.Setter;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 /**
- * Immutable data object represent client identity data.
+ * Data object represent client identity data.
  */
-@Data
 @Getter
 @Setter
+@AllArgsConstructor
 @NoArgsConstructor
+@ToString
 public class PersonIdentityData {
 
     private String externalId;
+    private Integer genderId;
+    private String dateOfBirth;
     private String firstName;
     private String middleName;
     private String lastName;
-    private Integer genderId;
-    private String dateOfBirth;
     private String dateFormat;
     private String locale;
     private String developerMessage;

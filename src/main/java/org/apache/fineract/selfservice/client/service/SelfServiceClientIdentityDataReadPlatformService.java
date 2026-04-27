@@ -23,6 +23,6 @@ import org.apache.fineract.selfservice.registration.data.PersonIdentityData;
 
 public interface SelfServiceClientIdentityDataReadPlatformService {
 
-    PersonIdentityData retrieveClientIdentityData(SelfServiceRetrieveIdentityRequest apiRequestBodyAsJson) throws Exception;
+    PersonIdentityData retrieveClientIdentityData(SelfServiceRetrieveIdentityRequest selfServiceRetrieveIdentityRequest) throws Exception;
 
 }

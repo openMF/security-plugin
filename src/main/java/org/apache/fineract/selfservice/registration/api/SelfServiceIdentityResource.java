@@ -60,8 +60,8 @@ public class SelfServiceIdentityResource {
         @ApiResponse(responseCode = "200", description = "OK"),
         @ApiResponse(responseCode = "400", description = "Bad Request")
     })    
-    public String retrieveIdentity(final SelfServiceRetrieveIdentityRequest apiRequestBodyAsJson) throws Exception{
+    public String retrieveIdentity(final SelfServiceRetrieveIdentityRequest selfServiceRetrieveIdentityRequest) throws Exception{
                 
-        return this.toApiJsonSerializer.serialize(this.selfServiceClientIdentityDataReadPlatformService.retrieveClientIdentityData(apiRequestBodyAsJson));
+        return this.toApiJsonSerializer.serialize(this.selfServiceClientIdentityDataReadPlatformService.retrieveClientIdentityData(selfServiceRetrieveIdentityRequest));
     }
 }
