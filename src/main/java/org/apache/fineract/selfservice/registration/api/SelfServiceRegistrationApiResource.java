@@ -33,6 +33,7 @@ import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
 import org.apache.fineract.selfservice.registration.data.IdentityDocumentData;
 import org.apache.fineract.selfservice.client.service.SelfServiceClientIdentifierReadPlatformService;
+import org.apache.fineract.selfservice.client.service.SelfServiceClientIdentityDataReadPlatformService;
 import org.apache.fineract.selfservice.registration.SelfServiceApiConstants;
 import org.apache.fineract.selfservice.registration.service.SelfServiceRegistrationWritePlatformService;
 import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
@@ -50,6 +51,7 @@ public class SelfServiceRegistrationApiResource {
     private final SelfServiceRegistrationWritePlatformService selfServiceRegistrationWritePlatformService;
     private final DefaultToApiJsonSerializer<AppSelfServiceUser> toApiJsonSerializer;
     private final SelfServiceClientIdentifierReadPlatformService clientIdentifierReadPlatformService;
+    private final SelfServiceClientIdentityDataReadPlatformService selfServiceClientIdentityDataReadPlatformService;
 
     /**
      * Creates a self-service registration request pending later confirmation.
@@ -131,5 +133,20 @@ public class SelfServiceRegistrationApiResource {
     @Operation(summary = "List all client identity documents", description = "Returns all the available client identity documents supported")
     public List<IdentityDocumentData> retrieveAllClientIdentifiers() {
         return this.clientIdentifierReadPlatformService.retrieveClientIdentifiers();
+    }
+    
+    @POST
+    @Path("retrieve-identity")
+    @Consumes({MediaType.APPLICATION_JSON})
+    @Produces({MediaType.APPLICATION_JSON})
+    @Operation(summary = "Retrieve Identity Data", description = "Retrieve Identity Information from Third Party System.")
+    @RequestBody(required = true, content = @Content(schema = @Schema(implementation = SelfServiceRetrieveIdentityRequest.class)))
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "OK"),
+        @ApiResponse(responseCode = "400", description = "Bad Request")
+    })
+    public String retrieveIdentity(final SelfServiceRetrieveIdentityRequest apiRequestBodyAsJson) throws Exception{
+                
+        return this.toApiJsonSerializer.serialize(this.selfServiceClientIdentityDataReadPlatformService.retrieveClientIdentityData(apiRequestBodyAsJson));
     }
 }

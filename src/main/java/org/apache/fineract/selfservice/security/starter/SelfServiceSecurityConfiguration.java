@@ -131,6 +131,10 @@ public class SelfServiceSecurityConfiguration {
                 // Client Identity documents available in the platform    
                 .requestMatchers(HttpMethod.GET, "/api/v1/self/registration/identifiers").permitAll()
                 .requestMatchers(HttpMethod.GET, "/v1/self/registration/identifiers").permitAll()
+                    
+                // External System Client Identity                          
+                .requestMatchers(HttpMethod.POST, "/api/v1/self/registration/retrieve-identity").permitAll()
+                .requestMatchers(HttpMethod.POST, "/v1/self/registration/retrieve-identity").permitAll()
 
                 // Self authentication (login)
                 .requestMatchers(HttpMethod.POST, "/api/v1/self/authentication").permitAll()
