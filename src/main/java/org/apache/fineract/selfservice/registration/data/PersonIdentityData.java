@@ -43,5 +43,8 @@ public class PersonIdentityData {
     private String dateFormat;
     private String locale;
     private String developerMessage;
+    private String type;
+    private String nationality;
+    private String country;
     
 }
