@@ -25,7 +25,7 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import lombok.RequiredArgsConstructor;
 import org.apache.fineract.selfservice.registration.api.SelfServiceRetrieveIdentityRequest;
 import org.apache.fineract.selfservice.registration.data.PersonIdentityData;
-import org.apache.fineract.selfservice.registration.util.ExternalIdentitySystemClient;
+import org.apache.fineract.selfservice.external.client.ExternalIdentitySystemClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -38,16 +38,12 @@ public class SelfServiceClientIdentityDataReadPlatformServiceImpl implements Sel
 
     private final ExternalIdentitySystemClient externalIdentitySystemClient;
     
-    private static final Logger LOGGER = LoggerFactory.getLogger(SelfServiceClientIdentityDataReadPlatformService.class);
-    
     @Override
     public PersonIdentityData retrieveClientIdentityData(SelfServiceRetrieveIdentityRequest apiRequestBodyAsJson) throws Exception{
         
         ObjectMapper objectMapper = JsonMapper.builder()
                                             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
                                             .build();
-        
-        LOGGER.info("ENVIANDO GET REQUEST");
         
         ResponseEntity<JsonNode> response = this.externalIdentitySystemClient.sendGetRequest(apiRequestBodyAsJson.externalId);        
         
