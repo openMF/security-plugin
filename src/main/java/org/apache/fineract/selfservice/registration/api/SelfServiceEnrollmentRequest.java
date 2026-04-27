@@ -65,6 +65,9 @@ public class SelfServiceEnrollmentRequest {
     @Schema(example = "ID12345")
     public String externalId;
     
+    @Schema(example = "ID12345")
+    public String externalID;
+    
     @Schema(example = "dd MMMM yyyy")
     public String dateFormat;
 
