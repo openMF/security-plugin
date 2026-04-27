@@ -45,13 +45,9 @@ public class SelfServiceClientIdentityDataReadPlatformServiceImpl implements Sel
         
         ResponseEntity<JsonNode> response = this.externalIdentitySystemClient.sendPostRequest(apiRequestBodyAsJson);        
         
-        if (response.getStatusCode() == HttpStatus.OK &&
-                response.getBody() != null) {
-
+        if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
             JsonNode externalSystemPersonData = response.getBody();
-            
             return objectMapper.treeToValue(externalSystemPersonData, PersonIdentityData.class);
-            
         } 
         else {
             return new PersonIdentityData();

@@ -133,8 +133,8 @@ public class SelfServiceSecurityConfiguration {
                 .requestMatchers(HttpMethod.GET, "/v1/self/registration/identifiers").permitAll()
                     
                 // External System Client Identity                          
-                .requestMatchers(HttpMethod.POST, "/api/v1/self/registration/retrieve-identity").permitAll()
-                .requestMatchers(HttpMethod.POST, "/v1/self/registration/retrieve-identity").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/self/identity/retrieve").permitAll()
+                .requestMatchers(HttpMethod.POST, "/v1/self/identity/retrieve").permitAll()
 
                 // Self authentication (login)
                 .requestMatchers(HttpMethod.POST, "/api/v1/self/authentication").permitAll()

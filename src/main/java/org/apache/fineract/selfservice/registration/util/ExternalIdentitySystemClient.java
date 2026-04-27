@@ -34,30 +34,6 @@ public class ExternalIdentitySystemClient {
     // Kept static as per original code, assuming a simple RestTemplate configuration is sufficient
     private static final RestTemplate restTemplate = new RestTemplate(); 
 
-     
-    /**
-     * Sends a GET request to the Identity External System API.
-     *
-     * @param path The API endpoint path (e.g., "/search?...")
-     * @return ResponseEntity containing the JSON response
-     * @throws Exception if the request fails
-     */
-    public ResponseEntity<JsonNode> sendGetRequest(String path) throws Exception {
-        
-        String url = externalIdentitySystemUrl;
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set(externalIdentitySystemHeader, externalIdentitySystemToken);
-        
-        LOGGER.info("url "+ url);
-        
-        HttpEntity<String> entity = new HttpEntity<>(headers);
-        LOGGER.info("Sending request to {} ", url);
-
-        return restTemplate.exchange(URI.create(url), HttpMethod.GET, entity, JsonNode.class);
-    }
-    
     public ResponseEntity<JsonNode> sendPostRequest(Object requestBody) throws Exception {
         
         String url = externalIdentitySystemUrl;
@@ -65,9 +41,7 @@ public class ExternalIdentitySystemClient {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set(externalIdentitySystemHeader, externalIdentitySystemToken);
-                
-        LOGGER.info("url "+ url);
-        
+
         ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
         String json = ow.writeValueAsString(requestBody);
 
