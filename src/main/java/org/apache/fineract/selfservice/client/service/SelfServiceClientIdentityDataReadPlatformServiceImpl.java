@@ -26,6 +26,8 @@ import lombok.RequiredArgsConstructor;
 import org.apache.fineract.selfservice.registration.api.SelfServiceRetrieveIdentityRequest;
 import org.apache.fineract.selfservice.registration.data.PersonIdentityData;
 import org.apache.fineract.selfservice.registration.util.ExternalIdentitySystemClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -36,6 +38,8 @@ public class SelfServiceClientIdentityDataReadPlatformServiceImpl implements Sel
 
     private final ExternalIdentitySystemClient externalIdentitySystemClient;
     
+    private static final Logger LOGGER = LoggerFactory.getLogger(SelfServiceClientIdentityDataReadPlatformService.class);
+    
     @Override
     public PersonIdentityData retrieveClientIdentityData(SelfServiceRetrieveIdentityRequest apiRequestBodyAsJson) throws Exception{
         
@@ -43,7 +47,9 @@ public class SelfServiceClientIdentityDataReadPlatformServiceImpl implements Sel
                                             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
                                             .build();
         
-        ResponseEntity<JsonNode> response = this.externalIdentitySystemClient.sendPostRequest(apiRequestBodyAsJson);        
+        LOGGER.info("ENVIANDO GET REQUEST");
+        
+        ResponseEntity<JsonNode> response = this.externalIdentitySystemClient.sendGetRequest(apiRequestBodyAsJson.externalId);        
         
         if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
             JsonNode externalSystemPersonData = response.getBody();

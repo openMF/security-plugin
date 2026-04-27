@@ -36,6 +36,8 @@ public class ExternalIdentitySystemClient {
 
     public ResponseEntity<JsonNode> sendPostRequest(Object requestBody) throws Exception {
         
+        LOGGER.info("Sending POST request to {} ");
+        
         String url = externalIdentitySystemUrl;
 
         HttpHeaders headers = new HttpHeaders();
@@ -50,6 +52,22 @@ public class ExternalIdentitySystemClient {
 
         return restTemplate.exchange(URI.create(url),HttpMethod.POST, entity, JsonNode.class);
         
+    }
+    
+    public ResponseEntity<JsonNode> sendGetRequest(String path) throws Exception {
+        
+        LOGGER.info("Sending GET request to {} ", path);
+        
+        String url = externalIdentitySystemUrl + path;
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set(externalIdentitySystemHeader, externalIdentitySystemToken);
+        
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+        LOGGER.info("Sending request to {} ", url);
+
+        return restTemplate.exchange(URI.create(url), HttpMethod.GET, entity, JsonNode.class);
     }
     
 }
