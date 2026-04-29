@@ -14,10 +14,13 @@
  */
 package org.apache.fineract.selfservice.registration.domain;
 
+import java.time.LocalDateTime;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 public interface SelfServiceRegistrationRepository
     extends JpaRepository<SelfServiceRegistration, Long>,
@@ -70,4 +73,20 @@ public interface SelfServiceRegistrationRepository
   SelfServiceRegistration getRequestByExternalAuthorizationToken(
       @Param("externalAuthorizationToken") String externalAuthorizationToken,
       @Param("requestType") SelfServiceRequestType requestType);
+
+  /**
+   * Deletes all self-service registration requests whose expiry timestamp is strictly before the
+   * supplied cutoff.
+   *
+   * <p>This covers all request types (REGISTRATION, ENROLLMENT, PASSWORD_RESET) regardless of
+   * their consumed status — an expired token is unusable whether or not it was consumed.
+   *
+   * @param cutoff reference timestamp; rows with {@code expiresAt < cutoff} are deleted
+   * @return number of rows deleted
+   */
+  @Modifying
+  @Transactional
+  @Query(
+      "DELETE FROM SelfServiceRegistration r WHERE r.expiresAt IS NOT NULL AND r.expiresAt < :cutoff")
+  int deleteExpiredRequests(@Param("cutoff") LocalDateTime cutoff);
 }
