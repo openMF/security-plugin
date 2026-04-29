@@ -9,12 +9,25 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
 
+/**
+ * HTTP client for the external SMS gateway.
+ *
+ * <p>This bean is only created when the external SMS system is explicitly enabled via
+ * {@code mifos.self.service.external.sms.system.enabled=true}. Without this guard, the
+ * mandatory {@code @Value} properties ({@code url}, {@code header}, {@code token}) would crash
+ * the entire application context on startup when the properties aren't configured.
+ */
 @Component
+@ConditionalOnProperty(
+    name = "mifos.self.service.external.sms.system.enabled",
+    havingValue = "true",
+    matchIfMissing = false)
 public class ExternalSmsSystemClient {
 
     @Value("${mifos.self.service.external.sms.system.url}")

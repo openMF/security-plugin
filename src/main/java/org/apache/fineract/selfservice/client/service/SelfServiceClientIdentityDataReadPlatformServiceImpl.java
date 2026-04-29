@@ -28,12 +28,17 @@ import org.apache.fineract.selfservice.registration.data.PersonIdentityData;
 import org.apache.fineract.selfservice.external.client.ExternalIdentitySystemClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
+@ConditionalOnProperty(
+    name = "mifos.self.service.external.identity.system.enabled",
+    havingValue = "true",
+    matchIfMissing = false)
 public class SelfServiceClientIdentityDataReadPlatformServiceImpl implements SelfServiceClientIdentityDataReadPlatformService {
 
     private final ExternalIdentitySystemClient externalIdentitySystemClient;
