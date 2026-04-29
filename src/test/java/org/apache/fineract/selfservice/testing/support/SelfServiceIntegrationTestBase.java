@@ -9,15 +9,20 @@ package org.apache.fineract.selfservice.testing.support;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
 public abstract class SelfServiceIntegrationTestBase {
+
+    private static final Logger LOG = LoggerFactory.getLogger(SelfServiceIntegrationTestBase.class);
 
     private static final Network network = Network.newNetwork();
 
@@ -106,6 +111,10 @@ public abstract class SelfServiceIntegrationTestBase {
                     );
                     cmd.withCmd();
                 })
+                        
+                // Stream container stdout/stderr to test output for diagnostic visibility.
+                // This reveals the actual failure reason instead of generic ContainerLaunchException.
+                .withLogConsumer(new Slf4jLogConsumer(LOG).withPrefix("fineract"))
                         
                 // HostPortWaitStrategy still runs an internal port check that requires bash (missing in
                 // apache/fineract images). HTTPS + allowInsecure waits until the app serves actuator.

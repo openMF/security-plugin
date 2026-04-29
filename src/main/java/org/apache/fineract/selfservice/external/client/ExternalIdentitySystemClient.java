@@ -7,12 +7,26 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
 
+/**
+ * HTTP client for the external identity verification system.
+ *
+ * <p>This bean is only created when the external identity system is explicitly enabled via
+ * {@code mifos.self.service.external.identity.system.enabled=true}. Without this guard, the
+ * mandatory {@code @Value} properties ({@code url}, {@code header}, {@code token}) would crash
+ * the entire application context on startup when the properties aren't configured — which is the
+ * normal case for most deployments.
+ */
 @Component
+@ConditionalOnProperty(
+    name = "mifos.self.service.external.identity.system.enabled",
+    havingValue = "true",
+    matchIfMissing = false)
 public class ExternalIdentitySystemClient {
 
     @Value("${mifos.self.service.external.identity.system.url}")
