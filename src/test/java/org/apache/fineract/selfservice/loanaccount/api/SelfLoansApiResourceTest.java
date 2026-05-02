@@ -46,25 +46,26 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @SuppressWarnings("unchecked")
 class SelfLoansApiResourceTest {
 
-    @Mock private PlatformSelfServiceSecurityContext context;
-    @Mock private LoansApiResource loansApiResource;
-    @Mock private LoanTransactionsApiResource loanTransactionsApiResource;
-    @Mock private LoanChargesApiResource loanChargesApiResource;
-    @Mock private AppuserLoansMapperReadService appuserLoansMapperReadService;
-    @Mock private AppSelfServiceUserClientMapperReadService appUserClientMapperReadService;
-    @Mock private SelfLoansDataValidator dataValidator;
-    @Mock private GuarantorsApiResource guarantorsApiResource;
-    @Mock private UriInfo uriInfo;
+  @Mock private PlatformSelfServiceSecurityContext context;
+  @Mock private LoansApiResource loansApiResource;
+  @Mock private LoanTransactionsApiResource loanTransactionsApiResource;
+  @Mock private LoanChargesApiResource loanChargesApiResource;
+  @Mock private AppuserLoansMapperReadService appuserLoansMapperReadService;
+  @Mock private AppSelfServiceUserClientMapperReadService appUserClientMapperReadService;
+  @Mock private SelfLoansDataValidator dataValidator;
+  @Mock private GuarantorsApiResource guarantorsApiResource;
+  @Mock private UriInfo uriInfo;
 
-    private SelfLoansApiResource resource;
+  private SelfLoansApiResource resource;
 
-    private static final Long USER_ID = 10L;
-    private static final Long LOAN_ID = 5L;
-    private static final Long CLIENT_ID = 7L;
+  private static final Long USER_ID = 10L;
+  private static final Long LOAN_ID = 5L;
+  private static final Long CLIENT_ID = 7L;
 
-    @BeforeEach
-    void setUp() {
-        resource = new SelfLoansApiResource(
+  @BeforeEach
+  void setUp() {
+    resource =
+        new SelfLoansApiResource(
             context,
             loansApiResource,
             loanTransactionsApiResource,
@@ -72,248 +73,283 @@ class SelfLoansApiResourceTest {
             appuserLoansMapperReadService,
             appUserClientMapperReadService,
             dataValidator,
-            guarantorsApiResource
-        );
-    }
+            guarantorsApiResource);
+  }
 
-    private void mockAuthenticatedUser() {
-        AppSelfServiceUser user = mock(AppSelfServiceUser.class);
-        when(user.getId()).thenReturn(USER_ID);
-        when(context.authenticatedSelfServiceUser()).thenReturn(user);
-    }
+  private void mockAuthenticatedUser() {
+    AppSelfServiceUser user = mock(AppSelfServiceUser.class);
+    when(user.getId()).thenReturn(USER_ID);
+    when(context.authenticatedSelfServiceUser()).thenReturn(user);
+  }
 
-    private void mockLoanMapped() {
-        mockAuthenticatedUser();
-        when(appuserLoansMapperReadService.isLoanMappedToUser(LOAN_ID, USER_ID)).thenReturn(true);
-    }
+  private void mockLoanMapped() {
+    mockAuthenticatedUser();
+    when(appuserLoansMapperReadService.isLoanMappedToUser(LOAN_ID, USER_ID)).thenReturn(true);
+  }
 
-    private void mockLoanNotMapped() {
-        mockAuthenticatedUser();
-        when(appuserLoansMapperReadService.isLoanMappedToUser(LOAN_ID, USER_ID)).thenReturn(false);
-    }
+  private void mockLoanNotMapped() {
+    mockAuthenticatedUser();
+    when(appuserLoansMapperReadService.isLoanMappedToUser(LOAN_ID, USER_ID)).thenReturn(false);
+  }
 
-    private void mockClientMapped() {
-        mockAuthenticatedUser();
-        when(appUserClientMapperReadService.isClientMappedToSelfServiceUser(CLIENT_ID, USER_ID)).thenReturn(true);
-    }
+  private void mockClientMapped() {
+    mockAuthenticatedUser();
+    when(appUserClientMapperReadService.isClientMappedToSelfServiceUser(CLIENT_ID, USER_ID))
+        .thenReturn(true);
+  }
 
-    private void mockClientNotMapped() {
-        mockAuthenticatedUser();
-        when(appUserClientMapperReadService.isClientMappedToSelfServiceUser(CLIENT_ID, USER_ID)).thenReturn(false);
-    }
+  private void mockClientNotMapped() {
+    mockAuthenticatedUser();
+    when(appUserClientMapperReadService.isClientMappedToSelfServiceUser(CLIENT_ID, USER_ID))
+        .thenReturn(false);
+  }
 
-    // --- retrieveLoan ---
+  // --- retrieveLoan ---
 
-    @Test
-    void retrieveLoan_mappedLoan_returnsData() {
-        mockLoanMapped();
-        when(loansApiResource.retrieveLoan(eq(LOAN_ID), eq(false), eq(LoanApiConstants.LOAN_ASSOCIATIONS_ALL), eq(null), eq(null), eq(uriInfo))).thenReturn("{}");
+  @Test
+  void retrieveLoan_mappedLoan_returnsData() {
+    mockLoanMapped();
+    when(loansApiResource.retrieveLoan(
+            eq(LOAN_ID),
+            eq(false),
+            eq(LoanApiConstants.LOAN_ASSOCIATIONS_ALL),
+            eq(null),
+            eq(null),
+            eq(uriInfo)))
+        .thenReturn("{}");
 
-        String result = resource.retrieveLoan(LOAN_ID, uriInfo);
+    String result = resource.retrieveLoan(LOAN_ID, uriInfo);
 
-        assertNotNull(result);
-        verify(dataValidator).validateRetrieveLoan(uriInfo);
-        verify(loansApiResource).retrieveLoan(LOAN_ID, false, LoanApiConstants.LOAN_ASSOCIATIONS_ALL, null, null, uriInfo);
-    }
+    assertNotNull(result);
+    verify(dataValidator).validateRetrieveLoan(uriInfo);
+    verify(loansApiResource)
+        .retrieveLoan(LOAN_ID, false, LoanApiConstants.LOAN_ASSOCIATIONS_ALL, null, null, uriInfo);
+  }
 
-    @Test
-    void retrieveLoan_unmappedLoan_throws() {
-        mockLoanNotMapped();
+  @Test
+  void retrieveLoan_unmappedLoan_throws() {
+    mockLoanNotMapped();
 
-        assertThrows(LoanNotFoundException.class, () -> resource.retrieveLoan(LOAN_ID, uriInfo));
-    }
+    assertThrows(LoanNotFoundException.class, () -> resource.retrieveLoan(LOAN_ID, uriInfo));
+  }
 
-    // --- retrieveTransaction ---
+  // --- retrieveTransaction ---
 
-    @Test
-    void retrieveTransaction_mappedLoan_returnsData() {
-        mockLoanMapped();
-        when(loanTransactionsApiResource.retrieveTransaction(LOAN_ID, 99L, "fields", uriInfo)).thenReturn("{}");
+  @Test
+  void retrieveTransaction_mappedLoan_returnsData() {
+    mockLoanMapped();
+    when(loanTransactionsApiResource.retrieveTransaction(LOAN_ID, 99L, "fields", uriInfo))
+        .thenReturn("{}");
 
-        String result = resource.retrieveTransaction(LOAN_ID, 99L, "fields", uriInfo);
+    String result = resource.retrieveTransaction(LOAN_ID, 99L, "fields", uriInfo);
 
-        assertNotNull(result);
-        verify(dataValidator).validateRetrieveTransaction(uriInfo);
-        verify(loanTransactionsApiResource).retrieveTransaction(LOAN_ID, 99L, "fields", uriInfo);
-    }
+    assertNotNull(result);
+    verify(dataValidator).validateRetrieveTransaction(uriInfo);
+    verify(loanTransactionsApiResource).retrieveTransaction(LOAN_ID, 99L, "fields", uriInfo);
+  }
 
-    @Test
-    void retrieveTransaction_unmappedLoan_throws() {
-        mockLoanNotMapped();
+  @Test
+  void retrieveTransaction_unmappedLoan_throws() {
+    mockLoanNotMapped();
 
-        assertThrows(LoanNotFoundException.class, () -> resource.retrieveTransaction(LOAN_ID, 99L, "fields", uriInfo));
-    }
+    assertThrows(
+        LoanNotFoundException.class,
+        () -> resource.retrieveTransaction(LOAN_ID, 99L, "fields", uriInfo));
+  }
 
-    // --- retrieveAllLoanCharges ---
+  // --- retrieveAllLoanCharges ---
 
-    @Test
-    void retrieveAllLoanCharges_mappedLoan_returnsData() {
-        mockLoanMapped();
-        when(loanChargesApiResource.retrieveAllLoanCharges(LOAN_ID, uriInfo)).thenReturn("[]");
+  @Test
+  void retrieveAllLoanCharges_mappedLoan_returnsData() {
+    mockLoanMapped();
+    when(loanChargesApiResource.retrieveAllLoanCharges(LOAN_ID, uriInfo)).thenReturn("[]");
 
-        String result = resource.retrieveAllLoanCharges(LOAN_ID, uriInfo);
+    String result = resource.retrieveAllLoanCharges(LOAN_ID, uriInfo);
 
-        assertNotNull(result);
-        verify(loanChargesApiResource).retrieveAllLoanCharges(LOAN_ID, uriInfo);
-    }
+    assertNotNull(result);
+    verify(loanChargesApiResource).retrieveAllLoanCharges(LOAN_ID, uriInfo);
+  }
 
-    @Test
-    void retrieveAllLoanCharges_unmappedLoan_throws() {
-        mockLoanNotMapped();
+  @Test
+  void retrieveAllLoanCharges_unmappedLoan_throws() {
+    mockLoanNotMapped();
 
-        assertThrows(LoanNotFoundException.class, () -> resource.retrieveAllLoanCharges(LOAN_ID, uriInfo));
-    }
+    assertThrows(
+        LoanNotFoundException.class, () -> resource.retrieveAllLoanCharges(LOAN_ID, uriInfo));
+  }
 
-    // --- retrieveLoanCharge ---
+  // --- retrieveLoanCharge ---
 
-    @Test
-    void retrieveLoanCharge_mappedLoan_returnsData() {
-        mockLoanMapped();
-        when(loanChargesApiResource.retrieveLoanCharge(LOAN_ID, 50L, uriInfo)).thenReturn("{}");
+  @Test
+  void retrieveLoanCharge_mappedLoan_returnsData() {
+    mockLoanMapped();
+    when(loanChargesApiResource.retrieveLoanCharge(LOAN_ID, 50L, uriInfo)).thenReturn("{}");
 
-        String result = resource.retrieveLoanCharge(LOAN_ID, 50L, uriInfo);
+    String result = resource.retrieveLoanCharge(LOAN_ID, 50L, uriInfo);
 
-        assertNotNull(result);
-        verify(loanChargesApiResource).retrieveLoanCharge(LOAN_ID, 50L, uriInfo);
-    }
+    assertNotNull(result);
+    verify(loanChargesApiResource).retrieveLoanCharge(LOAN_ID, 50L, uriInfo);
+  }
 
-    @Test
-    void retrieveLoanCharge_unmappedLoan_throws() {
-        mockLoanNotMapped();
+  @Test
+  void retrieveLoanCharge_unmappedLoan_throws() {
+    mockLoanNotMapped();
 
-        assertThrows(LoanNotFoundException.class, () -> resource.retrieveLoanCharge(LOAN_ID, 50L, uriInfo));
-    }
+    assertThrows(
+        LoanNotFoundException.class, () -> resource.retrieveLoanCharge(LOAN_ID, 50L, uriInfo));
+  }
 
-    // --- template ---
+  // --- template ---
 
-    @Test
-    void template_mappedClient_returnsData() {
-        mockClientMapped();
-        when(loansApiResource.template(CLIENT_ID, null, 15L, "individual", false, true, uriInfo)).thenReturn("{}");
+  @Test
+  void template_mappedClient_returnsData() {
+    mockClientMapped();
+    when(loansApiResource.template(CLIENT_ID, null, 15L, "individual", false, true, uriInfo))
+        .thenReturn("{}");
 
-        String result = resource.template(CLIENT_ID, 15L, "individual", uriInfo);
+    String result = resource.template(CLIENT_ID, 15L, "individual", uriInfo);
 
-        assertNotNull(result);
-        verify(loansApiResource).template(CLIENT_ID, null, 15L, "individual", false, true, uriInfo);
-    }
+    assertNotNull(result);
+    verify(loansApiResource).template(CLIENT_ID, null, 15L, "individual", false, true, uriInfo);
+  }
 
-    @Test
-    void template_unmappedClient_throws() {
-        mockClientNotMapped();
+  @Test
+  void template_unmappedClient_throws() {
+    mockClientNotMapped();
 
-        assertThrows(ClientNotFoundException.class, () -> resource.template(CLIENT_ID, 15L, "individual", uriInfo));
-    }
+    assertThrows(
+        ClientNotFoundException.class,
+        () -> resource.template(CLIENT_ID, 15L, "individual", uriInfo));
+  }
 
-    @Test
-    void template_nullTemplateType_throws() {
-        mockClientMapped();
+  @Test
+  void template_nullTemplateType_throws() {
+    mockClientMapped();
 
-        assertThrows(LoanTemplateTypeRequiredException.class, () -> resource.template(CLIENT_ID, 15L, null, uriInfo));
-        verify(loansApiResource, never()).template(any(), any(), any(), any(), anyBoolean(), anyBoolean(), any());
-    }
+    assertThrows(
+        LoanTemplateTypeRequiredException.class,
+        () -> resource.template(CLIENT_ID, 15L, null, uriInfo));
+    verify(loansApiResource, never())
+        .template(any(), any(), any(), any(), anyBoolean(), anyBoolean(), any());
+  }
 
-    @Test
-    void template_invalidTemplateType_throws() {
-        mockClientMapped();
+  @Test
+  void template_invalidTemplateType_throws() {
+    mockClientMapped();
 
-        assertThrows(NotSupportedLoanTemplateTypeException.class, () -> resource.template(CLIENT_ID, 15L, "invalid", uriInfo));
-        verify(loansApiResource, never()).template(any(), any(), any(), any(), anyBoolean(), anyBoolean(), any());
-    }
+    assertThrows(
+        NotSupportedLoanTemplateTypeException.class,
+        () -> resource.template(CLIENT_ID, 15L, "invalid", uriInfo));
+    verify(loansApiResource, never())
+        .template(any(), any(), any(), any(), anyBoolean(), anyBoolean(), any());
+  }
 
-    // --- calculateLoanScheduleOrSubmitLoanApplication ---
+  // --- calculateLoanScheduleOrSubmitLoanApplication ---
 
-    @Test
-    void calculateLoanScheduleOrSubmitLoanApplication_mappedClient_returnsData() {
-        mockClientMapped();
-        HashMap<String, Object> map = new HashMap<>();
-        map.put("clientId", CLIENT_ID);
-        when(dataValidator.validateLoanApplication(any())).thenReturn(map);
-        when(loansApiResource.calculateLoanScheduleOrSubmitLoanApplication("submit", uriInfo, "body")).thenReturn("{}");
+  @Test
+  void calculateLoanScheduleOrSubmitLoanApplication_mappedClient_returnsData() {
+    mockClientMapped();
+    HashMap<String, Object> map = new HashMap<>();
+    map.put("clientId", CLIENT_ID);
+    when(dataValidator.validateLoanApplication(any())).thenReturn(map);
+    when(loansApiResource.calculateLoanScheduleOrSubmitLoanApplication("submit", uriInfo, "body"))
+        .thenReturn("{}");
 
-        String result = resource.calculateLoanScheduleOrSubmitLoanApplication("submit", uriInfo, "body");
+    String result =
+        resource.calculateLoanScheduleOrSubmitLoanApplication("submit", uriInfo, "body");
 
-        assertNotNull(result);
-        verify(loansApiResource).calculateLoanScheduleOrSubmitLoanApplication("submit", uriInfo, "body");
-    }
+    assertNotNull(result);
+    verify(loansApiResource)
+        .calculateLoanScheduleOrSubmitLoanApplication("submit", uriInfo, "body");
+  }
 
-    @Test
-    void calculateLoanScheduleOrSubmitLoanApplication_unmappedClient_throws() {
-        mockClientNotMapped();
-        HashMap<String, Object> map = new HashMap<>();
-        map.put("clientId", CLIENT_ID);
-        when(dataValidator.validateLoanApplication(any())).thenReturn(map);
+  @Test
+  void calculateLoanScheduleOrSubmitLoanApplication_unmappedClient_throws() {
+    mockClientNotMapped();
+    HashMap<String, Object> map = new HashMap<>();
+    map.put("clientId", CLIENT_ID);
+    when(dataValidator.validateLoanApplication(any())).thenReturn(map);
 
-        assertThrows(ClientNotFoundException.class, () -> resource.calculateLoanScheduleOrSubmitLoanApplication("submit", uriInfo, "body"));
-        verify(loansApiResource, never()).calculateLoanScheduleOrSubmitLoanApplication(any(), any(), any());
-    }
+    assertThrows(
+        ClientNotFoundException.class,
+        () -> resource.calculateLoanScheduleOrSubmitLoanApplication("submit", uriInfo, "body"));
+    verify(loansApiResource, never())
+        .calculateLoanScheduleOrSubmitLoanApplication(any(), any(), any());
+  }
 
-    // --- modifyLoanApplication ---
+  // --- modifyLoanApplication ---
 
-    @Test
-    void modifyLoanApplication_mappedLoanAndClient_returnsData() {
-        mockLoanMapped();
-        when(appUserClientMapperReadService.isClientMappedToSelfServiceUser(CLIENT_ID, USER_ID)).thenReturn(true);
-        HashMap<String, Object> map = new HashMap<>();
-        map.put("clientId", CLIENT_ID);
-        when(dataValidator.validateModifyLoanApplication(any())).thenReturn(map);
-        when(loansApiResource.modifyLoanApplication(eq(LOAN_ID), eq((String) null), eq("body"))).thenReturn("{}");
+  @Test
+  void modifyLoanApplication_mappedLoanAndClient_returnsData() {
+    mockLoanMapped();
+    when(appUserClientMapperReadService.isClientMappedToSelfServiceUser(CLIENT_ID, USER_ID))
+        .thenReturn(true);
+    HashMap<String, Object> map = new HashMap<>();
+    map.put("clientId", CLIENT_ID);
+    when(dataValidator.validateModifyLoanApplication(any())).thenReturn(map);
+    when(loansApiResource.modifyLoanApplication(eq(LOAN_ID), eq((String) null), eq("body")))
+        .thenReturn("{}");
 
-        String result = resource.modifyLoanApplication(LOAN_ID, "body");
+    String result = resource.modifyLoanApplication(LOAN_ID, "body");
 
-        assertNotNull(result);
-        verify(loansApiResource).modifyLoanApplication(eq(LOAN_ID), eq((String) null), eq("body"));
-    }
+    assertNotNull(result);
+    verify(loansApiResource).modifyLoanApplication(eq(LOAN_ID), eq((String) null), eq("body"));
+  }
 
-    @Test
-    void modifyLoanApplication_unmappedLoan_throws() {
-        HashMap<String, Object> map = new HashMap<>();
-        map.put("clientId", CLIENT_ID);
-        when(dataValidator.validateModifyLoanApplication(any())).thenReturn(map);
-        mockLoanNotMapped();
+  @Test
+  void modifyLoanApplication_unmappedLoan_throws() {
+    HashMap<String, Object> map = new HashMap<>();
+    map.put("clientId", CLIENT_ID);
+    when(dataValidator.validateModifyLoanApplication(any())).thenReturn(map);
+    mockLoanNotMapped();
 
-        assertThrows(LoanNotFoundException.class, () -> resource.modifyLoanApplication(LOAN_ID, "body"));
-        verify(loansApiResource, never()).modifyLoanApplication(any(Long.class), any(), any());
-    }
+    assertThrows(
+        LoanNotFoundException.class, () -> resource.modifyLoanApplication(LOAN_ID, "body"));
+    verify(loansApiResource, never()).modifyLoanApplication(any(Long.class), any(), any());
+  }
 
-    // --- stateTransitions ---
+  // --- stateTransitions ---
 
-    @Test
-    void stateTransitions_withdrawnByApplicant_mappedLoan_returnsData() {
-        mockLoanMapped();
-        when(loansApiResource.stateTransitions(eq(LOAN_ID), eq("withdrawnByApplicant"), eq("body"))).thenReturn("{}");
+  @Test
+  void stateTransitions_withdrawnByApplicant_mappedLoan_returnsData() {
+    mockLoanMapped();
+    when(loansApiResource.stateTransitions(eq(LOAN_ID), eq("withdrawnByApplicant"), eq("body")))
+        .thenReturn("{}");
 
-        String result = resource.stateTransitions(LOAN_ID, "withdrawnByApplicant", "body");
+    String result = resource.stateTransitions(LOAN_ID, "withdrawnByApplicant", "body");
 
-        assertNotNull(result);
-        verify(loansApiResource).stateTransitions(eq(LOAN_ID), eq("withdrawnByApplicant"), eq("body"));
-    }
+    assertNotNull(result);
+    verify(loansApiResource).stateTransitions(eq(LOAN_ID), eq("withdrawnByApplicant"), eq("body"));
+  }
 
-    @Test
-    void stateTransitions_invalidCommand_throws() {
-        assertThrows(UnrecognizedQueryParamException.class, () -> resource.stateTransitions(LOAN_ID, "approve", "body"));
-        verify(loansApiResource, never()).stateTransitions(any(Long.class), any(), any());
-    }
+  @Test
+  void stateTransitions_invalidCommand_throws() {
+    assertThrows(
+        UnrecognizedQueryParamException.class,
+        () -> resource.stateTransitions(LOAN_ID, "approve", "body"));
+    verify(loansApiResource, never()).stateTransitions(any(Long.class), any(), any());
+  }
 
-    // --- retrieveGuarantors ---
+  // --- retrieveGuarantors ---
 
-    @Test
-    void retrieveGuarantors_mappedLoan_returnsData() {
-        mockLoanMapped();
-        List<GuarantorData> data = List.of(mock(GuarantorData.class));
-        when(guarantorsApiResource.retrieveGuarantorDetails(LOAN_ID)).thenReturn(data);
+  @Test
+  void retrieveGuarantors_mappedLoan_returnsData() {
+    mockLoanMapped();
+    List<GuarantorData> data = List.of(mock(GuarantorData.class));
+    when(guarantorsApiResource.retrieveGuarantorDetails(LOAN_ID)).thenReturn(data);
 
-        List<GuarantorData> result = resource.retrieveGuarantorDetails(LOAN_ID, uriInfo);
+    List<GuarantorData> result = resource.retrieveGuarantorDetails(LOAN_ID, uriInfo);
 
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        verify(guarantorsApiResource).retrieveGuarantorDetails(LOAN_ID);
-    }
+    assertNotNull(result);
+    assertEquals(1, result.size());
+    verify(guarantorsApiResource).retrieveGuarantorDetails(LOAN_ID);
+  }
 
-    @Test
-    void retrieveGuarantors_unmappedLoan_throws() {
-        mockLoanNotMapped();
+  @Test
+  void retrieveGuarantors_unmappedLoan_throws() {
+    mockLoanNotMapped();
 
-        assertThrows(LoanNotFoundException.class, () -> resource.retrieveGuarantorDetails(LOAN_ID, uriInfo));
-    }
-
+    assertThrows(
+        LoanNotFoundException.class, () -> resource.retrieveGuarantorDetails(LOAN_ID, uriInfo));
+  }
 }
