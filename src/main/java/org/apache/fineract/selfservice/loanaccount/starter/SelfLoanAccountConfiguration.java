@@ -14,8 +14,11 @@
  */
 package org.apache.fineract.selfservice.loanaccount.starter;
 
+import org.apache.fineract.infrastructure.core.service.database.DatabaseSpecificSQLGenerator;
 import org.apache.fineract.selfservice.loanaccount.service.AppuserLoansMapperReadService;
 import org.apache.fineract.selfservice.loanaccount.service.AppuserLoansMapperReadServiceImpl;
+import org.apache.fineract.selfservice.loanaccount.service.SelfPublicLoanProductReadService;
+import org.apache.fineract.selfservice.loanaccount.service.SelfPublicLoanProductReadServiceImpl;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,5 +31,12 @@ public class SelfLoanAccountConfiguration {
   @ConditionalOnMissingBean(AppuserLoansMapperReadService.class)
   public AppuserLoansMapperReadService appuserLoansMapperReadService(JdbcTemplate jdbcTemplate) {
     return new AppuserLoansMapperReadServiceImpl(jdbcTemplate);
+  }
+
+  @Bean
+  @ConditionalOnMissingBean(SelfPublicLoanProductReadService.class)
+  public SelfPublicLoanProductReadService selfPublicLoanProductReadService(
+      JdbcTemplate jdbcTemplate, DatabaseSpecificSQLGenerator sqlGenerator) {
+    return new SelfPublicLoanProductReadServiceImpl(jdbcTemplate, sqlGenerator);
   }
 }

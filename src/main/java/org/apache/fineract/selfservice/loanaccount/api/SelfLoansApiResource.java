@@ -40,7 +40,6 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.fineract.infrastructure.core.exception.UnrecognizedQueryParamException;
-import org.apache.fineract.selfservice.security.service.PlatformSelfServiceSecurityContext;
 import org.apache.fineract.portfolio.client.exception.ClientNotFoundException;
 import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
 import org.apache.fineract.portfolio.loanaccount.api.LoanChargesApiResource;
@@ -51,11 +50,12 @@ import org.apache.fineract.portfolio.loanaccount.exception.LoanTemplateTypeRequi
 import org.apache.fineract.portfolio.loanaccount.exception.NotSupportedLoanTemplateTypeException;
 import org.apache.fineract.portfolio.loanaccount.guarantor.api.GuarantorsApiResource;
 import org.apache.fineract.portfolio.loanaccount.guarantor.data.GuarantorData;
+import org.apache.fineract.selfservice.client.service.AppSelfServiceUserClientMapperReadService;
 import org.apache.fineract.selfservice.loanaccount.data.SelfLoansDataValidator;
 import org.apache.fineract.selfservice.loanaccount.service.AppuserLoansMapperReadService;
+import org.apache.fineract.selfservice.security.service.PlatformSelfServiceSecurityContext;
 import org.apache.fineract.selfservice.useradministration.domain.AppSelfServiceUser;
 import org.springframework.stereotype.Component;
-import org.apache.fineract.selfservice.client.service.AppSelfServiceUserClientMapperReadService;
 
 @Path("/v1/self/loans")
 @Component
