@@ -62,6 +62,12 @@ import org.springframework.stereotype.Component;
  * fineract-provider:1.15.0-SNAPSHOT} (artifact {@code 20260329.095314-5}). If the Fineract core
  * version changes, the assumption that {@link LoanScheduleAssembler#assembleLoanScheduleFrom} does
  * not call {@code authenticatedUser()} should be re-verified.
+ *
+ * <p><strong>Holiday handling:</strong> Since no {@code clientId} is provided, the core {@link
+ * LoanScheduleAssembler} cannot resolve an office for holiday lookups. As of FINERACT-2597, the
+ * assembler is null-safe for {@code officeId} and skips holiday-based repayment rescheduling when
+ * no office context is available. The resulting schedule is mathematically correct but does not
+ * account for office-specific holidays.
  */
 @Path("/v1/self/loans/simulate")
 @Component
