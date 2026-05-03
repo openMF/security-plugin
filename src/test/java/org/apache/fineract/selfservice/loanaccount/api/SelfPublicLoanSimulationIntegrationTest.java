@@ -7,7 +7,6 @@
 package org.apache.fineract.selfservice.loanaccount.api;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -31,11 +30,10 @@ import org.junit.jupiter.api.TestMethodOrder;
  * <p><strong>Note on error codes:</strong> Fineract's {@code PlatformDomainRuleExceptionMapper}
  * maps {@code AbstractPlatformDomainRuleException} to HTTP 403.
  *
- * <p><strong>Note on schedule calculation:</strong> The core {@code LoanScheduleAssembler} requires
- * a valid {@code clientId} to resolve the client's office for holiday/working-day lookups. Since
- * public simulation endpoints intentionally exclude {@code clientId}, the core assembler cannot
- * fully calculate a schedule without client context. The schedule test validates that our endpoint
- * is reachable and the request passes validation, even though the core may return 500.
+ * <p><strong>Note on schedule calculation:</strong> The core {@code LoanScheduleAssembler} is
+ * null-safe for the {@code officeId} parameter when resolving holidays (see FINERACT-2597). When no
+ * {@code clientId} is provided (as in public simulation), holiday-based repayment rescheduling is
+ * skipped and the schedule is calculated without office-specific holiday adjustments.
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class SelfPublicLoanSimulationIntegrationTest extends SelfServiceIntegrationTestBase {
@@ -180,17 +178,9 @@ class SelfPublicLoanSimulationIntegrationTest extends SelfServiceIntegrationTest
 
   @Test
   @Order(7)
-  @DisplayName("POST /simulate?command=calculateLoanSchedule reaches core assembler")
-  void calculateSchedule_validRequest_reachesAssembler() {
-    // The core LoanScheduleAssembler requires a valid clientId to resolve the client's office
-    // for holiday/working-day lookups. Since public simulation endpoints intentionally exclude
-    // clientId (enforced by our DataValidator), the core assembler cannot fully calculate a
-    // schedule without client context.
-    //
-    // This test validates that:
-    // 1. The request reaches our endpoint (not blocked by security)
-    // 2. Our validator accepts the command
-    // 3. The core assembler is invoked (even if it fails due to missing client context)
+  @DisplayName("POST /simulate?command=calculateLoanSchedule returns 200 with schedule")
+  void calculateSchedule_validRequest_returns200WithSchedule() {
+    // Without clientId, holiday-based rescheduling is skipped (no office context).
     String requestBody =
         String.format(
             """
@@ -215,21 +205,15 @@ class SelfPublicLoanSimulationIntegrationTest extends SelfServiceIntegrationTest
             """,
             SEEDED_PRODUCT_ID);
 
-    io.restassured.response.Response response =
-        given(SelfServiceTestUtils.requestSpec(getFineractPort()))
-            .queryParam("command", "calculateLoanSchedule")
-            .body(requestBody)
-            .when()
-            .post(SelfServiceTestUtils.SELF_LOAN_SIMULATION_PATH);
-
-    // The endpoint is reachable and passes our security/validation layer.
-    // The core LoanScheduleAssembler may return 500 because it calls
-    // HolidayRepository.findByOfficeIdAndGreaterThanDate() which requires a valid officeId
-    // derived from a client — a field intentionally excluded from public simulation.
-    // TODO(MX-250): inject a default head-office context in
-    // SelfPublicLoanSimulationApiResource when clientId is absent so the assembler can
-    // resolve holidays without client context. See LoanScheduleAssembler ~line 480.
-    response.then().statusCode(anyOf(is(200), is(500)));
+    given(SelfServiceTestUtils.requestSpec(getFineractPort()))
+        .queryParam("command", "calculateLoanSchedule")
+        .body(requestBody)
+        .when()
+        .post(SelfServiceTestUtils.SELF_LOAN_SIMULATION_PATH)
+        .then()
+        .statusCode(200)
+        .body("periods", notNullValue())
+        .body("periods.size()", greaterThan(0));
   }
 
   // =====================================================================
