@@ -43,6 +43,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.apache.fineract.infrastructure.campaigns.sms.data.SmsProviderData;
 import org.apache.fineract.infrastructure.campaigns.sms.domain.SmsCampaign;
 import org.apache.fineract.infrastructure.campaigns.sms.service.SmsCampaignDropdownReadPlatformService;
+import org.apache.fineract.infrastructure.configuration.data.NotificationCredentialsData;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
@@ -99,6 +100,7 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.apache.fineract.portfolio.client.service.ClientWritePlatformService;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
+import org.apache.fineract.selfservice.external.client.ExternalNotificationSystemClient;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.thymeleaf.ITemplateEngine;
@@ -130,7 +132,9 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
     private final SelfServiceAuthorizationTokenService selfServiceAuthorizationTokenService;
     private final ITemplateEngine registrationTemplateEngine;
     private final MessageSource registrationMessageSource;
-    private final ApplicationEventPublisher applicationEventPublisher;
+    private final ApplicationEventPublisher applicationEventPublisher;    
+    private final ExternalNotificationSystemClient externalNotificationSystemClient;
+    private NotificationCredentialsData notificationCredentialsData; 
 
     @Override
     public SelfServiceRegistration createRegistrationRequest(String apiRequestBodyAsJson) {
@@ -210,9 +214,13 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
     }
 
     public void sendAuthorizationToken(SelfServiceRegistration selfServiceRegistration, Boolean isEmailAuthenticationMode) {
+        
+        notificationCredentialsData = externalNotificationSystemClient.resolveNotificationCredentials();
+                
         if (isEmailAuthenticationMode) {
             sendAuthorizationMail(selfServiceRegistration);
-        } else {
+        } 
+        else {
             sendAuthorizationMessage(selfServiceRegistration);
         }
     }
@@ -220,31 +228,38 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
     private void sendAuthorizationMessage(SelfServiceRegistration selfServiceRegistration) {
         Collection<SmsProviderData> smsProviders = this.smsCampaignDropdownReadPlatformService.retrieveSmsProviders();
         if (smsProviders.isEmpty()) {
-            throw new PlatformDataIntegrityException("error.msg.mobile.service.provider.not.available",
-                    "Mobile service provider not available.");
-        }
-        Long providerId = new ArrayList<>(smsProviders).get(0).getId();
-        Locale locale = LocaleContextHolder.getLocale();
-        final String message = this.registrationMessageSource.getMessage("sms.message",
-                new Object[] { selfServiceRegistration.getFirstName(), selfServiceRegistration.getId(),
-                        selfServiceRegistration.getAuthenticationToken() },
-                locale);
-        String externalId = null;
-        Group group = null;
-        Staff staff = null;
-        SmsCampaign smsCampaign = null;
-        boolean isNotification = false;
-        SmsMessage smsMessage = SmsMessage.instance(externalId, group, selfServiceRegistration.getClient(), staff,
-                SmsMessageStatusType.PENDING, message, selfServiceRegistration.getMobileNumber(), smsCampaign, isNotification);
-        smsMessage = this.smsMessageRepository.save(smsMessage);
-        try {
-            this.smsMessageScheduledJobService.sendTriggeredMessage(new ArrayList<>(Arrays.asList(smsMessage)), providerId);
-            smsMessage.setStatusType(SmsMessageStatusType.SENT.getValue());
-            this.smsMessageRepository.save(smsMessage);
-        } catch (Exception e) {
-            smsMessage.setStatusType(SmsMessageStatusType.FAILED.getValue());
-            this.smsMessageRepository.save(smsMessage);
-            throw e;
+            log.error("Mobile service provider not available.");        
+            Long providerId = new ArrayList<>(smsProviders).get(0).getId();
+            Locale locale = LocaleContextHolder.getLocale();
+            final String message = this.registrationMessageSource.getMessage("sms.message",
+                    new Object[] { selfServiceRegistration.getFirstName(), selfServiceRegistration.getId(),
+                            selfServiceRegistration.getAuthenticationToken() },
+                    locale);
+            String externalId = null;
+            Group group = null;
+            Staff staff = null;
+            SmsCampaign smsCampaign = null;
+            boolean isNotification = false;
+            SmsMessage smsMessage = SmsMessage.instance(externalId, group, selfServiceRegistration.getClient(), staff,
+                    SmsMessageStatusType.PENDING, message, selfServiceRegistration.getMobileNumber(), smsCampaign, isNotification);
+            smsMessage = this.smsMessageRepository.save(smsMessage);
+            try {
+                this.smsMessageScheduledJobService.sendTriggeredMessage(new ArrayList<>(Arrays.asList(smsMessage)), providerId);
+                smsMessage.setStatusType(SmsMessageStatusType.SENT.getValue());
+                this.smsMessageRepository.save(smsMessage);
+            } catch (Exception e) {
+                smsMessage.setStatusType(SmsMessageStatusType.FAILED.getValue());
+                this.smsMessageRepository.save(smsMessage);
+                throw e;
+            }
+        } else if(notificationCredentialsData.isEnabled()){
+            final String message = selfServiceRegistration.getFirstName() + " use this token for activate your account " + selfServiceRegistration.getAuthenticationToken();
+            try {
+                externalNotificationSystemClient.sendPostRequest(message);
+            } 
+            catch (Exception e){
+                log.error("Error when sending to external system ", e.getMessage());
+            }
         }
     }
 

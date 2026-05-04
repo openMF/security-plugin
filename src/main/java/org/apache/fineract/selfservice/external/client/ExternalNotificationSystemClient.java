@@ -35,7 +35,6 @@ import org.springframework.dao.DataAccessException;
     matchIfMissing = false)
 public class ExternalNotificationSystemClient {
     
-    
     private final ExternalApiRestServicesPropertiesReadPlatformService externalApiRestServicesPropertiesReadPlatformService;
     
     @Autowired
@@ -66,7 +65,7 @@ public class ExternalNotificationSystemClient {
         
     }
     
-    NotificationCredentialsData resolveNotificationCredentials() {
+    public NotificationCredentialsData resolveNotificationCredentials() {
         NotificationCredentialsData notificationCredentialsData = new NotificationCredentialsData();
         try {
             notificationCredentialsData = this.externalApiRestServicesPropertiesReadPlatformService.getNotificationCredentials();

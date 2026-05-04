@@ -35,6 +35,7 @@ import org.apache.fineract.useradministration.domain.RoleRepository;
 import org.apache.fineract.selfservice.useradministration.domain.SelfServiceUserDomainService;
 import org.apache.fineract.selfservice.useradministration.service.AppSelfServiceUserReadPlatformService;
 import org.apache.fineract.infrastructure.security.service.PlatformPasswordEncoder;
+import org.apache.fineract.selfservice.external.client.ExternalNotificationSystemClient;
 import org.apache.fineract.selfservice.registration.service.SelfServiceAuthorizationTokenService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
@@ -109,14 +110,14 @@ public class SelfRegistrationConfiguration {
             ClientWritePlatformService clientWritePlatformService, Environment env,
             PlatformPasswordEncoder platformPasswordEncoder, AppSelfServiceUserRepository appSelfServiceUserRepository,
             SelfServiceAuthorizationTokenService selfServiceAuthorizationTokenService,
-            ApplicationEventPublisher applicationEventPublisher) {
+            ApplicationEventPublisher applicationEventPublisher, ExternalNotificationSystemClient externalNotificationSystemClient) {
         return new SelfServiceRegistrationWritePlatformServiceImpl(selfServiceRegistrationRepository, fromApiJsonHelper,
                 selfServiceRegistrationReadPlatformService, clientRepository, passwordValidationPolicy, userDomainService,
                 selfServicePluginEmailService, smsMessageRepository, smsMessageScheduledJobService,
                  smsCampaignDropdownReadPlatformService, appUserReadPlatformService, roleRepository, appUserClientMappingRepository,
                  jdbcTemplate, appUserRepository, clientWritePlatformService, env, platformPasswordEncoder, appSelfServiceUserRepository,
                  selfServiceAuthorizationTokenService, registrationTemplateEngine(), registrationMessageSource(), 
-                 applicationEventPublisher);
+                 applicationEventPublisher, externalNotificationSystemClient);
     }
     
      @Bean

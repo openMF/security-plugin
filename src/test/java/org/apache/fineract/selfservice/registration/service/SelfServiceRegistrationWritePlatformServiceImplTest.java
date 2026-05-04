@@ -49,6 +49,7 @@ import org.apache.fineract.infrastructure.security.service.PlatformPasswordEncod
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.apache.fineract.useradministration.domain.AppUserRepository;
 import org.apache.fineract.portfolio.client.service.ClientWritePlatformService;
+import org.apache.fineract.selfservice.external.client.ExternalNotificationSystemClient;
 import org.springframework.core.env.Environment;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -87,6 +88,7 @@ class SelfServiceRegistrationWritePlatformServiceImplTest {
     @Mock private ITemplateEngine registrationTemplateEngine;
     @Mock private MessageSource registrationMessageSource;
     @Mock private ApplicationEventPublisher applicationEventPublisher;
+    @Mock private ExternalNotificationSystemClient externalNotificationSystemClient;
 
     private SelfServiceRegistrationWritePlatformServiceImpl service;
 
@@ -116,7 +118,8 @@ class SelfServiceRegistrationWritePlatformServiceImplTest {
             selfServiceAuthorizationTokenService,
             registrationTemplateEngine,
             registrationMessageSource,
-            applicationEventPublisher
+            applicationEventPublisher,
+            externalNotificationSystemClient
         );
 
         LocalDate businessDate = LocalDate.of(2026, 1, 2);
