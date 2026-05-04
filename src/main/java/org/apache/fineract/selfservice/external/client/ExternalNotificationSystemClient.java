@@ -47,31 +47,32 @@ public class ExternalNotificationSystemClient {
     // Kept static as per original code, assuming a simple RestTemplate configuration is sufficient
     private static final RestTemplate restTemplate = new RestTemplate(); 
 
-    @Async
-    public CompletableFuture<Void> sendPostRequest(Object requestBody) {
-        try {
-            NotificationCredentialsData notificationCredentialsData = resolveNotificationCredentials();
+    
+    public void sendPostRequest(Object requestBody) {
+        
+        NotificationCredentialsData credentials = resolveNotificationCredentials();        
+        
+        CompletableFuture.runAsync(() -> {
+            try {
+                
 
-            String url = notificationCredentialsData.getHost();
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set(notificationCredentialsData.getHeader(), notificationCredentialsData.getHeaderValue());
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.APPLICATION_JSON);
+                headers.set(credentials.getHeader(), credentials.getHeaderValue());
+                
+                ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
+                String json = ow.writeValueAsString(requestBody);
 
-            ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
-            String json = ow.writeValueAsString(requestBody);
+                HttpEntity<Object> entity = new HttpEntity<>(json, headers);
 
-            HttpEntity<String> entity = new HttpEntity<>(json, headers);
-
-            restTemplate.exchange(URI.create(url), HttpMethod.POST, entity, JsonNode.class);
-
-            return CompletableFuture.completedFuture(null);
-
-        } catch (Exception e) {
-            log.error("Error sending notification", e);
-            return CompletableFuture.failedFuture(e);
-        }
+                restTemplate.exchange(credentials.getHost(), HttpMethod.POST, entity, JsonNode.class);
+                log.info("Request sent successfully");
+            } catch (Exception e) {
+                log.error("Async request failed", e);
+            }
+        });
     }
-
+    
     public NotificationCredentialsData resolveNotificationCredentials() {
         NotificationCredentialsData notificationCredentialsData = new NotificationCredentialsData();
         try {
