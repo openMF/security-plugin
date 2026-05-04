@@ -45,10 +45,10 @@ public class ExternalIdentitySystemClient {
     // Kept static as per original code, assuming a simple RestTemplate configuration is sufficient
     private static final RestTemplate restTemplate = new RestTemplate(); 
     
-    public ResponseEntity<JsonNode> sendGetRequest(String path) throws Exception {
+    public ResponseEntity<JsonNode> sendGetRequest(String externalId) throws Exception {
         NationalIdCredentialsData nationalIdCredentialsData = resolveNationalIdCredentials();
                 
-        String url = nationalIdCredentialsData.getHost() + path;
+        String url = nationalIdCredentialsData.getHost() + externalId;
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -65,7 +65,7 @@ public class ExternalIdentitySystemClient {
             nationalIdCredentialsData = this.externalApiRestServicesPropertiesReadPlatformService.getNationalIdCredentials();
         } 
         catch (DataAccessException dae) {
-            log.warn("SMTP configuration table unavailable ({}); falling back to Spring properties ");
+            log.warn("National Id Service configuration unavailable, falling back to Spring properties ");
         }
         return nationalIdCredentialsData;
     }

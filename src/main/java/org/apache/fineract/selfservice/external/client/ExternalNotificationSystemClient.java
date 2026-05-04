@@ -3,6 +3,7 @@ package org.apache.fineract.selfservice.external.client;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import static java.lang.Math.log;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -14,6 +15,12 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.fineract.infrastructure.configuration.data.NationalIdCredentialsData;
+import org.apache.fineract.infrastructure.configuration.data.NotificationCredentialsData;
+import org.apache.fineract.infrastructure.configuration.service.ExternalApiRestServicesPropertiesReadPlatformService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 
 /**
  * HTTP client for the external SMS gateway.
@@ -23,32 +30,35 @@ import java.net.URI;
  * mandatory {@code @Value} properties ({@code url}, {@code header}, {@code token}) would crash
  * the entire application context on startup when the properties aren't configured.
  */
+@Slf4j
 @Component
 @ConditionalOnProperty(
     name = "mifos.self.service.external.sms.system.enabled",
     havingValue = "true",
     matchIfMissing = false)
-public class ExternalSmsSystemClient {
-
-    @Value("${mifos.self.service.external.sms.system.url}")
-    private String externalSmsSystemUrl;
-        
-    @Value("${mifos.self.service.external.sms.system.header}")
-    private String externalSmsSystemHeader;
+public class ExternalNotificationSystemClient {
     
-    @Value("${mifos.self.service.external.sms.system.token}")
-    private String externalSmsSystemToken;
+    
+    private final ExternalApiRestServicesPropertiesReadPlatformService externalApiRestServicesPropertiesReadPlatformService;
+    
+    @Autowired
+    public ExternalNotificationSystemClient(final ExternalApiRestServicesPropertiesReadPlatformService externalApiRestServicesPropertiesReadPlatformService) {
+        this.externalApiRestServicesPropertiesReadPlatformService = externalApiRestServicesPropertiesReadPlatformService;
+    
+    }
     
     // Kept static as per original code, assuming a simple RestTemplate configuration is sufficient
     private static final RestTemplate restTemplate = new RestTemplate(); 
 
     public ResponseEntity<JsonNode> sendPostRequest(Object requestBody) throws Exception {
         
-        String url = externalSmsSystemUrl;
+        NotificationCredentialsData notificationCredentialsData = resolveNotificationCredentials();
+        
+        String url = notificationCredentialsData.getHost();
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set(externalSmsSystemHeader, externalSmsSystemToken);
+        headers.set(notificationCredentialsData.getHeader(), notificationCredentialsData.getHeaderValue());
 
         ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
         String json = ow.writeValueAsString(requestBody);
@@ -57,6 +67,17 @@ public class ExternalSmsSystemClient {
         
         return restTemplate.exchange(URI.create(url),HttpMethod.POST, entity, JsonNode.class);
         
+    }
+    
+    NotificationCredentialsData resolveNotificationCredentials() {
+        NotificationCredentialsData notificationCredentialsData = new NotificationCredentialsData();
+        try {
+            notificationCredentialsData = this.externalApiRestServicesPropertiesReadPlatformService.getNotificationCredentials();
+        } 
+        catch (DataAccessException dae) {
+            log.warn("National Id Service configuration unavailable, falling back to Spring properties ");
+        }
+        return notificationCredentialsData;
     }
     
 }
