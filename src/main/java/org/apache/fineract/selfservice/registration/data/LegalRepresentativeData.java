@@ -35,7 +35,7 @@ import lombok.ToString;
 public class LegalRepresentativeData {
 
     private String position;
-    private Integer name;
+    private String name;
     private String identityType;
     private String identityId;
     private String legalGrants;
