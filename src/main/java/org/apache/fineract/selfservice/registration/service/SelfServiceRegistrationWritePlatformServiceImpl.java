@@ -44,6 +44,7 @@ import org.apache.fineract.infrastructure.campaigns.sms.data.SmsProviderData;
 import org.apache.fineract.infrastructure.campaigns.sms.domain.SmsCampaign;
 import org.apache.fineract.infrastructure.campaigns.sms.service.SmsCampaignDropdownReadPlatformService;
 import org.apache.fineract.infrastructure.configuration.data.NotificationCredentialsData;
+import org.apache.fineract.infrastructure.configuration.domain.NotificationMessage;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
@@ -181,6 +182,9 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
                 .notExceedingLengthOf(100);
 
         boolean isEmailAuthenticationMode = authenticationMode.equalsIgnoreCase(SelfServiceApiConstants.emailModeParamName);
+        
+        boolean isAnyAuthenticationMode = authenticationMode.equalsIgnoreCase(SelfServiceApiConstants.anyModeParamName);
+                
         String mobileNumber = null;
         if (!isEmailAuthenticationMode) {
             mobileNumber = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.mobileNumberParamName, element);
@@ -198,7 +202,7 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
                 mobileNumber, email, authenticationToken, authenticationToken, username, encodePassword(password),
                 SelfServiceRequestType.REGISTRATION, selfServiceAuthorizationTokenService.calculateExpiry(createdAt));
         this.selfServiceRegistrationRepository.saveAndFlush(selfServiceRegistration);
-        sendAuthorizationToken(selfServiceRegistration, isEmailAuthenticationMode);
+        sendAuthorizationToken(selfServiceRegistration, isEmailAuthenticationMode, isAnyAuthenticationMode);
         return selfServiceRegistration;
 
     }
@@ -213,7 +217,7 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
         }
     }
 
-    public void sendAuthorizationToken(SelfServiceRegistration selfServiceRegistration, Boolean isEmailAuthenticationMode) {
+    public void sendAuthorizationToken(SelfServiceRegistration selfServiceRegistration, Boolean isEmailAuthenticationMode, Boolean isAnyAuthenticationMode) {
         
         notificationCredentialsData = externalNotificationSystemClient.resolveNotificationCredentials();
                 
@@ -221,45 +225,57 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
             sendAuthorizationMail(selfServiceRegistration);
         } 
         else {
-            sendAuthorizationMessage(selfServiceRegistration);
+            sendAuthorizationMessage(selfServiceRegistration, isAnyAuthenticationMode);
         }
     }
     
-    private void sendAuthorizationMessage(SelfServiceRegistration selfServiceRegistration) {
-        Collection<SmsProviderData> smsProviders = this.smsCampaignDropdownReadPlatformService.retrieveSmsProviders();
-        if (smsProviders.isEmpty()) {
-            log.error("Mobile service provider not available.");        
-            Long providerId = new ArrayList<>(smsProviders).get(0).getId();
-            Locale locale = LocaleContextHolder.getLocale();
-            final String message = this.registrationMessageSource.getMessage("sms.message",
-                    new Object[] { selfServiceRegistration.getFirstName(), selfServiceRegistration.getId(),
-                            selfServiceRegistration.getAuthenticationToken() },
-                    locale);
-            String externalId = null;
-            Group group = null;
-            Staff staff = null;
-            SmsCampaign smsCampaign = null;
-            boolean isNotification = false;
-            SmsMessage smsMessage = SmsMessage.instance(externalId, group, selfServiceRegistration.getClient(), staff,
-                    SmsMessageStatusType.PENDING, message, selfServiceRegistration.getMobileNumber(), smsCampaign, isNotification);
-            smsMessage = this.smsMessageRepository.save(smsMessage);
-            try {
-                this.smsMessageScheduledJobService.sendTriggeredMessage(new ArrayList<>(Arrays.asList(smsMessage)), providerId);
-                smsMessage.setStatusType(SmsMessageStatusType.SENT.getValue());
-                this.smsMessageRepository.save(smsMessage);
-            } catch (Exception e) {
-                smsMessage.setStatusType(SmsMessageStatusType.FAILED.getValue());
-                this.smsMessageRepository.save(smsMessage);
-                throw e;
+    private void sendAuthorizationMessage(SelfServiceRegistration selfServiceRegistration, Boolean isAnyAuthenticationMode) {        
+        
+        if (!isAnyAuthenticationMode) {
+            Collection<SmsProviderData> smsProviders = this.smsCampaignDropdownReadPlatformService.retrieveSmsProviders(); 
+            if (!smsProviders.isEmpty()) {
+                Long providerId = new ArrayList<>(smsProviders).get(0).getId();
+                Locale locale = LocaleContextHolder.getLocale();
+                final String message = this.registrationMessageSource.getMessage("sms.message",
+                        new Object[] { selfServiceRegistration.getFirstName(), selfServiceRegistration.getId(),
+                                selfServiceRegistration.getAuthenticationToken() },
+                        locale);
+                String externalId = null;
+                Group group = null;
+                Staff staff = null;
+                SmsCampaign smsCampaign = null;
+                boolean isNotification = false;
+                SmsMessage smsMessage = SmsMessage.instance(externalId, group, selfServiceRegistration.getClient(), staff,
+                        SmsMessageStatusType.PENDING, message, selfServiceRegistration.getMobileNumber(), smsCampaign, isNotification);
+                smsMessage = this.smsMessageRepository.save(smsMessage);
+                try {
+                    this.smsMessageScheduledJobService.sendTriggeredMessage(new ArrayList<>(Arrays.asList(smsMessage)), providerId);
+                    smsMessage.setStatusType(SmsMessageStatusType.SENT.getValue());
+                    this.smsMessageRepository.save(smsMessage);
+                } catch (Exception e) {
+                    smsMessage.setStatusType(SmsMessageStatusType.FAILED.getValue());
+                    this.smsMessageRepository.save(smsMessage);
+                    throw e;
+                }
             }
         } else if(notificationCredentialsData.isEnabled()){
-            final String message = selfServiceRegistration.getFirstName() + " use this token for activate your account " + selfServiceRegistration.getAuthenticationToken();
-            try {
-                externalNotificationSystemClient.sendPostRequest(message);
-            } 
-            catch (Exception e){
-                log.error("Error when sending to external system ", e.getMessage());
-            }
+            
+                final String message = selfServiceRegistration.getFirstName() + " use this token for activate your account " + selfServiceRegistration.getAuthenticationToken();
+                
+                NotificationMessage notificationMessage = new NotificationMessage();
+                
+                notificationMessage.setEmail(selfServiceRegistration.getEmail());
+                notificationMessage.setMobile(selfServiceRegistration.getMobileNumber());
+                notificationMessage.setText(message);
+                
+                try {
+                    log.error("SE ENVIA MENSAJE");
+                    externalNotificationSystemClient.sendPostRequest(notificationMessage);
+                } 
+                catch (Exception e){
+                    log.error("Error when sending to external system ", e.getMessage());
+                    e.printStackTrace();
+                }
         }
     }
 
@@ -394,12 +410,13 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
 
         String authenticationMode = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.authenticationModeParamName, element);
         baseDataValidator.reset().parameter(SelfServiceApiConstants.authenticationModeParamName).value(authenticationMode).notBlank()
-                .isOneOfTheseStringValues(SelfServiceApiConstants.emailModeParamName, SelfServiceApiConstants.mobileModeParamName);
+                .isOneOfTheseStringValues(SelfServiceApiConstants.emailModeParamName, SelfServiceApiConstants.mobileModeParamName, SelfServiceApiConstants.anyModeParamName);
 
         String email = this.fromApiJsonHelper.extractStringNamed(SelfServiceApiConstants.emailParamName, element);
         baseDataValidator.reset().parameter(SelfServiceApiConstants.emailParamName).value(email).notExceedingLengthOf(100);
 
         boolean isEmailAuthenticationMode = authenticationMode != null && authenticationMode.equalsIgnoreCase(SelfServiceApiConstants.emailModeParamName);
+        boolean isAnyAuthenticationMode = authenticationMode != null && authenticationMode.equalsIgnoreCase(SelfServiceApiConstants.anyModeParamName);
         if (isEmailAuthenticationMode) {
              baseDataValidator.reset().parameter(SelfServiceApiConstants.emailParamName).value(email).notBlank();
         }
@@ -477,7 +494,7 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
                     selfServiceAuthorizationTokenService.calculateExpiry(createdAt));
             this.selfServiceRegistrationRepository.saveAndFlush(registration);
             try {
-                sendAuthorizationToken(registration, isEmailAuthenticationMode);
+                sendAuthorizationToken(registration, isEmailAuthenticationMode, isAnyAuthenticationMode);
             } catch (RuntimeException e) {
                 log.error("Failed to deliver enrollment confirmation token for clientId={}, userId={}", newClientId, appUser.getId(), e);
                 // The enrollment record is already persisted and can be retried or inspected by operators.

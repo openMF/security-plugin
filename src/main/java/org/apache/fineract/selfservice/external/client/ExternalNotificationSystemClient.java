@@ -46,7 +46,7 @@ public class ExternalNotificationSystemClient {
     // Kept static as per original code, assuming a simple RestTemplate configuration is sufficient
     private static final RestTemplate restTemplate = new RestTemplate(); 
 
-    public ResponseEntity<JsonNode> sendPostRequest(Object requestBody) throws Exception {
+    public void sendPostRequest(Object requestBody) throws Exception {
         
         NotificationCredentialsData notificationCredentialsData = resolveNotificationCredentials();
         
@@ -58,10 +58,12 @@ public class ExternalNotificationSystemClient {
 
         ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
         String json = ow.writeValueAsString(requestBody);
+        
+        log.error("MENSAJE ENVIADO "+json);
 
         HttpEntity<String> entity = new HttpEntity<>(json, headers);
         
-        return restTemplate.exchange(URI.create(url),HttpMethod.POST, entity, JsonNode.class);
+        restTemplate.exchange(URI.create(url),HttpMethod.POST, entity, JsonNode.class);
         
     }
     

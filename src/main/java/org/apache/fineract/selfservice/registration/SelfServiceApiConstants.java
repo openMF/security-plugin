@@ -43,6 +43,7 @@ public final class SelfServiceApiConstants {
     public static final String authenticationModeParamName = "authenticationMode";
     public static final String emailModeParamName = "email";
     public static final String mobileModeParamName = "mobile";
+    public static final String anyModeParamName = "any";
     public static final String requestIdParamName = "requestId";
     public static final String externalAuthenticationTokenParamName = "externalAuthenticationToken";
     public static final String firstnameParamName = "firstname";
