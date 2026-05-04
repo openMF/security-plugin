@@ -18,7 +18,6 @@
  */
 package org.apache.fineract.selfservice.registration.data;
 
-import java.util.ArrayList;
 import lombok.AllArgsConstructor;
 import lombok.Setter;
 import lombok.Getter;
@@ -33,20 +32,12 @@ import lombok.ToString;
 @AllArgsConstructor
 @NoArgsConstructor
 @ToString
-public class PersonIdentityData {
+public class LegalRepresentativeData {
 
-    private String externalId;
-    private Integer genderId;
-    private String dateOfBirth;
-    private String firstName;
-    private String middleName;
-    private String lastName;
-    private String dateFormat;
-    private String locale;
-    private String developerMessage;
-    private String type;
-    private String nationality;
-    private String country;
-    private ArrayList<LegalRepresentativeData> legalRepresentative;
+    private String position;
+    private Integer name;
+    private String identityType;
+    private String identityId;
+    private String legalGrants;
     
 }
