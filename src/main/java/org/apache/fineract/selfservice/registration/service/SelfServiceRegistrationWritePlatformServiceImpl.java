@@ -269,7 +269,7 @@ public class SelfServiceRegistrationWritePlatformServiceImpl implements SelfServ
                 notificationMessage.setText(message);
                 
                 try {
-                    log.error("SE ENVIA MENSAJE");
+                    
                     externalNotificationSystemClient.sendPostRequest(notificationMessage);
                 } 
                 catch (Exception e){

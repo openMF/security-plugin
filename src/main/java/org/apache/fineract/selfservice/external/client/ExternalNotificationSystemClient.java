@@ -7,17 +7,18 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
+import java.util.concurrent.CompletableFuture;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.fineract.infrastructure.configuration.data.NotificationCredentialsData;
 import org.apache.fineract.infrastructure.configuration.service.ExternalApiRestServicesPropertiesReadPlatformService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
+import org.springframework.scheduling.annotation.Async;
 
 /**
  * HTTP client for the external SMS gateway.
@@ -46,27 +47,31 @@ public class ExternalNotificationSystemClient {
     // Kept static as per original code, assuming a simple RestTemplate configuration is sufficient
     private static final RestTemplate restTemplate = new RestTemplate(); 
 
-    public void sendPostRequest(Object requestBody) throws Exception {
-        
-        NotificationCredentialsData notificationCredentialsData = resolveNotificationCredentials();
-        
-        String url = notificationCredentialsData.getHost();
+    @Async
+    public CompletableFuture<Void> sendPostRequest(Object requestBody) {
+        try {
+            NotificationCredentialsData notificationCredentialsData = resolveNotificationCredentials();
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set(notificationCredentialsData.getHeader(), notificationCredentialsData.getHeaderValue());
+            String url = notificationCredentialsData.getHost();
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set(notificationCredentialsData.getHeader(), notificationCredentialsData.getHeaderValue());
 
-        ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
-        String json = ow.writeValueAsString(requestBody);
-        
-        log.error("MENSAJE ENVIADO "+json);
+            ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
+            String json = ow.writeValueAsString(requestBody);
 
-        HttpEntity<String> entity = new HttpEntity<>(json, headers);
-        
-        restTemplate.exchange(URI.create(url),HttpMethod.POST, entity, JsonNode.class);
-        
+            HttpEntity<String> entity = new HttpEntity<>(json, headers);
+
+            restTemplate.exchange(URI.create(url), HttpMethod.POST, entity, JsonNode.class);
+
+            return CompletableFuture.completedFuture(null);
+
+        } catch (Exception e) {
+            log.error("Error sending notification", e);
+            return CompletableFuture.failedFuture(e);
+        }
     }
-    
+
     public NotificationCredentialsData resolveNotificationCredentials() {
         NotificationCredentialsData notificationCredentialsData = new NotificationCredentialsData();
         try {
