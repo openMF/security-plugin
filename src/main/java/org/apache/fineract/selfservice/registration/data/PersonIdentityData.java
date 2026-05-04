@@ -50,6 +50,9 @@ public class PersonIdentityData {
     private String type;
     private String nationality;
     private String country;
+    private String state;
+    private String municipality;
+    private String address;    
     private ArrayList<LegalRepresentativeData> legalRepresentative;
     
 }
