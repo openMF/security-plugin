@@ -1,7 +1,6 @@
 package org.apache.fineract.selfservice.external.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -12,6 +11,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.fineract.infrastructure.configuration.data.NationalIdCredentialsData;
+import org.apache.fineract.infrastructure.configuration.service.ExternalApiRestServicesPropertiesReadPlatformService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 
 /**
  * HTTP client for the external identity verification system.
@@ -22,37 +26,48 @@ import java.net.URI;
  * the entire application context on startup when the properties aren't configured — which is the
  * normal case for most deployments.
  */
+@Slf4j
 @Component
 @ConditionalOnProperty(
     name = "mifos.self.service.external.identity.system.enabled",
     havingValue = "true",
     matchIfMissing = false)
 public class ExternalIdentitySystemClient {
-
-    @Value("${mifos.self.service.external.identity.system.url}")
-    private String externalIdentitySystemUrl;
     
+    private final ExternalApiRestServicesPropertiesReadPlatformService externalApiRestServicesPropertiesReadPlatformService;
     
-    @Value("${mifos.self.service.external.identity.system.header}")
-    private String externalIdentitySystemHeader;
+    @Autowired
+    public ExternalIdentitySystemClient(final ExternalApiRestServicesPropertiesReadPlatformService externalApiRestServicesPropertiesReadPlatformService) {
+        this.externalApiRestServicesPropertiesReadPlatformService = externalApiRestServicesPropertiesReadPlatformService;
     
-    @Value("${mifos.self.service.external.identity.system.token}")
-    private String externalIdentitySystemToken;
+    }
     
     // Kept static as per original code, assuming a simple RestTemplate configuration is sufficient
     private static final RestTemplate restTemplate = new RestTemplate(); 
     
     public ResponseEntity<JsonNode> sendGetRequest(String path) throws Exception {
-        
-        String url = externalIdentitySystemUrl + path;
+        NationalIdCredentialsData nationalIdCredentialsData = resolveNationalIdCredentials();
+                
+        String url = nationalIdCredentialsData.getHost() + path;
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set(externalIdentitySystemHeader, externalIdentitySystemToken);
+        headers.set(nationalIdCredentialsData.getHeader(), nationalIdCredentialsData.getHeaderValue());
         
         HttpEntity<String> entity = new HttpEntity<>(headers);
         
         return restTemplate.exchange(URI.create(url), HttpMethod.GET, entity, JsonNode.class);
+    }
+    
+    NationalIdCredentialsData resolveNationalIdCredentials() {
+        NationalIdCredentialsData nationalIdCredentialsData = new NationalIdCredentialsData();
+        try {
+            nationalIdCredentialsData = this.externalApiRestServicesPropertiesReadPlatformService.getNationalIdCredentials();
+        } 
+        catch (DataAccessException dae) {
+            log.warn("SMTP configuration table unavailable ({}); falling back to Spring properties ");
+        }
+        return nationalIdCredentialsData;
     }
     
 }

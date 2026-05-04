@@ -26,8 +26,6 @@ import lombok.RequiredArgsConstructor;
 import org.apache.fineract.selfservice.registration.api.SelfServiceRetrieveIdentityRequest;
 import org.apache.fineract.selfservice.registration.data.PersonIdentityData;
 import org.apache.fineract.selfservice.external.client.ExternalIdentitySystemClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

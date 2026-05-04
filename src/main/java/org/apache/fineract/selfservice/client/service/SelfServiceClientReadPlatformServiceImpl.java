@@ -40,7 +40,6 @@ import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidati
 import org.apache.fineract.infrastructure.core.service.ExternalIdFactory;
 import org.apache.fineract.infrastructure.core.service.Page;
 import org.apache.fineract.infrastructure.core.service.PaginationHelper;
-import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.infrastructure.core.service.database.DatabaseSpecificSQLGenerator;
 import org.apache.fineract.selfservice.security.service.PlatformSelfServiceSecurityContext;
 import org.apache.fineract.infrastructure.security.utils.ColumnValidator;
@@ -54,7 +53,6 @@ import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
 import org.apache.fineract.portfolio.client.domain.ClientStatus;
 import org.apache.fineract.portfolio.client.exception.ClientNotFoundException;
 import org.apache.fineract.portfolio.client.mapper.ClientMapper;
-import org.apache.fineract.portfolio.client.service.ClientReadPlatformService;
 import org.apache.fineract.portfolio.collateralmanagement.domain.ClientCollateralManagement;
 import org.apache.fineract.portfolio.collateralmanagement.domain.ClientCollateralManagementRepositoryWrapper;
 import org.apache.fineract.portfolio.group.data.GroupGeneralData;

@@ -51,7 +51,10 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @Primary
-@ConditionalOnProperty(name = "mifos.self.service.plugin.email.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(
+        name = "mifos.self.service.plugin.email.enabled", 
+        havingValue = "true", 
+        matchIfMissing = true)
 public class SelfServicePluginEmailService implements PlatformEmailService {
 
     private final ExternalServicesPropertiesReadPlatformService externalServicesReadPlatformService;
