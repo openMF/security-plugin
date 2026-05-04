@@ -46,7 +46,6 @@ public class ExternalNotificationSystemClient {
     
     // Kept static as per original code, assuming a simple RestTemplate configuration is sufficient
     private static final RestTemplate restTemplate = new RestTemplate(); 
-
     
     public void sendPostRequest(Object requestBody) {
         
@@ -54,7 +53,6 @@ public class ExternalNotificationSystemClient {
         
         CompletableFuture.runAsync(() -> {
             try {
-                
 
                 HttpHeaders headers = new HttpHeaders();
                 headers.setContentType(MediaType.APPLICATION_JSON);
@@ -64,9 +62,7 @@ public class ExternalNotificationSystemClient {
                 String json = ow.writeValueAsString(requestBody);
 
                 HttpEntity<Object> entity = new HttpEntity<>(json, headers);
-
-                restTemplate.exchange(credentials.getHost(), HttpMethod.POST, entity, JsonNode.class);
-                log.info("Request sent successfully");
+                restTemplate.exchange(credentials.getHost(), HttpMethod.POST, entity, JsonNode.class);                
             } catch (Exception e) {
                 log.error("Async request failed", e);
             }
