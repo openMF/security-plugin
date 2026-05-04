@@ -38,6 +38,9 @@ public class PersonIdentityData {
     private String externalId;
     private Integer genderId;
     private String dateOfBirth;
+    private String dateOfActivation;
+    private String dateOfExpiration;
+    private String displayName;
     private String firstName;
     private String middleName;
     private String lastName;
