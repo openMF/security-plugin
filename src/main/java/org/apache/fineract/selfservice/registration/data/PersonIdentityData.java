@@ -53,6 +53,7 @@ public class PersonIdentityData {
     private String state;
     private String municipality;
     private String address;    
+    private String category;    
     private ArrayList<LegalRepresentativeData> legalRepresentative;
     
 }
